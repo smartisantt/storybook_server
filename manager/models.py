@@ -20,8 +20,8 @@ class Activity(BaseModle, models.Model):
     intro = models.CharField(max_length=1024,  verbose_name="活动介绍", null=True)
     status = models.CharField(max_length=32,  verbose_name="活动状态", null=True)
     mediaUuid = models.CharField(max_length=256, verbose_name="活动图片",  null=True)
-    starttime = models.DateTimeField( verbose_name='活动开始时间', null=True)
-    endtime = models.DateTimeField( verbose_name='活动结束时间', null=True)
+    startTime = models.DateTimeField( verbose_name='活动开始时间', null=True)
+    endTime = models.DateTimeField( verbose_name='活动结束时间', null=True)
 
     class Meta:
         db_table = 'tb_activity'
@@ -33,9 +33,9 @@ class Ad(BaseModle, models.Model):
     """
     mediaUuid = models.CharField(max_length=64,  verbose_name='广告图片', null=True)
     jumpUrl = models.CharField(max_length=128, verbose_name='跳转地址', null=True)
-    starttime = models.DateTimeField( verbose_name='时效开始时间', null=True)
-    endtime = models.DateTimeField( verbose_name='时效结束时间', null=True)
-    isdelete = models.BooleanField( verbose_name='软删除', null=True)
+    startTime = models.DateTimeField( verbose_name='时效开始时间', null=True)
+    endTime = models.DateTimeField( verbose_name='时效结束时间', null=True)
+    isDelete = models.BooleanField( verbose_name='软删除', null=True)
 
     class Meta:
         db_table = 'tb_ad'
@@ -46,8 +46,8 @@ class Baby(BaseModle, models.Model):
     宝宝表
     """
     name = models.CharField(max_length=24,  verbose_name='宝宝姓名', null=True)
-    babybirthday = models.DateTimeField( verbose_name='宝宝生日', null=True)
-    gender = models.IntegerField( null=True)
+    babyBirthday = models.DateTimeField( verbose_name='宝宝生日', null=True)
+    gender = models.IntegerField(default=False)
 
     class Meta:
         db_table = 'tb_baby'
@@ -125,12 +125,11 @@ class Rank(BaseModle, models.Model):
 
 class Records(BaseModle, models.Model):
     """播放记录/最近录过记录表"""
-    playdatetime = models.DateTimeField( verbose_name='播放/录制 日期时间', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, db_column='userUuid',
                                  null=True, related_name='userRecordUuid', to_field='uuid')
     workUuid = models.ForeignKey('Works', models.CASCADE, db_column='workUuid',
                                  null=True, related_name='workRecordUuid', to_field='uuid')
-    record_type = models.IntegerField( null=True)  # 播放记录  / 最近录过
+    recordType = models.CharField(max_length=20, null=True)  # 播放记录  / 最近录过
 
     class Meta:
         db_table = 'tb_records'
@@ -185,7 +184,7 @@ class Tag(BaseModle, models.Model):
         db_table = 'tb_tag'
 
 
-class Templatestory(BaseModle, models.Model):
+class TemplateStory(BaseModle, models.Model):
     """
     模板故事
     """
@@ -240,7 +239,7 @@ class Viewpager(BaseModle, models.Model):
     """
     轮播图
     """
-    titlte = models.CharField(max_length=64,  null=True)
+    title = models.CharField(max_length=64,  null=True)
     orderNum = models.IntegerField(null=True) # 显示序号
     mediaUuid = models.CharField(max_length=64, null=True) # 轮播图片
     startTime = models.DateTimeField(null=True) # 有效起始时间
@@ -255,10 +254,10 @@ class Viewpager(BaseModle, models.Model):
 
 class Works(BaseModle, models.Model):
     """
-    作品表自由录制和模U板作品
+    作品表自由录制和模板作品
     """
     isUpload = models.IntegerField(default=False)                  # 是否上传
-    voiceMediaUuid = models.CharField( max_length=64,  null=True)        # 用户的声音
+    voiceMediaUuid = models.CharField( max_length=64,  null=True)  # 用户的声音
     uservolume = models.IntegerField( null=True)
     bgmUuid = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
     bgmvolume = models.IntegerField( null=True)                 # 背景音乐音量

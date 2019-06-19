@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import uuid
@@ -66,3 +67,58 @@ def get_uuid():
     :return:
     """
     return "".join(str(uuid.uuid4()).split("-")).upper()
+
+
+def datetime_to_string(mydate, rule='%Y-%m-%d %H:%M:%S'):
+    """
+    将datetime.datetime转为string
+    :param mydate:
+    :return:
+    """
+    if isinstance(mydate, datetime.datetime) or isinstance(mydate, datetime.date):
+        return mydate.strftime(rule)
+    else:
+        return mydate
+
+
+def string_to_datetime(mystr, rule='%Y-%m-%d %H:%M:%S'):
+    """
+    将string转为 datetime.datetime
+    :param mydate:
+    :return:
+    """
+    if isinstance(mystr, str):
+        return datetime.datetime.strptime(mystr, rule)
+    else:
+        return mystr
+
+
+def page_index(myList, page=1, limit=10):
+    """
+    分页
+    :param page: 页码  第一页为1
+    :param limit: 每一页显示条数
+    :return: total + list
+    """
+    page = page if page else 0
+    limit = limit if limit else 20
+
+    if not all([isinstance(page, int), isinstance(limit, int)]):
+        try:
+            page = int(page)
+            limit = int(limit)
+        except Exception as e:
+            logging.error(str(e))
+            return myList
+    total = len(myList)
+    if page == 0:
+        startPage = 0
+        endPage = limit
+    else:
+        startPage = (page - 1) * limit
+        endPage = page * limit
+    if total < startPage:
+        return total, []
+    if total < endPage:
+        endPage = total
+    return total, myList[startPage: endPage]

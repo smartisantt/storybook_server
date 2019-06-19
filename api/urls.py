@@ -8,6 +8,8 @@ from api import views
 app_name = 'api'
 
 urlpatterns = [
-    path('index/', views.index, name='index'),
+    path('identify/code', views.identify_code, name='identify'),
+    path('check/identifycode', views.check_identify_code, name='check_identify_code'),
+
 
 ]

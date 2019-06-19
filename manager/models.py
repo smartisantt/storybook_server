@@ -123,10 +123,8 @@ class Rank(BaseModle, models.Model):
 
 class Records(BaseModle, models.Model):
     """播放记录/最近录过记录表"""
-    userUuid = models.ForeignKey('User', models.CASCADE, db_column='userUuid',
-                                 null=True, related_name='userRecordUuid', to_field='uuid')
-    workUuid = models.ForeignKey('Works', models.CASCADE, db_column='workUuid',
-                                 null=True, related_name='workRecordUuid', to_field='uuid')
+    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRecordUuid', to_field='uuid')
+    workUuid = models.ForeignKey('Works', models.CASCADE, null=True, related_name='workRecordUuid', to_field='uuid')
     recordType = models.CharField(max_length=20, null=True)  # 播放记录  / 最近录过
 
     class Meta:

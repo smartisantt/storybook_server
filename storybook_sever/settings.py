@@ -31,6 +31,22 @@ ALLOWED_HOSTS = [
     '192.168.100.201',
 ]
 
+# 缓存配置
+caches = {
+    'default': {
+        'backend': 'redis_caches.cache.RedisCache',
+        'location': 'redis://127.0.0.1:6379/0',  # redis服务ip和端口，
+        'option': {
+            'client_class': 'redis_cache.client.DefaultClient',
+        },
+    },
+}
+
+REDIS_TIMEOUT = 7*24*60*60
+CUBES_REDIS_TIMEOUT = 60*60
+NEVER_REDIS_TIMEOUT = 365*24*60*60
+
+
 # Application definition
 
 INSTALLED_APPS = [

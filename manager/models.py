@@ -12,7 +12,7 @@ from django.db import models
 from common.models import BaseModle
 
 
-class Activity(models.Model, BaseModle):
+class Activity(BaseModle, models.Model):
     """
     活动表
     """
@@ -27,7 +27,7 @@ class Activity(models.Model, BaseModle):
         db_table = 'tb_activity'
 
 
-class Ad(models.Model, BaseModle):
+class Ad(BaseModle, models.Model):
     """
     首页弹屏广告
     """
@@ -41,7 +41,7 @@ class Ad(models.Model, BaseModle):
         db_table = 'tb_ad'
 
 
-class Baby(models.Model, BaseModle):
+class Baby(BaseModle, models.Model):
     """
     宝宝表
     """
@@ -53,7 +53,7 @@ class Baby(models.Model, BaseModle):
         db_table = 'tb_baby'
 
 
-class Bgm(models.Model, BaseModle):
+class Bgm(BaseModle, models.Model):
     """
     背景音乐
     """
@@ -67,7 +67,7 @@ class Bgm(models.Model, BaseModle):
         db_table = 'tb_bgm'
 
 
-class Feedback(models.Model, BaseModle):
+class Feedback(BaseModle, models.Model):
     """
     用户反馈表
     """
@@ -79,26 +79,26 @@ class Feedback(models.Model, BaseModle):
     mediauuid3 = models.CharField(db_column='mediaUuid3', max_length=64, blank=True, null=True)
     mediauuid4 = models.CharField(db_column='mediaUuid4', max_length=64, blank=True, null=True)
     tel = models.CharField(max_length=20, blank=True, null=True)
-    user = models.ForeignKey('User', models.DO_NOTHING, blank=True, null=True)
+    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userFeedbackUuid', to_field='uuid')
 
     class Meta:
         db_table = 'tb_feedback'
 
 
-class LoginLog(models.Model, BaseModle):
+class LoginLog(BaseModle, models.Model):
     """
     登录日志
     """
     ipAddr = models.CharField(max_length=126, verbose_name='IP地址', blank=True, null=True)
     logDate = models.DateTimeField(blank=True, verbose_name='登录日期时间', null=True)
     devCode = models.CharField(max_length=256, verbose_name='设备编号', blank=True, null=True)
-    user = models.ForeignKey('User', models.CASCADE, blank=True, null=True, related_name='longinLogUuid')
+    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='longinLogUuid', to_field='uuid')
 
     class Meta:
         db_table = 'tb_login_log'
 
 
-class Module(models.Model, BaseModle):
+class Module(BaseModle, models.Model):
     """
     首页显示模块
     """
@@ -110,64 +110,70 @@ class Module(models.Model, BaseModle):
         db_table = 'tb_module'
 
 
-class Rank(models.Model, BaseModle):
-    """活动排名"""
+class Rank(BaseModle, models.Model):
+    """活动排名  用户和活动中间的关联表"""
     userRank = models.IntegerField(blank=True, null=True)
     popularity = models.IntegerField(blank=True, verbose_name='人气', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, db_column='userUuid',
                                  null=True, related_name='userRankUuid', to_field='uuid')
     activityUuid = models.ForeignKey(Activity, models.CASCADE, db_column='userUuid',
-                                     null=True, related_name='activityUuid', to_field='uuid')
+                                     null=True, related_name='activityRankUuid', to_field='uuid')
 
     class Meta:
         db_table = 'tb_rank'
 
 
-class Records(models.Model, BaseModle):
-    """播放记录和最近录过记录表"""
+class Records(BaseModle, models.Model):
+    """播放记录/最近录过记录表"""
     playdatetime = models.DateTimeField(blank=True, verbose_name='播放/录制 日期时间', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, db_column='userUuid',
                                  null=True, related_name='userRecordUuid', to_field='uuid')
     workUuid = models.ForeignKey('Works', models.CASCADE, db_column='workUuid',
                                  null=True, related_name='workRecordUuid', to_field='uuid')
-    record_type = models.IntegerField(blank=True, null=True)
+    record_type = models.IntegerField(blank=True, null=True)  # 播放记录  / 最近录过
 
     class Meta:
         db_table = 'tb_records'
 
 
-class Relation(models.Model, BaseModle):
+class Relation(BaseModle, models.Model):
     """当前用户和其他用户关系表"""
-    user = models.ForeignKey('User', models.DO_NOTHING, blank=True, null=True)
-    relattion_type = models.IntegerField(blank=True, null=True)
-    elation_user = models.ForeignKey('User', models.DO_NOTHING, blank=True, null=True)
-    status = models.IntegerField(blank=True, null=True)
+    userUuid = models.ForeignKey('User', models.CASCADE, null=True,
+                                 related_name='userRelationUuid', to_field='uuid')
+    relationType = models.CharField(blank=True, null=True)  # 当前用户和另一用户的关系 粉丝 还是 关注
+    relationUserUuid = models.ForeignKey('User', models.CASCADE, null=True,
+                                         related_name='relationUserRelationUuid', to_field='uuid')
+    status = models.BooleanField(default=False)    # 状态，是否取消0/关注1
 
     class Meta:
         db_table = 'tb_relation'
 
 
-class Search(models.Model, BaseModle):
-    id = models.IntegerField(blank=True, null=True)
-    keyword = models.CharField(max_length=32, blank=True, null=True)
-    ordernum = models.IntegerField(blank=True, null=True)
-    isdelete = models.IntegerField(blank=True, null=True)
+class HotSearch(BaseModle, models.Model):
+    """
+    热搜词
+    """
+    keyword = models.CharField(max_length=32, null=True) # 搜索关键词
+    orderNum = models.IntegerField(blank=True, null=True) # 排列序号
+    isDelete = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'tb_search'
 
 
-class Searchhistory(models.Model, BaseModle):
-    id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=20, blank=True, null=True)
-    searchtime = models.DateTimeField(db_column='searchTime', blank=True, null=True)
-    user = models.ForeignKey('User', models.DO_NOTHING, blank=True, null=True)
+class SearchHistory(BaseModle, models.Model):
+    """
+    搜索历史表
+    """
+    searchName = models.CharField(max_length=20, blank=True, null=True)  # 搜索名字
+    searchTime = models.DateTimeField(db_column='searchTime', blank=True, null=True)
+    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userSearchUuid', to_field='uuid')
 
     class Meta:
         db_table = 'tb_searchhistory'
 
 
-class Tag(models.Model, BaseModle):
+class Tag(BaseModle, models.Model):
     id = models.IntegerField(primary_key=True)
     code = models.CharField(max_length=20, blank=True, null=True)
     tag_name = models.CharField(max_length=32, blank=True, null=True)
@@ -177,7 +183,7 @@ class Tag(models.Model, BaseModle):
         db_table = 'tb_tag'
 
 
-class Templatestory(models.Model, BaseModle):
+class Templatestory(BaseModle, models.Model):
     id = models.IntegerField(primary_key=True)
     icon = models.CharField(max_length=128, blank=True, null=True)
     intro = models.CharField(max_length=512, blank=True, null=True)
@@ -190,7 +196,7 @@ class Templatestory(models.Model, BaseModle):
         db_table = 'tb_templatestory'
 
 
-class User(models.Model, BaseModle):
+class User(BaseModle, models.Model):
     """
     用户表
     """
@@ -214,7 +220,7 @@ class User(models.Model, BaseModle):
         db_table = 'tb_user'
 
 
-class Version(models.Model, BaseModle):
+class Version(BaseModle, models.Model):
     """
     版本信息表
     """
@@ -226,7 +232,7 @@ class Version(models.Model, BaseModle):
         db_table = 'tb_version'
 
 
-class Viewpager(models.Model, BaseModle):
+class Viewpager(BaseModle, models.Model):
     id = models.IntegerField(primary_key=True)
     titlte = models.CharField(max_length=64, blank=True, null=True)
     ordernum = models.IntegerField(db_column='orderNum', blank=True, null=True)
@@ -241,7 +247,7 @@ class Viewpager(models.Model, BaseModle):
         db_table = 'tb_viewpager'
 
 
-class Works(models.Model, BaseModle):
+class Works(BaseModle, models.Model):
     """
     作品表自由录制和模板作品
     """

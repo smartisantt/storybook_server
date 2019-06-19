@@ -194,32 +194,33 @@ class User(models.Model, BaseModle):
     """
     用户表
     """
-    tb_field = models.ForeignKey('Searchhistory', models.DO_NOTHING, db_column='tb__id', blank=True,
-                                 null=True)  # Field renamed because it ended with '_'.
-    is_delete = models.IntegerField()
-    forbiddentype = models.CharField(db_column='forbiddenType', max_length=16, null=True)
-    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)
-    endtime = models.DateTimeField(db_column='endTime', blank=True, null=True)
-    tel = models.CharField(max_length=20)
-    userphoto = models.CharField(max_length=255, blank=True, null=True)
     username = models.CharField(max_length=30)
-    password = models.CharField(max_length=256)
-    gender = models.IntegerField(blank=True, null=True)
-    status = models.IntegerField(blank=True, null=True)
-    regdate = models.DateField(blank=True, null=True)
-    roles = models.CharField(max_length=1024, blank=True, null=True)
-    lastvisit = models.DateTimeField(blank=True, null=True)
-    version = models.ForeignKey('Version', models.CASCADE, blank=True, null=True)
+    is_delete = models.IntegerField(default=False)
+    forbiddenType = models.CharField(db_column='forbiddenType', max_length=16, null=True) # 禁止方式,（禁止登录，禁止发言）
+    startTime = models.DateTimeField(db_column='startTime', blank=True, null=True)
+    endTime = models.DateTimeField(db_column='endTime', blank=True, null=True)
+    tel = models.CharField(max_length=20)
+    mediaUuid = models.CharField(max_length=64, null=True) # 用户头像
+    gender = models.IntegerField(blank=True, null=True) # 性别
+    status = models.IntegerField(blank=True, null=True) # 状态
+    roles = models.CharField(max_length=1024, blank=True, null=True) # 角色
+    lastvisit = models.DateTimeField(blank=True, null=True) # 最近登录时间
+    searchHistoryUuid = models.ForeignKey('Searchhistory', models.CASCADE, related_name='searchUserUuid',
+                                          to_field='uuid', null=True)
+    versionUuid = models.ForeignKey('Version', models.CASCADE, null=True, related_name='versionUserUuid',
+                                    to_field='uuid' )
 
     class Meta:
         db_table = 'tb_user'
 
 
 class Version(models.Model, BaseModle):
-    id = models.IntegerField(primary_key=True)
-    version = models.CharField(max_length=26, blank=True, null=True)
-    name = models.CharField(max_length=26, blank=True, null=True)
-    company = models.CharField(max_length=26, blank=True, null=True)
+    """
+    版本信息表
+    """
+    version = models.CharField(max_length=26, blank=True, null=True) # 版本号
+    name = models.CharField(max_length=26, blank=True, null=True)   #app名字
+    company = models.CharField(max_length=26, blank=True, null=True) # 公司名
 
     class Meta:
         db_table = 'tb_version'
@@ -241,7 +242,9 @@ class Viewpager(models.Model, BaseModle):
 
 
 class Works(models.Model, BaseModle):
-    id = models.IntegerField(primary_key=True)
+    """
+    作品表自由录制和模板作品
+    """
     isupload = models.IntegerField(blank=True, null=True)
     mediauuid = models.CharField(db_column='mediaUuid', max_length=64, blank=True, null=True)
     uservolume = models.IntegerField(blank=True, null=True)

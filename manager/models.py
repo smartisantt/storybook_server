@@ -114,10 +114,8 @@ class Rank(BaseModle, models.Model):
     """活动排名  用户和活动中间的关联表"""
     userRank = models.IntegerField( null=True)
     popularity = models.IntegerField( verbose_name='人气', null=True)
-    userUuid = models.ForeignKey('User', models.CASCADE, db_column='userUuid',
-                                 null=True, related_name='userRankUuid', to_field='uuid')
-    activityUuid = models.ForeignKey(Activity, models.CASCADE, db_column='userUuid',
-                                     null=True, related_name='activityRankUuid', to_field='uuid')
+    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRankUuid', to_field='uuid')
+    activityUuid = models.ForeignKey(Activity, models.CASCADE, null=True, related_name='activityRankUuid', to_field='uuid')
 
     class Meta:
         db_table = 'tb_rank'

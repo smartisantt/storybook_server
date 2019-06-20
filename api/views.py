@@ -56,3 +56,12 @@ def check_identify_code(request):
     if code != identify_code:
         return http_return(400, '验证码错误')
     return http_return(200, '验证码正确')
+
+
+def user_index(request):
+    """
+    首页信息展示
+    :param request:
+    :return:
+    """
+    pass

@@ -1,4 +1,4 @@
-"""ht URL Configuration
+"""stroybook_sever URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.1/topics/http/urls/
@@ -19,7 +19,7 @@ from api import urls as apiUrl
 from manager import urls as managerUrl
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
     path('api/ht/', include((apiUrl, 'api'), namespace='api')),
     path('api/manage/', include((managerUrl, 'manager'), namespace='manager')),
 ]

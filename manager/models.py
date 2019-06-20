@@ -129,7 +129,6 @@ class Sign(BaseModle, models.Model):
                                     to_field='uuid')
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userSignUuid', to_field='uuid')
 
-
     class Meta:
         db_table = 'tb_sign'
 
@@ -214,16 +213,13 @@ class User(BaseModle, models.Model):
     """
     userID = models.CharField(max_length=64, default=None)
     username = models.CharField(max_length=30)
-    is_delete = models.IntegerField(default=False)
-    forbiddenType = models.CharField(max_length=16, null=True)  # 禁止方式,（禁止登录，禁止发言）
-    startTime = models.DateTimeField(null=True)
-    endTime = models.DateTimeField(null=True)
+    startTime = models.DateTimeField(null=True)  # 禁止起始时间
+    endTime = models.DateTimeField(null=True)  # 禁止结束时间
     tel = models.CharField(max_length=20)
     mediaUuid = models.CharField(max_length=64, null=True)  # 用户头像
-    gender = models.IntegerField(null=True)  # 性别
-    status = models.IntegerField(null=True)  # 状态
-    roles = models.CharField(max_length=1024, null=True)  # 角色
-    lastvisit = models.DateTimeField(null=True)  # 最近登录时间
+    gender = models.BooleanField(null=True)  # 性别 0 女 1 男
+    status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
+    roles = models.CharField(max_length=1024, null=True)  # 角色 normalUser adminUser
 
     versionUuid = models.ForeignKey('Version', models.CASCADE, null=True, related_name='versionUserUuid',
                                     to_field='uuid')
@@ -290,7 +286,7 @@ class Works(BaseModle, models.Model):
     playTimes = models.IntegerField(null=True)  # 播放次数
     worksType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
     templateUuid = models.ForeignKey(TemplateStory, on_delete=models.CASCADE, related_name='templateStoryUuid',
-                                     to_field='uuid',null=True)  # 作品关联的模板（如果不是自由录制的作品）
+                                     to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
     title = models.CharField(max_length=128, null=True)  # 自由录制的标题
     photoMediaUuid = models.CharField(max_length=64, null=True)  # 封面图片
     feeling = models.CharField(max_length=512, null=True)  # 录制感受
@@ -298,7 +294,8 @@ class Works(BaseModle, models.Model):
     tags = models.ManyToManyField(Tag)  # 作品标签
     moduleUuid = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='moduleWorksUuid',
                                    to_field='uuid')  # 在首页哪个模块显示
-    albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',null=True)
+    albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',
+                                  null=True)
     checkStatus = models.CharField(max_length=64, null=True)
     checkInfo = models.CharField(max_length=256, null=True)
 

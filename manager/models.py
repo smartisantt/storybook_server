@@ -90,7 +90,6 @@ class LoginLog(BaseModle, models.Model):
     登录日志
     """
     ipAddr = models.CharField(max_length=126, verbose_name='IP地址', null=True)
-    logDate = models.DateTimeField(verbose_name='登录日期时间', null=True)
     devCode = models.CharField(max_length=256, verbose_name='设备编号', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='longinLogUuid', to_field='uuid')
 
@@ -216,8 +215,8 @@ class User(BaseModle, models.Model):
     startTime = models.DateTimeField(null=True)  # 禁止起始时间
     endTime = models.DateTimeField(null=True)  # 禁止结束时间
     tel = models.CharField(max_length=20)
-    mediaUuid = models.CharField(max_length=64, null=True)  # 用户头像
-    gender = models.BooleanField(null=True)  # 性别 0 女 1 男
+    userLogo = models.CharField(max_length=255, null=True)  # 用户头像，存地址
+    gender = models.BooleanField(null=True)  # 性别 0未知  1男  2女
     status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
     roles = models.CharField(max_length=1024, null=True)  # 角色 normalUser adminUser
 
@@ -236,6 +235,7 @@ class Version(BaseModle, models.Model):
     version = models.CharField(max_length=26, null=True)  # 版本号
     name = models.CharField(max_length=26, null=True)  # app名字
     company = models.CharField(max_length=26, null=True)  # 公司名
+    status = models.CharField(max_length=32, null=True)  # 状态 dafault 默认使用
 
     class Meta:
         db_table = 'tb_version'

@@ -77,14 +77,16 @@ def check_identify(func):
                 user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
                 if not user_data:
                     user_uuid = get_uuid()
+                    version = Version.objects.filter(status="dafault").first()
                     user = User(
                         uuid=user_uuid,
                         tel=user_info.get('phone', ''),
                         userID=user_info.get('userId', ''),
                         username=user_info.get('wxNickname', ''),
                         roles="normalUser",
+                        userLogo=user_info.get('wxNickname', ''),
                         gender=user_info.get('wxSex', None),
-                        updateTime=datetime.datetime.now()
+                        versionUuid=version
                     )
                     try:
                         with transaction.atomic():

@@ -6,6 +6,7 @@
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from api.apiCommon import *
+from common.fileApi import FileInfo
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
@@ -82,4 +83,23 @@ def index_banner(request):
     :return:
     """
     nowDatetime = datetime.datetime.now()
-    banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime)
+    banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
+    # 按显示序号排序
+    banner = banner.order_by('orderNum')
+    banners = banner.all()
+    mediaList = []
+    for ban in banners:
+        mediaList.append({
+            ban.uuid: ban.mediaUuid
+        })
+    # fileList = FileInfo.get_url(mediaList)
+    banList = []
+    for banner in banners:
+        banList.append({
+            'title': banner.title,
+            'mediaUrl': banner.mediaUuid,
+            'jumpType': banner.jumpType,
+            'targetUrl': banner.targetUuid,
+        })
+    total = len(banners)
+    return http_return(200, '成功', {"total": total, "banList": banList})

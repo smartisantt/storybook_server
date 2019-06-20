@@ -216,7 +216,7 @@ class User(BaseModle, models.Model):
     endTime = models.DateTimeField(null=True)  # 禁止结束时间
     tel = models.CharField(max_length=20)
     userLogo = models.CharField(max_length=255, null=True)  # 用户头像，存地址
-    gender = models.BooleanField(null=True)  # 性别 0未知  1男  2女
+    gender = models.IntegerField(null=True)  # 性别 0未知  1男  2女
     status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
     roles = models.CharField(max_length=1024, null=True)  # 角色 normalUser adminUser
 

@@ -96,6 +96,11 @@ def check_identify(func):
                         return http_return(400, '保存失败')
                     user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
                 try:
+                    log = LoginLog(
+                        ipAddr=user_info.get('loginIp', ''),
+                        userUuid=user_data,
+                    )
+                    log.save()
                     user_data.update(loginTime=datetime.datetime.now())
                 except Exception as e:
                     logging.error(str(e))

@@ -23,21 +23,31 @@ def admin(request):
 
 def login(request):
     """登录模块"""
-    # 前端传入token ， 先在缓冲查找， 如果没有（调用接口查询），
-
+    # 前端传入token ， 先在缓存查找， 如果没有（调用接口查询），
     token = request.META.get('HTTP_TOKEN')
-
     user_data = cache.get(token)
     # 缓存有数据,则在缓存中拿数据，登录日志添加新数据
     if user_data:
         try:
             # 获取缓存用户信息
             user_info = cache.get(token)
-            role = user_info.get('role')
-            status = user_info.get('status')
-            # TODO: 缓存失效时间和用户禁止时间的协调
+            user = User.objects.filter(userID=user_info.get('userId', '')).first()
+
+            role = user.get('role')
+            status = user.get('status')
             if status == 'forbbiden_login':
                 return http_return(400, '此用户被禁止登录')
+                # 获取登录ip
+            loginIp = get_ip_address(request)
+
+            # 登录成功生成登录日志，缓存存入信息
+
+            loginLog = LoginLog(
+                uuid = get_uuid(),
+                ipAddr = loginIp,
+                userUuid = user
+            )
+            loginLog.save()
 
         except Exception as e:
             logging.error(str(e))
@@ -58,7 +68,7 @@ def login(request):
                 return http_return(400, '无此用户')
             if user and user.status == 'forbbiden_login':
                 return http_return(400, '此用户被禁止登录')
-            # 写入缓存
+
 
             # 当前表中没有此用户信息则在数据库中创建
             if not user:
@@ -68,7 +78,8 @@ def login(request):
                     tel=user_info.get('phone', ''),
                     userID=user_info.get('userId', ''),
                     username=user_info.get('wxNickname', ''),
-                    roles="normalUser",
+                    roles="adminUser",
+                    # roles="normalUser",
                     userLogo=user_info.get('wxNickname', ''),
                     gender=user_info.get('wxSex', 0),
                     status='normal'
@@ -81,19 +92,20 @@ def login(request):
                     return http_return(400, '保存失败')
             user = User.objects.filter(Q(userID=user_info.get('userId', '')) and ~Q(status='forbbiden_login')).first()
             role = user.roles
+            # 获取登录ip
+            loginIp = get_ip_address(request)
 
-    # 登录成功生成登录日志，缓存存入信息
-    # 获取登录ip
-    loginIp = get_ip_address(request)
-    if not create_cache(user, loginIp, token):
-        return http_return(400, '用户不存在')
-    loginLog_uuid = get_uuid()
-    loginLog = LoginLog(
-        uuid=loginLog_uuid,
-        ipAddr=user_info.get('loginIp', ''),
-        userUuid=user
-    )
-    loginLog.save()
+            # 写入缓存
+            if not create_cache(user,  loginIp, token):
+                return http_return(400, '用户不存在')
+            # 登录成功生成登录日志，缓存存入信息
+            loginLog_uuid = get_uuid()
+            loginLog = LoginLog(
+                uuid=loginLog_uuid,
+                ipAddr=loginIp,
+                userUuid=user
+            )
+            loginLog.save()
 
     return http_return(200, '登陆成功', {'roles': role, 'userInfo': user_info})
 

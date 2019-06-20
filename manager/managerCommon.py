@@ -18,8 +18,7 @@ from django.db import connection
 
 from django.http import HttpResponse
 from django.db import transaction
-from django.core.cache import cache
-
+from django.core.cache import cache, caches
 
 from storybook_sever.config import *
 
@@ -426,7 +425,7 @@ def create_cache(user_info, loginIp, token):
     # request.session[token] = shop_keeper
     # request.session['uuid'] = user_info.uuid
     try:
-        cache.set(token, user_data, USER_CACHE_OVER_TIME)
+        caches['default'].set(token, user_data, USER_CACHE_OVER_TIME)
     except Exception as e:
         logging.error(str(e))
         return False

@@ -33,16 +33,7 @@ ALLOWED_HOSTS = [
     '192.168.100.253'
 ]
 
-# 缓存配置
-caches = {
-    'default': {
-        'backend': 'redis_caches.cache.RedisCache',
-        'location': 'redis://127.0.0.1:6379/0',  # redis服务ip和端口，
-        'option': {
-            'client_class': 'redis_cache.client.DefaultClient',
-        },
-    },
-}
+
 
 REDIS_TIMEOUT = 7*24*60*60
 CUBES_REDIS_TIMEOUT = 60*60
@@ -179,7 +170,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
-LANGUAGE_CODE = 'zh-Hans'
+LANGUAGE_CODE = 'zh-hans'
 
 TIME_ZONE = 'Asia/Shanghai'
 
@@ -187,7 +178,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = False
+USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
@@ -224,3 +215,34 @@ CORS_ALLOW_HEADERS = (
     'XSRF-TOKEN',
     'X-XSRF-TOKEN'
 )
+
+
+# 缓存配置
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': [
+            'redis://127.0.0.1:6379/0',
+        ],  # redis服务ip和端口，
+        'KEY_PREFIX': 'manage',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 1024,
+            }
+        },
+    },
+    'api': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': [
+            'redis://127.0.0.1:6379/1',
+        ],  # redis服务ip和端口，
+        'KEY_PREFIX': 'api',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 512,
+            }
+        },
+    },
+}

@@ -212,6 +212,7 @@ class User(BaseModle, models.Model):
     """
     用户表
     """
+    userID = models.CharField(max_length=64, default=None)
     username = models.CharField(max_length=30)
     is_delete = models.IntegerField(default=False)
     forbiddenType = models.CharField(max_length=16, null=True)  # 禁止方式,（禁止登录，禁止发言）
@@ -223,8 +224,7 @@ class User(BaseModle, models.Model):
     status = models.IntegerField(null=True)  # 状态
     roles = models.CharField(max_length=1024, null=True)  # 角色
     lastvisit = models.DateTimeField(null=True)  # 最近登录时间
-    searchHistoryUuid = models.ForeignKey('Searchhistory', models.CASCADE, related_name='searchUserUuid',
-                                          to_field='uuid', null=True)
+
     versionUuid = models.ForeignKey('Version', models.CASCADE, null=True, related_name='versionUserUuid',
                                     to_field='uuid')
     works = models.ManyToManyField(to='Works', through=Records)

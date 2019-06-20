@@ -7,7 +7,7 @@ from django.core.cache import cache
 from django.http import HttpResponse
 
 
-def request_body_not_token(request):
+def request_body(request, method='GET'):
     """
     转换request.body
     :param request:
@@ -15,16 +15,19 @@ def request_body_not_token(request):
     """
     if not request:
         return request
+    if request.method != method:
+        return http_return(400, '请求方式不正确')
     try:
         token = request.META.get('HTTP_TOKEN')
-
+        if not token:
+            return http_return(400, '非法请求')
         data = {
             '_cache': cache.get(token)
         }
         if request.method == 'POST':
             if request.body:
                 try:
-                    for key, value in json.loads(request.body.decode('utf-8')).items():
+                    for key, value in json.loads(request.body).items():
                         data[key] = value
                 except Exception as e:
                     logging.error(str(e))

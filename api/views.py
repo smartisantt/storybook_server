@@ -15,7 +15,7 @@ def identify_code(request):
     :param request:
     :return:
     """
-    data = request_body_not_token(request)
+    data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
     tel = data.get('tel', '0')
@@ -47,7 +47,7 @@ def check_identify_code(request):
     :param request:
     :return:
     """
-    data = request_body_not_token(request)
+    data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')
     identify_code = data.get('identifyCode')
@@ -58,10 +58,28 @@ def check_identify_code(request):
     return http_return(200, '验证码正确')
 
 
-def user_index(request):
+# @check_identify
+def index_list(request):
     """
     首页信息展示
     :param request:
     :return:
     """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    page = data.get('page', '')
+    pageIndex = data.get('pageIndex', '')
+    rank = data.get('rank', '')
     pass
+
+
+# @check_identify
+def index_banner(request):
+    """
+    首页轮播图
+    :param request:
+    :return:
+    """
+    nowDatetime = datetime.datetime.now()
+    banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime)

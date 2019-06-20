@@ -108,6 +108,7 @@ if version == 'debug':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '127.0.0.1',  # 主机
             'PORT': '3306',  # 数据库使用的端口
+            'TIME_ZONE': 'Asia/Chongqing'
         }
     }
 

@@ -1,6 +1,6 @@
 
 
-version = "test"
+version = "debug"
 
 # 手机验证码缓存时间
 TEL_IDENTIFY_CODE = 5 * 60

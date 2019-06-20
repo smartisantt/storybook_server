@@ -99,6 +99,7 @@ WSGI_APPLICATION = 'storybook_sever.wsgi.application'
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 if version == 'debug':
+# if version == 'test':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',  # 数据库引擎

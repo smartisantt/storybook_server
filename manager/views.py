@@ -18,7 +18,7 @@ def admin(request):
     return http_return(200, 'ok')
 
 
-def admin_login(request):
+def login(request):
     """
     :param request:
     :return:
@@ -31,22 +31,29 @@ def admin_login(request):
             return http_return(400, '未获取到用户信息')
         else:
             user_data = User.objects.filter(userID=user_info.get('userId', '')).first()
+            # 状态 normal  destroy  forbbiden_login  forbbiden_say
             if user_data and user_data.status == 'destroy':
                 return http_return(400, '无此用户')
-            if user_data and user_data.status == 'forbid':
+            if user_data and user_data.status == 'forbbiden_login':
                 return http_return(400, '此用户被禁止')
             if not user_data:
-                shop_uuid = get_uuid()
-                shop = User(
-                    uuid=shop_uuid,
+                user_uuid = get_uuid()
+                user = User(
+                    uuid=user_uuid,
                     tel=user_info.get('phone', ''),
                     userID=user_info.get('userId', ''),
                     name=user_info.get('wxNickname', ''),
                     updateTime=datetime.datetime.now()
                 )
+                loginLog_uuid = get_uuid()
+                loginLog = LoginLog(
+                    uuid = loginLog_uuid,
+                    ipAddr = user_info.get('loginIp', ''),
+                )
                 try:
                     with transaction.atomic():
-                        shop.save()
+                        user.save()
+                        loginLog.save()
                 except Exception as e:
                     logging.error(str(e))
                     return http_return(400, '保存失败')

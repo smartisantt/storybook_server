@@ -185,7 +185,7 @@ class Tag(BaseModle, models.Model):
     """
     code = models.CharField(max_length=20, null=True)  # 编码
     tag_name = models.CharField(max_length=32, null=True)  # 标签名字
-    parent_id = models.IntegerField(null=True)  # 爸爸标签id
+    parent = models.ForeignKey(to='self', on_delete=models.CASCADE, db_column='parent_id', null=True)  # 爸爸标签id
 
     class Meta:
         db_table = 'tb_tag'

@@ -9,26 +9,29 @@ from storybook_sever.config import version
 
 class FileInfo(object):
     def __init__(self):
-        self.file_host = ""
-        self.url = ""
+        self.file_host = "http://192.168.100.29:8000"
+        self.url = "/api/pub/file/urls"
         if version == 'ali_test':
             self.file_host = ""
-            self.url = ""
+            self.url = "/api/pub/file/urls"
 
-    def get_url(self, uuid):
+    def get_url(self, mediaUuidList, request):
         data = {
-            "uuid": uuid
+            "mediaUuid": mediaUuidList,
         }
-        re = requests.get(self.url, data)
+        headers = {'token': request.META.get('HTTP_TOKEN')}
+        re = requests.get(self.file_host + self.url, headers=headers, json=data)
         try:
             if re.status_code == 200:
-                return re.status_code, re.json().get('data').get('url', '')
+                return re.json().get('data')
             else:
-                return re.status_code, re.json().get('msg')
+                return False
         except Exception as e:
             logging.error(e)
             return False
 
+
+fileApi = FileInfo()
 
 if __name__ == "__main__":
     file = FileInfo()

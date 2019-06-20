@@ -196,7 +196,7 @@ class TemplateStory(BaseModle, models.Model):
     模板故事
     """
     faceMediaUuid = models.CharField(max_length=64, null=True)  # 封面图片
-    listMediaUuid = models.CharField(max_length=64, null=True)  # 列表
+    listMediaUuid = models.CharField(max_length=64, null=True)  # 列表图片
     intro = models.CharField(max_length=512, null=True)  # 介绍
     content = models.TextField(null=True)  # 故事内容
     recordNum = models.IntegerField(null=True)  # 录制次数
@@ -246,7 +246,7 @@ class Viewpager(BaseModle, models.Model):
     轮播图
     """
     title = models.CharField(max_length=64, null=True)
-    orderNum = models.IntegerField(null=True)  # 显示序号
+    orderNum = models.IntegerField(null=True)  # 显示序号  数字越小越优先显示
     mediaUuid = models.CharField(max_length=64, null=True)  # 轮播图片
     startTime = models.DateTimeField(null=True)  # 有效起始时间
     endTime = models.DateTimeField(null=True)

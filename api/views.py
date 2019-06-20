@@ -6,7 +6,7 @@
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from api.apiCommon import *
-from common.fileApi import FileInfo
+from common.fileApi import fileApi
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
@@ -71,7 +71,26 @@ def index_list(request):
         return http_return(400, '参数错误')
     page = data.get('page', '')
     pageIndex = data.get('pageIndex', '')
-    rank = data.get('rank', '')
+    sort = data.get('sort', '')  # latest最新 rank排行 recommended推荐
+    if sort not in ['latest', 'rank', 'recommended']:
+        return http_return(400, '参数错误')
+    story = TemplateStory.objects
+    if sort == "latest":
+        story = story.order_by("-createTime")
+    elif sort == "rank":
+        story = story.order_by("-recordNum")
+    elif sort == "recommended":  # 推荐算法
+        story = story.order_by()
+    stories = story.all()
+    total, stories = page_index(stories, page, pageIndex)
+    storyList = []
+    for st in stories:
+        storyList.append({
+            "uuid": st.uuid,
+            "title": st.intro,
+            "mediaUrl": st.listMediaUuid,
+            "recordNum": st.recordNum,
+        })
     pass
 
 
@@ -82,6 +101,9 @@ def index_banner(request):
     :param request:
     :return:
     """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
     nowDatetime = datetime.datetime.now()
     banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
     # 按显示序号排序
@@ -89,15 +111,16 @@ def index_banner(request):
     banners = banner.all()
     mediaList = []
     for ban in banners:
-        mediaList.append({
-            ban.uuid: ban.mediaUuid
-        })
-    # fileList = FileInfo.get_url(mediaList)
+        mediaList.append(ban.mediaUuid)
+    #获取媒体文件地址
+    mediaDict = get_media(mediaList, 'mediaUuid')
+    if not mediaDict:
+        return http_return(400, '获取文件失败')
     banList = []
     for banner in banners:
         banList.append({
             'title': banner.title,
-            'mediaUrl': banner.mediaUuid,
+            'mediaUrl': mediaDict.get(banner.mediaUuid, None),
             'jumpType': banner.jumpType,
             'targetUrl': banner.targetUuid,
         })

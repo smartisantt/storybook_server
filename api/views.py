@@ -6,7 +6,6 @@
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from api.apiCommon import *
-from common.fileApi import fileApi
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
@@ -83,15 +82,22 @@ def index_list(request):
         story = story.order_by()
     stories = story.all()
     total, stories = page_index(stories, page, pageIndex)
+    mediaList = []
+    for story in stories:
+        mediaList.append(story.listMediaUuid)
+    # 获取媒体文件地址
+    mediaDict = get_media(mediaList, request)
+    if not mediaDict:
+        return http_return(400, '获取文件失败')
     storyList = []
     for st in stories:
         storyList.append({
             "uuid": st.uuid,
             "title": st.intro,
-            "mediaUrl": st.listMediaUuid,
+            "mediaUrl": mediaDict[st.listMediaUuid],
             "recordNum": st.recordNum,
         })
-    pass
+    return http_return(200, '成功', {"total": total, "storyList": storyList})
 
 
 # @check_identify
@@ -112,8 +118,8 @@ def index_banner(request):
     mediaList = []
     for ban in banners:
         mediaList.append(ban.mediaUuid)
-    #获取媒体文件地址
-    mediaDict = get_media(mediaList, 'mediaUuid')
+    # 获取媒体文件地址
+    mediaDict = get_media(mediaList, request)
     if not mediaDict:
         return http_return(400, '获取文件失败')
     banList = []

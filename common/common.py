@@ -3,7 +3,7 @@ import json
 import logging
 import uuid
 
-from django.core.cache import cache
+from django.core.cache import cache, caches
 from django.http import HttpResponse
 
 
@@ -16,13 +16,13 @@ def request_body(request, method='GET'):
     if not request:
         return request
     if request.method != method:
-        return http_return(400, '请求方式不正确')
+        return False
     try:
         token = request.META.get('HTTP_TOKEN')
         if not token:
-            return http_return(400, '非法请求')
+            return False
         data = {
-            '_cache': cache.get(token)
+            '_cache': caches['api'].get(token)
         }
         if request.method == 'POST':
             if request.body:

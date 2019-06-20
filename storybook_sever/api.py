@@ -84,10 +84,8 @@ class Api(object):
 
 
 
-
-
 if __name__ == '__main__':
-
+    api = Api()
     if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
         print ('111')
     # api.create_user('18683367392', '123456')

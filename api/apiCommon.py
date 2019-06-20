@@ -7,14 +7,15 @@ import random
 import re
 import string
 
-from django.core.cache import cache
+from django.core.cache import cache, caches
 from django.db import transaction
 from pip._vendor.msgpack.fallback import xrange
 
-from common import fileApi
 from common.common import http_return, get_uuid
+from common.fileApi import fileApi
 from manager.models import *
 from storybook_sever import api
+from storybook_sever.api import Api
 from storybook_sever.config import USER_SESSION_OVER_TIME
 
 
@@ -41,19 +42,19 @@ def random_string(size=6, chars=string.ascii_uppercase + string.digits):
 
 def create_session(user_info, token):
     """
-    用户信息保存至cache
+    用户信息保存至caches
     :param request:
     :param user_info:
     :return:
     """
-    shop_keeper = {
-        'name': user_info.name,
+    user = {
+        'username': user_info.username if user_info.username else None,
         'uuid': user_info.uuid,
         'userID': user_info.userID,
         'tel': user_info.tel,
     }
     try:
-        cache.set(token, shop_keeper, USER_SESSION_OVER_TIME)
+        caches['api'].set(token, user, USER_SESSION_OVER_TIME)
     except Exception as e:
         logging.error(str(e))
         return False
@@ -69,8 +70,9 @@ def check_identify(func):
 
     def wrapper(request):
         token = request.META.get('HTTP_TOKEN')
-        user_info = cache.get(token)
+        user_info = caches['api'].get(token)
         if not user_info:
+            api = Api()
             user_info = api.check_token(token)
             if not user_info:
                 return http_return(400, '未获取到用户信息')
@@ -87,7 +89,8 @@ def check_identify(func):
                         roles="normalUser",
                         userLogo=user_info.get('wxNickname', ''),
                         gender=user_info.get('wxSex', None),
-                        versionUuid=version
+                        versionUuid=version if version else None,
+                        status="normal",
                     )
                     try:
                         with transaction.atomic():
@@ -97,12 +100,14 @@ def check_identify(func):
                         return http_return(400, '保存失败')
                     user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
                 try:
+                    user_data.updateTime = datetime.datetime.now()
+                    user_data.save()
                     log = LoginLog(
+                        uuid=get_uuid(),
                         ipAddr=user_info.get('loginIp', ''),
                         userUuid=user_data,
                     )
                     log.save()
-                    user_data.update(loginTime=datetime.datetime.now())
                 except Exception as e:
                     logging.error(str(e))
                 if not create_session(user_data, token):

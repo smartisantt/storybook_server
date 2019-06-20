@@ -83,7 +83,7 @@ class Api(object):
             return {}
 
 
-api = Api()
+
 
 
 if __name__ == '__main__':

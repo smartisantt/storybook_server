@@ -10,5 +10,4 @@ app_name = 'manager'
 urlpatterns = [
     path('admin/', views.admin, name='admin'),
     path('login/', views.login, name='login'),
-
 ]

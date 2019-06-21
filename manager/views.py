@@ -63,9 +63,10 @@ def login(request):
         if not user_info:
             return http_return(400, '未获取到用户信息')
         else:
-
             # 用户表中是否有该用户
             userID = user_info.get('userId', '')
+            if not userID:
+                return http_return(400, '参数错误')
             user = User.objects.filter(userID=userID).only('userID').first()
             # 状态 normal  destroy  forbbiden_login  forbbiden_say
             if user and user.status == 'destroy':
@@ -120,15 +121,11 @@ def login(request):
 
 
 def total_data(request):
-    if request.method == 'POST':
-        try:
-            startTimestamp = int(request.POST.get('startTime', 0))
-            endTimestamp = int(request.POST.get('endTime', 0))
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '参数有误无法查询')
-        if endTimestamp < startTimestamp or endTimestamp < 0 or startTimestamp < 0:
-            http_return(400, '参数有误无法查询')
+    if request.method == 'GET':
+        startTimestamp = int(request.GET.get('startTime', 0))
+        endTimestamp = int(request.GET.get('endTime', 0))
+        if endTimestamp < startTimestamp or endTimestamp <= 0 or startTimestamp <= 0:
+            return http_return(400, '参数有误')
         if startTimestamp and endTimestamp:
             # 给定时间查询
             startTime = datetime.fromtimestamp(startTimestamp)
@@ -166,13 +163,12 @@ def show_all_tags(request):
 def add_sort_search_tags(request):
     """添加搜索分类（一级标签）"""
     if request.method == 'POST':
-        try:
-            tag_name = request.POST.get('tagName')
-            iconMediaUuid = request.POST.get('iconMediaUuid')
-            sortNum = int(request.POST.get('sortNum'))
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '参数有误无法查询')
+        tag_name = request.POST.get('tagName', '')
+        iconMediaUuid = request.POST.get('iconMediaUuid', '')
+        sortNum = int(request.POST.get('sortNum', ''))
+        # all 都为True 才返回True
+        if not all([tag_name, sortNum, iconMediaUuid]):
+            return http_return(400, '参数有误')
         try:
             with transaction.atomic():
                 uuid = get_uuid()
@@ -190,22 +186,22 @@ def add_sort_search_tags(request):
             return http_return(400, '保存分类失败')
 
 
-def add_sort_search_child_tags(request):
+def add_modify_child_tags(request):
+    """创建二级标签和修改二级标签"""
+    uuid = request.POST.get('uuid', '')
     if request.method == 'POST':
-        uuid = request.POST.get('uuid', '')
         """创建子标签"""
         if not uuid:
-            try:
-                parentUuid = request.POST.get('parentUuid')
-                tag_name = request.POST.get('tagName')
-                sortNum = request.POST.get('sortNum')
-                print(type(sortNum))
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '参数有误无法查询')
+            parentUuid = request.POST.get('parentUuid', '')
+            tag_name = request.POST.get('tagName', '')
+            sortNum = request.POST.get('sortNum', '')
+            if not all([parentUuid, tag_name, sortNum]):
+                return http_return(400, '参数有误')
+            if not sortNum.isdigit():
+                return http_return(400, '参数有误')
             parentTag = Tag.objects.filter(uuid=parentUuid).first()
             if not parentTag:
-                return http_return(400, '参数有误无法查询')
+                return http_return(400, '参数有误')
             try:
                 with transaction.atomic():
                     # 创建字标签
@@ -214,7 +210,7 @@ def add_sort_search_child_tags(request):
                         uuid = uuid,
                         code = 'SEARCHSORT',
                         tag_name = tag_name,
-                        sortNum = sortNum,
+                        sortNum = int(sortNum),
                         parent = parentTag
                     )
                     tag.save()
@@ -225,60 +221,35 @@ def add_sort_search_child_tags(request):
         else:
             """修改二级标签"""
             try:
-                uuid.isdigit()
-                uuid = request.POST.get('uuid')
-                tag_name = request.POST.get('tagName')
-                sortNum = request.POST.get('sortNum')
+                tag_name = request.POST.get('tagName', '')
+                sortNum = request.POST.get('sortNum', '')
+                if not all([tag_name, sortNum]):
+                    return http_return(400, '参数有误')
+                tag = Tag.objects.filter(uuid=uuid).first()
+                if not tag:
+                    return http_return(400, '没有对象')
                 with transaction.atomic():
-                    tag = Tag.objects.get(uuid=int(uuid))
                     tag.tag_name = sortNum
                     tag.tag_name = tag_name
                     tag.save()
+                    return http_return(200, 'OK')
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '修改分类失败')
 
 
+def del_child_tags(request):
+    if request.method == 'POST':
+        uuid = request.POST.get('uuid', '')
+        if not uuid:
+            return http_return(400, '参数有误')
+        tag = Tag.objects.filter(uuid=uuid).first()
+        if not tag:
+            return http_return(400, '没有对象')
+        with transaction.atomic():
+            tag.delete()
+            return http_return(200, 'OK')
 
-# def add_sort_search_child_tags(request):
-#     """添加子标签（二级标签）"""
-#     if request.method == 'POST':
-#         """创建子标签"""
-#         try:
-#             parentUuid = request.POST.get('parentUuid')
-#             tag_name = request.POST.get('tagName')
-#             sortNum = request.POST.get('sortNum')
-#             print(type(sortNum))
-#         except Exception as e:
-#             logging.error(str(e))
-#             return http_return(400, '参数有误无法查询')
-#         parentTag = Tag.objects.filter(uuid=parentUuid).first()
-#         if not parentTag:
-#             return http_return(400, '参数有误无法查询')
-#         try:
-#             with transaction.atomic():
-#                 uuid = get_uuid()
-#                 tag = Tag(
-#                     uuid = uuid,
-#                     code = 'SEARCHSORT',
-#                     tag_name = tag_name,
-#                     sortNum = sortNum,
-#                     parent = parentTag
-#                 )
-#                 tag.save()
-#                 return http_return(200, 'OK')
-#         except Exception as e:
-#             logging.error(str(e))
-#             return http_return(400, '保存分类失败')
-
-def del_sort_search_child_tags(request):
-    if request.method == 'DELETE':
-
-        """修改子标签"""
-        delete = QueryDict(request.body)
-        key = delete.get('name')
-        field = delete.get('age')
-        field_value = delete.get('field-value')
 
 
 

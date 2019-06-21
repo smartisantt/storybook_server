@@ -184,6 +184,7 @@ class Tag(BaseModle, models.Model):
     """
     code = models.CharField(max_length=20, null=True)  # 编码
     tag_name = models.CharField(max_length=32, null=True)  # 标签名字
+    iconMediaUuid = models.CharField(max_length=64, null=True) # 分类图标
     parent = models.ForeignKey(to='self', on_delete=models.CASCADE, db_column='parent_id', null=True)  # 爸爸标签id
 
     class Meta:

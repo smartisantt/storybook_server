@@ -159,6 +159,11 @@ def total_data(request):
 
 
 
+def add_sort_search_tags(request):
+    """添加搜索分类（一级类）"""
+
+    pass
+
 
 
 

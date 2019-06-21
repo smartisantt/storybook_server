@@ -10,4 +10,5 @@ app_name = 'manager'
 urlpatterns = [
     path('admin/', views.admin, name='admin'),
     path('login/', views.login, name='login'),
+    path('totaldata/', views.total_data, name='get_total_data'),
 ]

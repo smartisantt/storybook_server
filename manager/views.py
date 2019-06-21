@@ -51,7 +51,7 @@ def login(request):
 
         except Exception as e:
             logging.error(str(e))
-            return http_return(200, '登陆失败')
+            return http_return(400, '登陆失败')
     # 缓存中没有数据
     if not user_data:
         api = Api()
@@ -110,8 +110,41 @@ def login(request):
     return http_return(200, '登陆成功', {'roles': role, 'userInfo': user_info})
 
 
-def main_page(request):
-    pass
+def total_data(request):
+    if request.method == 'POST':
+        startTime = request.POST.get('startTime', 0)
+        endTime = request.POST.get('endTime', 0)
+        currentDate = datetime.datetime.now().date()
+
+        if startTime and endTime:
+            startTime = unix_time_to_datetime(int(startTime)).date()
+            endTime = unix_time_to_datetime(int(endTime)).date()
+            totalUsers1 = User.objects.filter(createTime__gte=startTime).count()
+            totalUsers2 = User.objects.filter(createTime__lte=endTime).count()
+            totalUsers = User.objects.filter(Q(createTime__gte=startTime) and Q(createTime__lte=endTime)).count()
+
+        else:
+            # 返回所有数据
+            totalUsers = User.objects.filter(~Q(status='destroy')).count()
+            # 按时间范围搜索
+            # 首先获取时间范围，然后再查询
+            # 用户总人数
+            # totalUsers =
+            # 新增用户人数
+            # 活跃用户人数
+            # 故事总数
+            # 模板故事总数
+            # Entry.objects.filter(pub_date__range=(start_date, end_date))
+        return http_return(200, 'OK',
+                           {
+                               'totalUsers': totalUsers,
+                               'newUsers': 12,
+                               'activityUsers': 23,
+                               'totalStories': 23,
+                               'totalTemplateStroies': 23
+                           })
+
+
 
 
 

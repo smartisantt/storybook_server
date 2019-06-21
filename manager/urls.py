@@ -11,4 +11,7 @@ urlpatterns = [
     path('admin/', views.admin, name='admin'),
     path('login/', views.login, name='login'),
     path('totaldata/', views.total_data, name='get_total_data'),
+    path('tags/', views.add_sort_search_tags, name='add_sort_search_tags'),
+    path('childtags/', views.add_sort_search_child_tags, name='add_sort_search_child_tags'),
+    path('delchildtags/', views.del_sort_search_child_tags, name='del_sort_search_child_tags'),
 ]

@@ -7,7 +7,9 @@
 #   * Make sure each ForeignKey has `on_delete` set to the desired behavior.
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
-from django.db import models
+import logging
+
+from django.db import models, transaction
 
 from common.models import BaseModle
 
@@ -116,7 +118,7 @@ class Rank(BaseModle, models.Model):
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRankUuid', to_field='uuid')
     activityUuid = models.ForeignKey(Activity, models.CASCADE, null=True, related_name='activityRankUuid',
                                      to_field='uuid')
-    workUuid = models.ForeignKey('Works', models.CASCADE, null=True, related_name='workRankUuid', to_field='uuid')
+    workUuid = models.OneToOneField('Works', models.CASCADE, null=True, related_name='workRankUuid', to_field='uuid')
 
     class Meta:
         db_table = 'tb_rank'
@@ -142,13 +144,11 @@ class Records(BaseModle, models.Model):
         db_table = 'tb_records'
 
 
-class Relation(BaseModle, models.Model):
+class FriendShip(BaseModle, models.Model):
     """当前用户和其他用户关系表"""
-    userUuid = models.ForeignKey('User', models.CASCADE, null=True,
-                                 related_name='userRelationUuid', to_field='uuid')
-    relationType = models.CharField(max_length=32, null=True)  # 当前用户和另一用户的关系 粉丝 还是 关注
-    relationUserUuid = models.ForeignKey('User', models.CASCADE, null=True,
-                                         related_name='relationUserRelationUuid', to_field='uuid')
+    followed = models.ForeignKey('User', related_name='followed')
+    follower = models.ForeignKey('User', related_name='follower')
+
     status = models.BooleanField(default=False)  # 状态，是否取消0/关注1
 
     class Meta:
@@ -206,6 +206,8 @@ class TemplateStory(BaseModle, models.Model):
         db_table = 'tb_templatestory'
 
 
+
+
 class User(BaseModle, models.Model):
     """
     用户表
@@ -226,6 +228,51 @@ class User(BaseModle, models.Model):
 
     class Meta:
         db_table = 'tb_user'
+
+    def get_follower(self):
+        '''
+        folloer  关注的人
+        :return:
+        '''
+        user_list = []
+        for followed_user in self.user.followed.all():
+            user_list.append(followed_user.follower)
+        return user_list
+
+    def get_followed(self):
+        '''
+        followed 关注我的人
+        :return:
+        '''
+        user_list = []
+        for follower_user in self.user.follower.all():
+            user_list.append(follower_user.followed)
+        return user_list
+
+    def set_follower(self, uuid):
+        '''
+        follow some user use uuid
+        :param id:
+        :return:
+        '''
+        try:
+            user = User.objects.get(uuid=uuid)
+        except Exception as e:
+            logging.error(str(e))
+            return False
+        # 这是关注的逻辑
+        friendship = FriendShip()
+        friendship.followed = self.user
+        friendship.follower = user
+        try:
+            with transaction.atomic():
+                friendship.save()
+        except Exception as e:
+            logging.error(str(e))
+            return False
+        return True
+
+
 
 
 class Version(BaseModle, models.Model):

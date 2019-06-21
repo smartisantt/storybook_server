@@ -151,7 +151,7 @@ class FriendShip(BaseModle, models.Model):
     status = models.BooleanField(default=False)  # 状态，是否取消0/关注1
 
     class Meta:
-        db_table = 'tb_relation'
+        db_table = 'tb_friend'
 
 
 class HotSearch(BaseModle, models.Model):

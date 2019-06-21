@@ -15,7 +15,6 @@ class FileInfo(object):
             "mediaUuid": mediaUuidStr,
         }
         token = request.META.get('HTTP_TOKEN')
-        token = 'B91CFAFF5510BB5C589755AAB4A714EA'
         headers = {'token': token}
         re = requests.get(self.file_host + self.url, headers=headers, params=data)
         try:

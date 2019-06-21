@@ -196,9 +196,11 @@ class TemplateStory(BaseModle, models.Model):
     """
     faceMediaUuid = models.CharField(max_length=64, null=True)  # 封面图片
     listMediaUuid = models.CharField(max_length=64, null=True)  # 列表图片
-    intro = models.CharField(max_length=512, null=True)  # 介绍
+    intro = models.CharField(max_length=512, null=True)  # 介绍(标题)
     content = models.TextField(null=True)  # 故事内容
     recordNum = models.IntegerField(null=True)  # 录制次数
+    status = models.CharField(max_length=32, null=True, default="normal")  # 是否推荐 normal启用 forbid禁用 destroy删除
+    isRecommd = models.BooleanField(default=True)  # 是否推荐
     tags = models.ManyToManyField(Tag)
 
     class Meta:

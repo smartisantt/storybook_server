@@ -188,6 +188,7 @@ class Tag(BaseModle, models.Model):
     sortNum = models.IntegerField(verbose_name='排序编号', null=True) # 排列顺序
     parent = models.ForeignKey(to='self', on_delete=models.CASCADE, db_column='parent_id', to_field='uuid', null=True)  # 爸爸标签id
 
+
     class Meta:
         db_table = 'tb_tag'
 
@@ -322,12 +323,12 @@ class Works(BaseModle, models.Model):
     """
     作品表自由录制和模板作品
     """
-    isUpload = models.IntegerField(default=False)  # 是否上传 0 没有传  1 上传到服务器
+    isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
     voiceMediaUuid = models.CharField(max_length=64, null=True)  # 用户的声音
-    userVolume = models.IntegerField(null=True)     # 用户音量
+    userVolume = models.FloatField(null=True)  # 用户音量
     bgmUuid = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
-    bgmVolume = models.IntegerField(null=True)  # 背景音乐音量
-    recordType = models.IntegerField(null=True)  # 录制形式
+    bgmVolume = models.FloatField(null=True)  # 背景音乐音量
+    recordType = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
     recordDate = models.DateTimeField(null=True)  # 录制时间
     playTimes = models.IntegerField(null=True)  # 播放次数
     worksType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
@@ -339,11 +340,11 @@ class Works(BaseModle, models.Model):
     worksTime = models.IntegerField(null=True)  # 作品时长
     tags = models.ManyToManyField(Tag)  # 作品标签
     moduleUuid = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='moduleWorksUuid',
-                                   to_field='uuid')  # 在首页哪个模块显示
+                                   to_field='uuid', null=True)  # 在首页哪个模块显示
     albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',
-                                  null=True) # 专辑
-    checkStatus = models.CharField(max_length=64, null=True) # 审核状态
-    checkInfo = models.CharField(max_length=256, null=True) # 审核信息，审核被拒绝原因
+                                  null=True)  # 专辑
+    checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
+    checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
 
     class Meta:
         db_table = 'tb_works'

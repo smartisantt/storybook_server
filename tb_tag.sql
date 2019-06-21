@@ -1,4 +1,3 @@
-
 INSERT INTO `tb_tag` VALUES (1, REPLACE(UUID(), '-', ''), NULL, NULL, 'HOMEPAGE', '绘本', 0);
 INSERT INTO `tb_tag` VALUES (2, REPLACE(UUID(), '-', ''), NULL, NULL, 'HOMEPAGE', '儿歌', 0);
 INSERT INTO `tb_tag` VALUES (3, REPLACE(UUID(), '-', ''), NULL, NULL, 'HOMEPAGE', '英文', 0);

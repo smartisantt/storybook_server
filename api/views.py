@@ -193,11 +193,92 @@ def recording_bgmusic_list(request):
             return http_return(400, '获取文件失败')
     bgmList = []
     for bg in bgms:
-        bgmTime = seconds_to_hour(bg.bgmTime)
         bgmList.append({
             "uuid": bg.uuid,
             "name": bg.name,
-            "bgmTime": bgmTime,
+            "bgmTime": bg.bgmTime,
             "mediaUrl": mediaDict[bg.mediaUuid] if mediaDict else None,
         })
     return http_return(200, '成功', {"total": total, "bgmList": bgmList})
+
+
+@check_identify
+def recording_send(request):
+    """
+    发布故事
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    storyUuid = data.get('storyUuid', '')
+    viceUuid = data.get('viceUuid', '')
+    viceVolume = data.get('viceVolume', '')
+    bgmUuid = data.get('bgmUuid', '')
+    bgmVolume = data.get('bgmVolume', '')
+    photoMediaUuid = data.get('photoMediaUuid', '')
+    feeling = data.get('feeling', '')
+    recordType = data.get('recordType', '')
+    typeUuidList = data.get('typeList', '')
+    worksTime = data.get('worksTime', '')
+    title = None
+    worksType = True
+    if not storyUuid:
+        title = data.get('title', '')
+        worksType = False
+    if bgmUuid:
+        bg = Bgm.objects.filter(uuid=bgmUuid).first()
+    if storyUuid:
+        template = TemplateStory.objects.filter(uuid=storyUuid).first()
+    if not all([viceUuid, viceVolume, recordType, typeUuidList, photoMediaUuid, worksTime]):
+        return http_return(400, '参数错误')
+    tags = []
+    for tagUuid in typeUuidList:
+        tag = Tag.objects.filter(uuid=tagUuid).first()
+        if tag:
+            tags.append(tag)
+    try:
+        Works.objects.create(
+            isUpload=1,
+            voiceMediaUuid=viceUuid,
+            userVolume=viceVolume,
+            bgmUuid=bg if bg else None,
+            bgmVolume=bgmVolume if bgmVolume else None,
+            recordType=recordType,
+            recordDate=datetime.datetime.now(),
+            playTimes=0,
+            worksType=worksType,
+            templateUuid=template if template else None,
+            title=title,
+            photoMediaUuid=photoMediaUuid,
+            feeling=feeling,
+            worksTime=worksTime,
+            checkStatus="unCheck"
+        ).tags.add(*tags)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '发布失败')
+    return http_return(200, '发布成功')
+
+
+@check_identify
+def recording_tag_list(request):
+    """
+    发布故事标签选择列表
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    tag = Tag.objects.filter(parent__code="SEARCHSORT", parent__parent=None).order_by('sortNum')
+    tags = tag.all()
+    tagList = []
+    for tag in tags:
+        tagList.append({
+            "uuid": tag.uuid,
+            "name": tag.tag_name,
+        })
+    total = len(tagList)
+    return http_return(200, '成功', {"total": total, "tagList": tagList})

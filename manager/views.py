@@ -191,11 +191,10 @@ def add_sort_search_tags(request):
 
 
 def add_sort_search_child_tags(request):
-    """修改子标签（二级标签）"""
     if request.method == 'POST':
-        childUuid = request.POST.get('childUuid', '')
+        uuid = request.POST.get('uuid', '')
         """创建子标签"""
-        if not childUuid:
+        if not uuid:
             try:
                 parentUuid = request.POST.get('parentUuid')
                 tag_name = request.POST.get('tagName')
@@ -224,9 +223,20 @@ def add_sort_search_child_tags(request):
                 logging.error(str(e))
                 return http_return(400, '保存分类失败')
         else:
+            """修改二级标签"""
             try:
-                tag = Tag.objects.get(uuid=int(childUuid))
-                tag.tag_name = tag_name
+                uuid.isdigit()
+                uuid = request.POST.get('uuid')
+                tag_name = request.POST.get('tagName')
+                sortNum = request.POST.get('sortNum')
+                with transaction.atomic():
+                    tag = Tag.objects.get(uuid=int(uuid))
+                    tag.tag_name = sortNum
+                    tag.tag_name = tag_name
+                    tag.save()
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '修改分类失败')
 
 
 

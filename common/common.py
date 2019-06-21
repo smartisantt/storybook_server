@@ -5,7 +5,7 @@ import uuid
 
 from django.core.cache import cache, caches
 from django.http import HttpResponse
-
+from common.fileApi import FileInfo
 
 def request_body(request, method='GET'):
     """
@@ -125,3 +125,44 @@ def page_index(myList, page=1, limit=10):
     if total < endPage:
         endPage = total
     return total, myList[startPage: endPage]
+
+
+def seconds_to_hour(num):
+    """
+    秒转时分秒
+    :param num:
+    :return:
+    """
+    h = num // 3600
+    num = num % 3600
+    m = num // 60
+    s = num % 60
+    return '%d:%d:%d' % (h, m, s)
+
+
+def hour_to_seconds(data):
+    """
+    秒转时分秒
+    :param num:
+    :return:
+    """
+    h = int(data.split(":")[0]) * 3600
+    m = int(data.split(":")[1]) * 60
+    s = int(data.split(":")[2])
+    return h + m + s
+
+def get_media(objList, request):
+    """
+    获取媒体文件字典
+    :param list:
+    :return:
+    """
+    mediaUuidStr = ','.join(objList)
+    apiFile = FileInfo()
+    fileList = apiFile.get_url(mediaUuidStr, request)
+    if not fileList:
+        return False
+    fileDict = {}
+    for file in fileList:
+        fileDict[file.get('uuid')] = file.get('url')
+    return fileDict

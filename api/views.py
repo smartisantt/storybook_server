@@ -178,4 +178,26 @@ def recording_bgmusic_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    bgm = Bgm.objects.filter(isUsing=True)
+    page = data.get('page', '')
+    pageIndex = data.get('pageIndex', '')
+    bgm = Bgm.objects.filter(isUsing=True).order_by('sortNum')
+    bgms = bgm.all()
+    total, bgms = page_index(bgms, page, pageIndex)
+    mediaList = []
+    for bgm in bgms:
+        mediaList.append(bgm.mediaUuid)
+    # 获取媒体文件地址
+    if len(mediaList) > 0:
+        mediaDict = get_media(mediaList, request)
+        if not mediaDict:
+            return http_return(400, '获取文件失败')
+    bgmList = []
+    for bg in bgms:
+        bgmTime = seconds_to_hour(bg.bgmTime)
+        bgmList.append({
+            "uuid": bg.uuid,
+            "name": bg.name,
+            "bgmTime": bgmTime,
+            "mediaUrl": mediaDict[bg.mediaUuid] if mediaDict else None,
+        })
+    return http_return(200, '成功', {"total": total, "bgmList": bgmList})

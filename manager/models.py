@@ -325,9 +325,9 @@ class Works(BaseModle, models.Model):
     """
     isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
     voiceMediaUuid = models.CharField(max_length=64, null=True)  # 用户的声音
-    userVolume = models.IntegerField(null=True)  # 用户音量
+    userVolume = models.FloatField(null=True)  # 用户音量
     bgmUuid = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
-    bgmVolume = models.IntegerField(null=True)  # 背景音乐音量
+    bgmVolume = models.FloatField(null=True)  # 背景音乐音量
     recordType = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
     recordDate = models.DateTimeField(null=True)  # 录制时间
     playTimes = models.IntegerField(null=True)  # 播放次数

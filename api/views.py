@@ -5,7 +5,8 @@
 # Create your views here.
 from api.ssoSMS.sms import send_sms
 from common.common import *
-from api.apiCommon import *
+from manager.models import *
+from api.apiCommon import check_identify
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
@@ -220,7 +221,7 @@ def recording_send(request):
     photoMediaUuid = data.get('photoMediaUuid', '')
     feeling = data.get('feeling', '')
     recordType = data.get('recordType', '')
-    typeUuidList = data.get('typeList', '')
+    typeUuidList = data.get('typeUuidList', '')
     worksTime = data.get('worksTime', '')
     title = None
     worksType = True
@@ -269,7 +270,7 @@ def recording_tag_list(request):
     :param request:
     :return:
     """
-    data = request_body(request, 'POST')
+    data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
     tag = Tag.objects.filter(parent__code="SEARCHSORT", parent__parent=None).order_by('sortNum')

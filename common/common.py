@@ -27,7 +27,7 @@ def request_body(request, method='GET'):
         if request.method == 'POST':
             if request.body:
                 try:
-                    for key, value in json.loads(request.body).items():
+                    for key, value in json.loads(request.body.decode('utf-8')).items():
                         data[key] = value
                 except Exception as e:
                     logging.error(str(e))

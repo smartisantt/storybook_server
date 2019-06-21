@@ -141,29 +141,21 @@ def total_data(request):
             # 专辑总数
             totalAlbums = Album.objects.all().count()
             # 新增用户人数
-            newUsers = User.objects.filter(Q(createTime__range=(t1, t2))).count()
+            newUsers = User.objects.filter(createTime__range=(t1, t2)).count()
             # 活跃用户人数
-            activityUsers = LoginLog.objects.filter(Q(createTime__range=(t1, t2))).only('userUuid_id').distinct().count()
-            a = LoginLog.objects.values('userUuid_id').annotate(Count('userUuid_id')).count()
+            activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id')).count()
+            # 新增音频数
+            newWorks = Works.objects.filter(createTime__range=(t1, t2)).count()
 
-        else:
-            # 没有给定参数返回最近一个月所有数据
-            totalUsers = User.objects.filter(~Q(status='destroy')).count()
-            # 按时间范围搜索
-            # 首先获取时间范围，然后再查询
-            # 新增用户人数
-            # 活跃用户人数
-            # 故事总数
-            # 模板故事总数
-            # Entry.objects.filter(pub_date__range=(start_date, end_date))
-        return http_return(200, 'OK',
-                           {
-                               'totalUsers': totalUsers,
-                               'newUsers': newUsers,
-                               'activityUsers': activityUsers,
-                               'totalStories': 23,
-                               'totalTemplateStroies': 23
-                           })
+            return http_return(200, 'OK',
+                               {
+                                   'totalUsers': totalUsers,
+                                   'totalWorks': totalWorks,
+                                   'totalAlbums': totalAlbums,
+                                   'newUsers': newUsers,
+                                   'activityUsers': activityUsers,
+                                   'newWorks': newWorks
+                               })
 
 
 

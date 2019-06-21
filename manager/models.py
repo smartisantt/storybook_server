@@ -320,11 +320,11 @@ class Works(BaseModle, models.Model):
     """
     作品表自由录制和模板作品
     """
-    isUpload = models.IntegerField(default=False)  # 是否上传
+    isUpload = models.IntegerField(default=False)  # 是否上传 0 没有传  1 上传到服务器
     voiceMediaUuid = models.CharField(max_length=64, null=True)  # 用户的声音
-    uservolume = models.IntegerField(null=True)
+    userVolume = models.IntegerField(null=True)     # 用户音量
     bgmUuid = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
-    bgmvolume = models.IntegerField(null=True)  # 背景音乐音量
+    bgmVolume = models.IntegerField(null=True)  # 背景音乐音量
     recordType = models.IntegerField(null=True)  # 录制形式
     recordDate = models.DateTimeField(null=True)  # 录制时间
     playTimes = models.IntegerField(null=True)  # 播放次数
@@ -339,9 +339,9 @@ class Works(BaseModle, models.Model):
     moduleUuid = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='moduleWorksUuid',
                                    to_field='uuid')  # 在首页哪个模块显示
     albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',
-                                  null=True)
-    checkStatus = models.CharField(max_length=64, null=True)
-    checkInfo = models.CharField(max_length=256, null=True)
+                                  null=True) # 专辑
+    checkStatus = models.CharField(max_length=64, null=True) # 审核状态
+    checkInfo = models.CharField(max_length=256, null=True) # 审核信息，审核被拒绝原因
 
     class Meta:
         db_table = 'tb_works'

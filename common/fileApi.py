@@ -27,8 +27,6 @@ class FileInfo(object):
             return False
 
 
-fileApi = FileInfo()
-
 if __name__ == "__main__":
     file = FileInfo()
     uuidList = []

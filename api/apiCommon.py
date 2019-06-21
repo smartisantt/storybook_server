@@ -12,7 +12,6 @@ from django.db import transaction
 from pip._vendor.msgpack.fallback import xrange
 
 from common.common import http_return, get_uuid
-from common.fileApi import fileApi
 from manager.models import *
 from storybook_sever import api
 from storybook_sever.api import Api
@@ -116,19 +115,3 @@ def check_identify(func):
         return func(request)
 
     return wrapper
-
-
-def get_media(objList, request):
-    """
-    获取媒体文件字典
-    :param list:
-    :return:
-    """
-    mediaUuidStr = ','.join(objList)
-    fileList = fileApi.get_url(mediaUuidStr, request)
-    if not fileList:
-        return False
-    fileDict = {}
-    for file in fileList:
-        fileDict[file.get('uuid')] = file.get('url')
-    return fileDict

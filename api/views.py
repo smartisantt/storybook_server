@@ -58,8 +58,8 @@ def check_identify_code(request):
     return http_return(200, '验证码正确')
 
 
-# @check_identify
-def index_list(request):
+@check_identify
+def recording_index_list(request):
     """
     首页信息展示
     :param request:
@@ -73,35 +73,36 @@ def index_list(request):
     sort = data.get('sort', '')  # latest最新 rank排行 recommended推荐
     if sort not in ['latest', 'rank', 'recommended']:
         return http_return(400, '参数错误')
-    story = TemplateStory.objects
+    story = TemplateStory.objects.exclude(status="destroy")
     if sort == "latest":
         story = story.order_by("-createTime")
     elif sort == "rank":
         story = story.order_by("-recordNum")
     elif sort == "recommended":  # 推荐算法
-        story = story.order_by()
+        story = story.filter(isRecommd=True).order_by("-createTime")
     stories = story.all()
     total, stories = page_index(stories, page, pageIndex)
     mediaList = []
     for story in stories:
         mediaList.append(story.listMediaUuid)
     # 获取媒体文件地址
-    mediaDict = get_media(mediaList, request)
-    if not mediaDict:
-        return http_return(400, '获取文件失败')
+    if len(mediaList) > 0:
+        mediaDict = get_media(mediaList, request)
+        if not mediaDict:
+            return http_return(400, '获取文件失败')
     storyList = []
     for st in stories:
         storyList.append({
             "uuid": st.uuid,
             "title": st.intro,
-            "mediaUrl": mediaDict[st.listMediaUuid],
+            "mediaUrl": mediaDict[st.listMediaUuid] if mediaDict else None,
             "recordNum": st.recordNum,
         })
     return http_return(200, '成功', {"total": total, "storyList": storyList})
 
 
-# @check_identify
-def index_banner(request):
+@check_identify
+def recording_banner(request):
     """
     首页轮播图
     :param request:
@@ -113,22 +114,68 @@ def index_banner(request):
     nowDatetime = datetime.datetime.now()
     banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
     # 按显示序号排序
-    banner = banner.order_by('orderNum')
+    banner = banner.filter(isUsing=True).order_by('orderNum')
     banners = banner.all()
     mediaList = []
     for ban in banners:
         mediaList.append(ban.mediaUuid)
     # 获取媒体文件地址
-    mediaDict = get_media(mediaList, request)
-    if not mediaDict:
-        return http_return(400, '获取文件失败')
+    if len(mediaList) > 0:
+        mediaDict = get_media(mediaList, request)
+        if not mediaDict:
+            return http_return(400, '获取文件失败')
     banList = []
     for banner in banners:
         banList.append({
             'title': banner.title,
-            'mediaUrl': mediaDict.get(banner.mediaUuid, None),
+            'mediaUrl': mediaDict[banner.mediaUuid] if mediaDict else None,
             'jumpType': banner.jumpType,
             'targetUrl': banner.targetUuid,
         })
     total = len(banners)
     return http_return(200, '成功', {"total": total, "banList": banList})
+
+
+@check_identify
+def recording_stroy_detail(request):
+    """
+    模板详情
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    story = TemplateStory.objects.filter(uuid=uuid, status="normal").first()
+    if not story:
+        return http_return(400, '模板故事不存在')
+    mediaList = []
+    mediaList.append(story.faceMediaUuid)
+    # 获取媒体文件地址
+    if len(mediaList) > 0:
+        mediaDict = get_media(mediaList, request)
+        if not mediaDict:
+            return http_return(400, '获取文件失败')
+    d = {
+        "uuid": story.uuid,
+        "title": story.intro if story.intro else None,
+        "conten": story.content if story.content else None,
+        "mediaUuid": mediaDict[story.faceMediaUuid] if mediaDict else None
+    }
+    return http_return(200, '成功', {"detail": d})
+
+
+@check_identify
+def recording_bgmusic_list(request):
+    """
+    背景音乐列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    bgm = Bgm.objects.filter(isUsing=True)

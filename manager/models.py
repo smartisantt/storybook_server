@@ -146,9 +146,8 @@ class Records(BaseModle, models.Model):
 
 class FriendShip(BaseModle, models.Model):
     """当前用户和其他用户关系表"""
-    followed = models.ForeignKey('User', related_name='followed')
-    follower = models.ForeignKey('User', related_name='follower')
-
+    followed = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followed')
+    follower = models.ForeignKey('User', on_delete=models.CASCADE, related_name='follower')
     status = models.BooleanField(default=False)  # 状态，是否取消0/关注1
 
     class Meta:
@@ -204,8 +203,6 @@ class TemplateStory(BaseModle, models.Model):
 
     class Meta:
         db_table = 'tb_templatestory'
-
-
 
 
 class User(BaseModle, models.Model):
@@ -271,8 +268,6 @@ class User(BaseModle, models.Model):
             logging.error(str(e))
             return False
         return True
-
-
 
 
 class Version(BaseModle, models.Model):

@@ -12,6 +12,7 @@ from manager.managerCommon import *
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count
+from django.http import QueryDict
 
 def admin(request):
     """
@@ -101,21 +102,21 @@ def login(request):
             # 写入缓存
             if not create_cache(user,  loginIp, token):
                 return http_return(400, '用户不存在')
-            # 登录成功生成登录日志，缓存存入信息
-            loginLog_uuid = get_uuid()
-            loginLog = LoginLog(
-                uuid=loginLog_uuid,
-                ipAddr=loginIp,
-                userUuid=user
-            )
             try:
                 with transaction.atomic():
+                    loginLog_uuid = get_uuid()
+                    loginLog = LoginLog(
+                        uuid=loginLog_uuid,
+                        ipAddr=loginIp,
+                        userUuid=user
+                    )
                     loginLog.save()
+                    return http_return(200, '登陆成功', {'roles': role})
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '保存日志失败')
 
-    return http_return(200, '登陆成功', {'roles': role})
+
 
 
 def total_data(request):
@@ -125,7 +126,7 @@ def total_data(request):
             endTimestamp = int(request.POST.get('endTime', 0))
         except Exception as e:
             logging.error(str(e))
-            http_return(400, '参数有误无法查询')
+            return http_return(400, '参数有误无法查询')
         if endTimestamp < startTimestamp or endTimestamp < 0 or startTimestamp < 0:
             http_return(400, '参数有误无法查询')
         if startTimestamp and endTimestamp:
@@ -158,11 +159,119 @@ def total_data(request):
                                })
 
 
+def show_all_tags(request):
+    pass
+
 
 def add_sort_search_tags(request):
-    """添加搜索分类（一级类）"""
+    """添加搜索分类（一级标签）"""
+    if request.method == 'POST':
+        try:
+            tag_name = request.POST.get('tagName')
+            iconMediaUuid = request.POST.get('iconMediaUuid')
+            sortNum = int(request.POST.get('sortNum'))
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '参数有误无法查询')
+        try:
+            with transaction.atomic():
+                uuid = get_uuid()
+                tag = Tag(
+                    uuid = uuid,
+                    code = 'SEARCHSORT',
+                    tag_name = tag_name,
+                    iconMediaUuid = iconMediaUuid,
+                    sortNum = sortNum,
+                )
+                tag.save()
+                return http_return(200, 'OK')
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '保存分类失败')
 
-    pass
+
+def add_sort_search_child_tags(request):
+    """修改子标签（二级标签）"""
+    if request.method == 'POST':
+        childUuid = request.POST.get('childUuid', '')
+        """创建子标签"""
+        if not childUuid:
+            try:
+                parentUuid = request.POST.get('parentUuid')
+                tag_name = request.POST.get('tagName')
+                sortNum = request.POST.get('sortNum')
+                print(type(sortNum))
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '参数有误无法查询')
+            parentTag = Tag.objects.filter(uuid=parentUuid).first()
+            if not parentTag:
+                return http_return(400, '参数有误无法查询')
+            try:
+                with transaction.atomic():
+                    # 创建字标签
+                    uuid = get_uuid()
+                    tag = Tag(
+                        uuid = uuid,
+                        code = 'SEARCHSORT',
+                        tag_name = tag_name,
+                        sortNum = sortNum,
+                        parent = parentTag
+                    )
+                    tag.save()
+                    return http_return(200, 'OK')
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '保存分类失败')
+        else:
+            try:
+                tag = Tag.objects.get(uuid=int(childUuid))
+                tag.tag_name = tag_name
+
+
+
+# def add_sort_search_child_tags(request):
+#     """添加子标签（二级标签）"""
+#     if request.method == 'POST':
+#         """创建子标签"""
+#         try:
+#             parentUuid = request.POST.get('parentUuid')
+#             tag_name = request.POST.get('tagName')
+#             sortNum = request.POST.get('sortNum')
+#             print(type(sortNum))
+#         except Exception as e:
+#             logging.error(str(e))
+#             return http_return(400, '参数有误无法查询')
+#         parentTag = Tag.objects.filter(uuid=parentUuid).first()
+#         if not parentTag:
+#             return http_return(400, '参数有误无法查询')
+#         try:
+#             with transaction.atomic():
+#                 uuid = get_uuid()
+#                 tag = Tag(
+#                     uuid = uuid,
+#                     code = 'SEARCHSORT',
+#                     tag_name = tag_name,
+#                     sortNum = sortNum,
+#                     parent = parentTag
+#                 )
+#                 tag.save()
+#                 return http_return(200, 'OK')
+#         except Exception as e:
+#             logging.error(str(e))
+#             return http_return(400, '保存分类失败')
+
+def del_sort_search_child_tags(request):
+    if request.method == 'DELETE':
+
+        """修改子标签"""
+        delete = QueryDict(request.body)
+        key = delete.get('name')
+        field = delete.get('age')
+        field_value = delete.get('field-value')
+
+
+
 
 
 

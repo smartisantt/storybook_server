@@ -279,7 +279,7 @@ def recording_tag_list(request):
     for tag in tags:
         tagList.append({
             "uuid": tag.uuid,
-            "name": tag.tag_name,
+            "name": tag.tagName,
         })
     total = len(tagList)
     return http_return(200, '成功', {"total": total, "tagList": tagList})

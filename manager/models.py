@@ -183,14 +183,20 @@ class Tag(BaseModle, models.Model):
     标签字典表
     """
     code = models.CharField(max_length=20, null=True)  # 编码
-    tag_name = models.CharField(max_length=32, null=True)  # 标签名字
+    tagName = models.CharField(max_length=32, null=True)  # 标签名字
     iconMediaUuid = models.CharField(max_length=64, null=True) # 分类图标
     sortNum = models.IntegerField(verbose_name='排序编号', null=True) # 排列顺序
-    parent = models.ForeignKey(to='self', on_delete=models.CASCADE, db_column='parent_id', to_field='uuid', null=True)  # 爸爸标签id
+    isUsing = models.BooleanField(default=True)                     # 标签状态停用还是使用
+    parent = models.ForeignKey(to='self', on_delete=models.CASCADE,related_name='child_tag',
+                               db_column='parent_id', to_field='uuid', null=True)  # 爸爸标签id
 
+    def __str__(self):
+        return self.tagName
 
     class Meta:
         db_table = 'tb_tag'
+
+
 
 
 class TemplateStory(BaseModle, models.Model):

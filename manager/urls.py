@@ -12,8 +12,8 @@ urlpatterns = [
     path('login/', views.login, name='login'),
     path('totaldata/', views.total_data, name='total_data'),
     path('tags/', views.add_tags, name='add_tags'),
-    path('childtags/', views.add_modify_child_tags, name='add_modify_child_tags'),
     path('alltags/', views.show_all_tags, name='show_all_tags'),
     path('deltags/', views.del_tags, name='del_tags'),
     path('addchildtags/', views.add_child_tags, name='add_child_tags'),
+    path('modifychildtags/', views.modify_child_tags, name='modify_child_tags'),
 ]

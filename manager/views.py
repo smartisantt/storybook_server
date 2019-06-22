@@ -229,60 +229,6 @@ def add_tags(request):
         logging.error(str(e))
         return http_return(400, '保存分类失败')
 
-def del_tags(request):
-    pass
-
-def add_modify_child_tags(request):
-    """创建二级标签和修改二级标签"""
-    uuid = request.POST.get('uuid', '')
-    if request.method == 'POST':
-        """创建子标签"""
-        if not uuid:
-            parentUuid = request.POST.get('parentUuid', '')
-            tagName = request.POST.get('tagName', '')
-            sortNum = request.POST.get('sortNum', '')
-            if not all([parentUuid, tagName, sortNum]):
-                return http_return(400, '参数有误')
-            if not sortNum.isdigit():
-                return http_return(400, '参数有误')
-            parentTag = Tag.objects.filter(uuid=parentUuid).first()
-            if not parentTag:
-                return http_return(400, '参数有误')
-            try:
-                with transaction.atomic():
-                    # 创建字标签
-                    uuid = get_uuid()
-                    tag = Tag(
-                        uuid = uuid,
-                        code = 'SEARCHSORT',
-                        tagName = tagName,
-                        sortNum = int(sortNum),
-                        parent = parentTag
-                    )
-                    tag.save()
-                    return http_return(200, 'OK')
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '保存分类失败')
-        else:
-            """修改二级标签"""
-            try:
-                tagName = request.POST.get('tagName', '')
-                sortNum = request.POST.get('sortNum', '')
-                if not all([tagName, sortNum]):
-                    return http_return(400, '参数有误')
-                tag = Tag.objects.filter(uuid=uuid).first()
-                if not tag:
-                    return http_return(400, '没有对象')
-                with transaction.atomic():
-                    tag.tagName = sortNum
-                    tag.tagName = tagName
-                    tag.save()
-                    return http_return(200, 'OK')
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '修改分类失败')
-
 
 def add_child_tags(request):
     """添加子标签"""
@@ -319,19 +265,58 @@ def add_child_tags(request):
                 'uuid': uuid,
                 'tagName': tagName,
                 'sortNum': int(sortNum),
+                'parentUuid': parentUuid
             })
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '保存分类失败')
-
+        return http_return(400, '保存失败')
 
 
 def modify_child_tags(request):
     """修改子标签"""
-    pass
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    parentUuid = data.get('parentUuid', '')
+    tagName = data.get('tagName', '')
+    sortNum = data.get('sortNum', '')
+    uuid = data.get('uuid', '')
+    if not all([parentUuid, tagName, sortNum, uuid]):
+        return http_return(400, '参数错误')
+    if not sortNum.isdigit():
+        return http_return(400, '序号必须是数字')
+    parentTag = Tag.objects.filter(uuid=parentUuid).first()
+    if not parentTag:
+        return http_return(400, '参数有误')
+
+    # 查询是否有重复tagName
+    tag = Tag.objects.filter(tagName=tagName).first()
+    if tag:
+        return http_return(400, '重复标签')
+    # 有对象才修改
+    tag = Tag.objects.filter(uuid=uuid).first()
+    if not tag:
+        return http_return(400, '没有对象')
+
+    try:
+        with transaction.atomic():
+            tag.sortNum = int(sortNum)
+            tag.tagName = tagName
+            tag.save()
+            return http_return(200, 'OK', {
+                'uuid': uuid,
+                'tagName': tagName,
+                'sortNum': int(sortNum),
+                'parentUuid': parentUuid
+            })
+
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改分类失败')
 
 
 def del_tags(request):
+    """删除一级标签或者子标签"""
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')

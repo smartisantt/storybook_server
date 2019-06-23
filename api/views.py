@@ -76,27 +76,19 @@ def recording_index_list(request):
         return http_return(400, '参数错误')
     story = TemplateStory.objects.exclude(status="destroy")
     if sort == "latest":
-        story = story.filter(isRecommd=False).order_by("-createTime")
+        story = story.filter(isRecommd=False).order_by("-isTop", "-createTime")
     elif sort == "rank":
         story = story.order_by("-recordNum")
     elif sort == "recommended":  # 推荐算法
-        story = story.filter(isRecommd=True).order_by("-createTime")
+        story = story.filter(isRecommd=True).order_by("-isTop", "-createTime")
     stories = story.all()
     total, stories = page_index(stories, page, pageIndex)
-    mediaList = []
-    for story in stories:
-        mediaList.append(story.listMediaUuid)
-    # 获取媒体文件地址
-    if len(mediaList) > 0:
-        mediaDict = get_media(mediaList, request)
-        if not mediaDict:
-            return http_return(400, '获取文件失败')
     storyList = []
     for st in stories:
         storyList.append({
             "uuid": st.uuid,
-            "title": st.intro,
-            "mediaUrl": mediaDict[st.listMediaUuid] if mediaDict else None,
+            "title": st.title,
+            "mediaUrl": st.listUrl,
             "recordNum": st.recordNum,
         })
     return http_return(200, '成功', {"total": total, "storyList": storyList})
@@ -117,19 +109,11 @@ def recording_banner(request):
     # 按显示序号排序
     banner = banner.filter(isUsing=True).order_by('orderNum')
     banners = banner.all()
-    mediaList = []
-    for ban in banners:
-        mediaList.append(ban.mediaUuid)
-    # 获取媒体文件地址
-    if len(mediaList) > 0:
-        mediaDict = get_media(mediaList, request)
-        if not mediaDict:
-            return http_return(400, '获取文件失败')
     banList = []
     for banner in banners:
         banList.append({
             'title': banner.title,
-            'mediaUrl': mediaDict[banner.mediaUuid] if mediaDict else None,
+            'mediaUrl': banner.mediaUrl,
             'jumpType': banner.jumpType,
             'targetUrl': banner.targetUuid,
         })
@@ -153,18 +137,11 @@ def recording_stroy_detail(request):
     story = TemplateStory.objects.filter(uuid=uuid, status="normal").first()
     if not story:
         return http_return(400, '模板故事不存在')
-    mediaList = []
-    mediaList.append(story.faceMediaUuid)
-    # 获取媒体文件地址
-    if len(mediaList) > 0:
-        mediaDict = get_media(mediaList, request)
-        if not mediaDict:
-            return http_return(400, '获取文件失败')
     d = {
         "uuid": story.uuid,
-        "title": story.intro if story.intro else None,
+        "title": story.title if story.title else None,
         "conten": story.content if story.content else None,
-        "mediaUuid": mediaDict[story.faceMediaUuid] if mediaDict else None
+        "mediaUuid": story.faceUrl if story.faceUrl else None
     }
     return http_return(200, '成功', {"detail": d})
 
@@ -184,21 +161,13 @@ def recording_bgmusic_list(request):
     bgm = Bgm.objects.filter(isUsing=True).order_by('sortNum')
     bgms = bgm.all()
     total, bgms = page_index(bgms, page, pageIndex)
-    mediaList = []
-    for bgm in bgms:
-        mediaList.append(bgm.mediaUuid)
-    # 获取媒体文件地址
-    if len(mediaList) > 0:
-        mediaDict = get_media(mediaList, request)
-        if not mediaDict:
-            return http_return(400, '获取文件失败')
     bgmList = []
     for bg in bgms:
         bgmList.append({
             "uuid": bg.uuid,
             "name": bg.name,
             "bgmTime": bg.bgmTime,
-            "mediaUrl": mediaDict[bg.mediaUuid] if mediaDict else None,
+            "mediaUrl": bg.mediaUrl,
         })
     return http_return(200, '成功', {"total": total, "bgmList": bgmList})
 
@@ -214,11 +183,11 @@ def recording_send(request):
     if not data:
         return http_return(400, '参数错误')
     storyUuid = data.get('storyUuid', '')
-    viceUuid = data.get('viceUuid', '')
-    viceVolume = data.get('viceVolume', '')
+    voiceUrl = data.get('voiceUrl', '')
+    voiceVolume = data.get('voiceVolume', '')
     bgmUuid = data.get('bgmUuid', '')
     bgmVolume = data.get('bgmVolume', '')
-    photoMediaUuid = data.get('photoMediaUuid', '')
+    bgUrl = data.get('bgUrl', '')
     feeling = data.get('feeling', '')
     recordType = data.get('recordType', '')
     typeUuidList = data.get('typeUuidList', '')
@@ -232,18 +201,22 @@ def recording_send(request):
         bg = Bgm.objects.filter(uuid=bgmUuid).first()
     if storyUuid:
         template = TemplateStory.objects.filter(uuid=storyUuid).first()
-    if not all([viceUuid, viceVolume, recordType, typeUuidList, photoMediaUuid, worksTime]):
+    if not all([voiceUrl, voiceVolume, recordType, typeUuidList, bgUrl, worksTime]):
         return http_return(400, '参数错误')
     tags = []
     for tagUuid in typeUuidList:
         tag = Tag.objects.filter(uuid=tagUuid).first()
         if tag:
             tags.append(tag)
+    # 发布用户
+    user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     try:
         Works.objects.create(
+            uuid=get_uuid(),
+            userUuid=user if user else None,
             isUpload=1,
-            voiceMediaUuid=viceUuid,
-            userVolume=viceVolume,
+            voiceUrl=voiceUrl,
+            userVolume=voiceVolume,
             bgmUuid=bg if bg else None,
             bgmVolume=bgmVolume if bgmVolume else None,
             recordType=recordType,
@@ -252,7 +225,7 @@ def recording_send(request):
             worksType=worksType,
             templateUuid=template if template else None,
             title=title,
-            photoMediaUuid=photoMediaUuid,
+            bgUrl=bgUrl,
             feeling=feeling,
             worksTime=worksTime,
             checkStatus="unCheck"
@@ -273,7 +246,7 @@ def recording_tag_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    tag = Tag.objects.filter(parent__code="SEARCHSORT", parent__parent=None).order_by('sortNum')
+    tag = Tag.objects.filter(code="RECORDTYPE", isUsing=True).order_by('sortNum')
     tags = tag.all()
     tagList = []
     for tag in tags:

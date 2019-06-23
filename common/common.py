@@ -152,18 +152,3 @@ def hour_to_seconds(data):
     return h + m + s
 
 
-def get_media(objList, request):
-    """
-    获取媒体文件字典
-    :param list:
-    :return:
-    """
-    mediaUuidStr = ','.join(objList)
-    apiFile = FileInfo()
-    fileList = apiFile.get_url(mediaUuidStr, request)
-    if not fileList:
-        return False
-    fileDict = {}
-    for file in fileList:
-        fileDict[file.get('uuid')] = file.get('url')
-    return fileDict

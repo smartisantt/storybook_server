@@ -89,9 +89,7 @@ def check_identify(func):
         except Exception as e:
             logging.error(str(e))
             return http_return(400, '连接redis失败')
-        if user_info:
-            user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
-        else:
+        if not user_info:
             api = Api()
             user_info = api.check_token(token)
             if not user_info:
@@ -129,17 +127,17 @@ def check_identify(func):
                     user_data = user
                 if not create_session(user_data, token, loginIP):
                     return http_return(400, '用户不存在')
-
-        try:
-            log = LoginLog(
-                uuid=get_uuid(),
-                ipAddr=user_info.get('loginIp', ''),
-                userUuid=user_data,
-            )
-            log.save()
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '日志保存失败')
+            # 如果有登陆出现，则存登录日志
+            try:
+                log = LoginLog(
+                    uuid=get_uuid(),
+                    ipAddr=user_info.get('loginIp', ''),
+                    userUuid=user_data,
+                )
+                log.save()
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '日志保存失败')
 
         return func(request)
 

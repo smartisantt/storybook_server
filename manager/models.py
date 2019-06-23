@@ -60,7 +60,7 @@ class Bgm(BaseModle, models.Model):
     背景音乐
     """
     name = models.CharField(max_length=32, null=True)
-    mediaUuid = models.CharField(max_length=64, null=True)
+    mediaUrl = models.CharField(max_length=255, null=True)
     bgmTime = models.IntegerField(verbose_name='背景音乐时长', null=True)
     isUsing = models.IntegerField(verbose_name='是否在用', null=True)  # 0 停用 1 在用
     sortNum = models.IntegerField(verbose_name='排序编号', null=True)
@@ -203,8 +203,8 @@ class TemplateStory(BaseModle, models.Model):
     """
     模板故事
     """
-    faceMediaUuid = models.CharField(max_length=64, null=True)  # 封面图片
-    listMediaUuid = models.CharField(max_length=64, null=True)  # 列表图片
+    faceUrl = models.CharField(max_length=255, null=True)  # 封面图片
+    listUrl = models.CharField(max_length=255, null=True)  # 列表图片
     title = models.CharField(max_length=512, null=True)  # 标题
     intro = models.CharField(max_length=512, null=True)  # 介绍(标题)
     content = models.TextField(null=True)  # 故事内容
@@ -227,7 +227,7 @@ class User(BaseModle, models.Model):
     startTime = models.DateTimeField(null=True)  # 禁止起始时间
     endTime = models.DateTimeField(null=True)  # 禁止结束时间
     tel = models.CharField(max_length=20)
-    userLogo = models.CharField(max_length=255, null=True)  # 用户头像，存地址
+    userLogo = models.CharField(max_length=255, null=True)  # 用户头像
     gender = models.IntegerField(null=True)  # 性别 0未知  1男  2女
     status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
     roles = models.CharField(max_length=1024, null=True)  # 角色 normalUser adminUser
@@ -302,7 +302,7 @@ class Viewpager(BaseModle, models.Model):
     """
     title = models.CharField(max_length=64, null=True)
     orderNum = models.IntegerField(null=True)  # 显示序号  数字越小越优先显示
-    mediaUuid = models.CharField(max_length=64, null=True)  # 轮播图片
+    mediaUrl = models.CharField(max_length=255, null=True)  # 轮播图片
     startTime = models.DateTimeField(null=True)  # 有效起始时间
     endTime = models.DateTimeField(null=True)
     jumpType = models.CharField(max_length=64, null=True)  # 跳转类型 1专辑 2作品 3故事 4外部链接
@@ -332,7 +332,7 @@ class Works(BaseModle, models.Model):
     作品表自由录制和模板作品
     """
     isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
-    voiceMediaUuid = models.CharField(max_length=64, null=True)  # 用户的声音
+    voiceUrl = models.CharField(max_length=64, null=True)  # 用户的声音
     userVolume = models.FloatField(null=True)  # 用户音量
     bgmUuid = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
     bgmVolume = models.FloatField(null=True)  # 背景音乐音量
@@ -343,7 +343,7 @@ class Works(BaseModle, models.Model):
     templateUuid = models.ForeignKey(TemplateStory, on_delete=models.CASCADE, related_name='templateStoryUuid',
                                      to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
     title = models.CharField(max_length=128, null=True)  # 自由录制的标题
-    photoMediaUuid = models.CharField(max_length=64, null=True)  # 封面图片
+    bgUrl = models.CharField(max_length=64, null=True)  # 封面图片
     feeling = models.CharField(max_length=512, null=True)  # 录制感受
     worksTime = models.IntegerField(null=True)  # 作品时长
     tags = models.ManyToManyField(Tag)  # 作品标签

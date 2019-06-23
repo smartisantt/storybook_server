@@ -1,6 +1,5 @@
-import serializers as serializers
-from rest_framework import serializers
 
+from rest_framework import serializers
 from manager.models import TemplateStory
 
 

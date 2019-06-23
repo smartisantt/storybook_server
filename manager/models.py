@@ -209,11 +209,9 @@ class TemplateStory(BaseModle, models.Model):
     intro = models.CharField(max_length=512, null=True)  # 介绍(标题)
     content = models.TextField(null=True)  # 故事内容
     recordNum = models.IntegerField(null=True)  # 录制次数
-    status = models.CharField(max_length=32, null=True, default="normal")  #  normal启用 forbid禁用 destroy删除
+    status = models.CharField(max_length=32, null=True, default="normal")  # normal启用 forbid禁用 destroy删除
     isRecommd = models.BooleanField(default=True)  # 显示位置 默认推荐 否则是 最新
     isTop = models.IntegerField(default=0)  # 置顶 默认为0 置顶为1
-
-    # displayPosition =
     tags = models.ManyToManyField(Tag)
 
     class Meta:

@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Create your views here.
-from django.db import transaction
-from django.db.models import Q
 from rest_framework.generics import ListAPIView
 
-from common.common import get_media
 from manager import managerCommon
 from manager.models import *
 from manager.managerCommon import *
@@ -14,7 +11,7 @@ from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count
 
-from storybook_sever.serializers import TemplateStorySerializer
+from manager.serializers import TemplateStorySerializer
 
 
 def admin(request):

@@ -14,6 +14,8 @@ from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count
 
+from storybook_sever.serializers import TemplateStorySerializer
+
 
 def admin(request):
     """
@@ -378,7 +380,10 @@ def del_tags(request):
 """
 """显示所有模板列表"""
 class TemplateStoryView(ListAPIView):
-    queryset = TemplateStory.objects.all().only('id', )
+    queryset = TemplateStory.objects.all().only('id', 'uuid', 'title', 'createTime', 'recordNum', 'status')
+    serializer_class = TemplateStorySerializer
+    pagination_class = None
+
 
 
 

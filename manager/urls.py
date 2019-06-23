@@ -4,6 +4,7 @@
 from django.urls import path
 
 from manager import views
+from manager.views import TemplateStoryView
 
 app_name = 'manager'
 
@@ -16,4 +17,8 @@ urlpatterns = [
     path('deltags/', views.del_tags, name='del_tags'),
     path('addchildtags/', views.add_child_tags, name='add_child_tags'),
     path('modifychildtags/', views.modify_child_tags, name='modify_child_tags'),
+
+    path('modifychildtags/', TemplateStoryView.as_view()),
+
+
 ]

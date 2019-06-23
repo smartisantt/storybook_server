@@ -7,7 +7,7 @@ import requests
 
 class FileInfo(object):
     def __init__(self):
-        self.file_host = "http://192.168.100.29:8000"
+        self.file_host = "http://192.168.100.201:8000"
         self.url = "/api/pub/file/urls"
 
     def get_url(self, mediaUuidStr, request):

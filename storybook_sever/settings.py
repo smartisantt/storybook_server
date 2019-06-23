@@ -247,3 +247,17 @@ CACHES = {
         },
     },
 }
+
+REST_FRAMEWORK = {
+    # 分页配置
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 3,
+    # 过滤
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+    # 重构renderer
+    'DEFAULT_RENDERER_CLASSES': (
+        'utils.renderer.MyJsonRenderer',
+    ),
+}

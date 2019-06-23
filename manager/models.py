@@ -184,11 +184,12 @@ class Tag(BaseModle, models.Model):
     """
     code = models.CharField(max_length=20, null=True)  # 编码
     tagName = models.CharField(max_length=32, null=True)  # 标签名字
-    iconMediaUuid = models.CharField(max_length=64, null=True) # 分类图标
+    iconUrl = models.CharField(max_length=256, null=True) # 分类图标
     sortNum = models.IntegerField(verbose_name='排序编号', null=True) # 排列顺序
     parent = models.ForeignKey(to='self', on_delete=models.CASCADE,related_name='child_tag',
                                db_column='parent_id', to_field='uuid', null=True)  # 爸爸标签id
     isUsing = models.BooleanField(default=True)                     # 标签状态停用还是使用
+    isDelete = models.BooleanField(default=False)                    # 标签是否删除
 
     def __str__(self):
         return self.tagName
@@ -319,7 +320,7 @@ class Album(BaseModle, models.Model):
     """
     title = models.CharField(max_length=64, null=True)
     intro = models.CharField(max_length=256, null=True)
-    mediaUuid = models.CharField(max_length=64, null=True)  # 专辑封面
+    coverUuid = models.CharField(max_length=256, null=True)  # 专辑封面
     status = models.CharField(max_length=32, null=True)  # 专辑状态
     tags = models.ManyToManyField(Tag)  # 标签
 

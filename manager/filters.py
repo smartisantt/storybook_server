@@ -4,16 +4,16 @@ import django_filters
 from manager.models import TemplateStory
 
 
-class TemplateStoryFilterSet(django_filters.FilterSet):
+class TemplateStoryFilter(django_filters.rest_framework.FilterSet):
     """模板id，模板名，日期，"""
     id = django_filters.NumberFilter(field_name='id')
-    starttime = django_filters.NumberFilter(field_name='createTime', lookup_expr='gte')
-    endtime = django_filters.NumberFilter(field_name='createTime', lookup_expr='lte')
-
+    title = django_filters.CharFilter('title', lookup_expr='contains')
+    # starttime = django_filters.DateTimeFilter('createTime', lookup_expr='gte')
+    # endtime = django_filters.DateTimeFilter('createTime', lookup_expr='lte')
 
 
     @staticmethod
-    def filer_by_id(queryset, value):
+    def filter_by_starttime(queryset, value):
         return queryset.filter(id=value)
 
     class Meta:

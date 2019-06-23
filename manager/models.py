@@ -186,9 +186,9 @@ class Tag(BaseModle, models.Model):
     tagName = models.CharField(max_length=32, null=True)  # 标签名字
     iconMediaUuid = models.CharField(max_length=64, null=True) # 分类图标
     sortNum = models.IntegerField(verbose_name='排序编号', null=True) # 排列顺序
-    isUsing = models.BooleanField(default=True)                     # 标签状态停用还是使用
     parent = models.ForeignKey(to='self', on_delete=models.CASCADE,related_name='child_tag',
                                db_column='parent_id', to_field='uuid', null=True)  # 爸爸标签id
+    isUsing = models.BooleanField(default=True)                     # 标签状态停用还是使用
 
     def __str__(self):
         return self.tagName
@@ -205,11 +205,15 @@ class TemplateStory(BaseModle, models.Model):
     """
     faceMediaUuid = models.CharField(max_length=64, null=True)  # 封面图片
     listMediaUuid = models.CharField(max_length=64, null=True)  # 列表图片
+    title = models.CharField(max_length=512, null=True)  # 标题
     intro = models.CharField(max_length=512, null=True)  # 介绍(标题)
     content = models.TextField(null=True)  # 故事内容
     recordNum = models.IntegerField(null=True)  # 录制次数
-    status = models.CharField(max_length=32, null=True, default="normal")  # 是否推荐 normal启用 forbid禁用 destroy删除
-    isRecommd = models.BooleanField(default=True)  # 是否推荐
+    status = models.CharField(max_length=32, null=True, default="normal")  #  normal启用 forbid禁用 destroy删除
+    isRecommd = models.BooleanField(default=True)  # 显示位置 默认推荐 否则是 最新
+    isTop = models.IntegerField(default=0)  # 置顶 默认为0 置顶为1
+
+    # displayPosition =
     tags = models.ManyToManyField(Tag)
 
     class Meta:

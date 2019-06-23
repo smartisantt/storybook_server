@@ -4,14 +4,17 @@
 # Create your views here.
 from django.db import transaction
 from django.db.models import Q
+from rest_framework.generics import ListAPIView
 
+from common.common import get_media
 from manager import managerCommon
 from manager.models import *
-from storybook_sever import api
 from manager.managerCommon import *
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count
+
+from storybook_sever.serializers import TemplateStorySerializer
 
 
 def admin(request):
@@ -117,7 +120,9 @@ def login(request):
 
 
 
-
+"""
+首页数据
+"""
 def total_data(request):
     data = managerCommon.request_body(request, 'GET')
     if not data:
@@ -164,6 +169,9 @@ def total_data(request):
                            })
 
 
+"""
+内容分类
+"""
 def show_all_tags(request):
     """
     发布故事标签选择列表
@@ -172,11 +180,23 @@ def show_all_tags(request):
     """
     if request.method == 'GET':
         tags = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True).all().order_by('sortNum')
+        """
+        uuid转成url
+        用列表保存uuid然后得到url
+        """
 
         tagList = []
+        # for tag in tags:
+        #     tagList.append(tag.uuid)
+        # # 获取媒体文件地址
+        # if len(tagList) > 0:
+        #     mediaDict = get_media(tagList, request)
+        #     if not mediaDict:
+        #         return http_return(400, '获取文件失败')
+
         for tag in tags:
             childTagList= []
-            for child_tag in tag.tag_set.only('uuid', 'sortNum', 'tagName'):
+            for child_tag in tag.child_tag.only('uuid', 'sortNum', 'tagName'):
                 childTagList.append({
                     "uuid": child_tag.uuid,
                     "tagName": child_tag.tagName,
@@ -186,7 +206,9 @@ def show_all_tags(request):
                 "uuid": tag.uuid,
                 "tagName": tag.tagName,
                 "sortNum": tag.sortNum,
-                "iconMediaUuid": tag.iconMediaUuid,
+                "iconUrl": '',
+                # "iconUrl": mediaDict[tag.uuid] if mediaDict else None,
+                # "iconMediaUuid": tag.iconMediaUuid,
                 "isUsing": tag.isUsing,
                 "childTagList": childTagList,
                 "childTagsNum": len(childTagList)        # 子标签个数
@@ -209,6 +231,12 @@ def add_tags(request):
         return http_return(400, '参数有误')
     if not sortNum.isdigit():
         return http_return(400, '序号必须是数字')
+    sortNum = int(sortNum)
+    if not sortNum:
+        return http_return(400, '序号不能是0')
+    tag = Tag.objects.filter(sortNum=sortNum).first()
+    if tag:
+        return http_return(400, '重复序号')
     # 查询是否有重复tagName
     tag = Tag.objects.filter(tagName=tagName).first()
     if tag:
@@ -221,7 +249,7 @@ def add_tags(request):
                 code = 'SEARCHSORT',
                 tagName = tagName,
                 iconMediaUuid = iconMediaUuid,
-                sortNum = int(sortNum),
+                sortNum = sortNum,
             )
             tag.save()
             return http_return(200, 'OK')
@@ -242,6 +270,9 @@ def add_child_tags(request):
         return http_return(400, '参数错误')
     if not sortNum.isdigit():
         return http_return(400, '序号必须是数字')
+    sortNum = int(sortNum)
+    if not sortNum:
+        return http_return(400, '序号不能是0')
     parentTag = Tag.objects.filter(uuid=parentUuid).first()
     if not parentTag:
         return http_return(400, '参数有误')
@@ -249,6 +280,10 @@ def add_child_tags(request):
     tag = Tag.objects.filter(tagName=tagName).first()
     if tag:
         return http_return(400, '重复标签')
+    # 查询是否有重复tagName
+    tag = Tag.objects.filter(sortNum=sortNum).first()
+    if tag:
+        return http_return(400, '重复序号')
     #创建新标签
     try:
         with transaction.atomic():
@@ -257,14 +292,14 @@ def add_child_tags(request):
                 uuid=uuid,
                 code='SEARCHSORT',
                 tagName=tagName,
-                sortNum=int(sortNum),
+                sortNum=sortNum,
                 parent=parentTag
             )
             tag.save()
             return http_return(200, 'OK', {
                 'uuid': uuid,
                 'tagName': tagName,
-                'sortNum': int(sortNum),
+                'sortNum': sortNum,
                 'parentUuid': parentUuid
             })
     except Exception as e:
@@ -285,6 +320,12 @@ def modify_child_tags(request):
         return http_return(400, '参数错误')
     if not sortNum.isdigit():
         return http_return(400, '序号必须是数字')
+    sortNum = int(sortNum)
+    if not sortNum:
+        return http_return(400, '序号不能是0')
+    tag = Tag.objects.filter(sortNum=sortNum).first()
+    if tag:
+        return http_return(400, '重复序号')
     parentTag = Tag.objects.filter(uuid=parentUuid).first()
     if not parentTag:
         return http_return(400, '参数有误')
@@ -300,13 +341,13 @@ def modify_child_tags(request):
 
     try:
         with transaction.atomic():
-            tag.sortNum = int(sortNum)
+            tag.sortNum = sortNum
             tag.tagName = tagName
             tag.save()
             return http_return(200, 'OK', {
                 'uuid': uuid,
                 'tagName': tagName,
-                'sortNum': int(sortNum),
+                'sortNum': sortNum,
                 'parentUuid': parentUuid
             })
 
@@ -334,7 +375,25 @@ def del_tags(request):
         logging.error(str(e))
         return http_return(400, '删除失败')
 
+"""
+模板管理
+"""
+"""显示所有模板列表"""
+class TemplateStoryView(ListAPIView):
+    queryset = TemplateStory.objects.all().only('id', 'uuid', 'title', 'createTime', 'recordNum', 'status')
+    serializer_class = TemplateStorySerializer
+    pagination_class = None
 
+
+
+
+"""根据时间、模板ID、模板名搜索"""
+
+"""显示模板的详细信息"""
+
+""""添加模板"""
+""""修改模板"""
+""""删除模板"""
 
 
 

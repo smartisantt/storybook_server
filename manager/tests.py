@@ -19,3 +19,8 @@ print(dt2 - dt)
 
 uuid = get_uuid()
 print(uuid)
+
+a = 10
+if True:
+    a = 3
+print(a)

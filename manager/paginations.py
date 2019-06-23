@@ -2,7 +2,7 @@ from rest_framework.pagination import PageNumberPagination
 
 
 class TwentyPagination(PageNumberPagination):
-    page_size = 1
+    page_size = 2
     page_size_query_param = 'page_size'
 
 

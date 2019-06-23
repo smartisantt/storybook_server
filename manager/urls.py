@@ -18,7 +18,7 @@ urlpatterns = [
     path('addchildtags/', views.add_child_tags, name='add_child_tags'),
     path('modifychildtags/', views.modify_child_tags, name='modify_child_tags'),
 
-    path('modifychildtags/', TemplateStoryView.as_view()),
+    path('templatestories/', views.show_all_template_stories, name='show_all_template_stories'),
 
 
 ]

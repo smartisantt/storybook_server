@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # Create your views here.
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 
 from manager import managerCommon
+from manager.filters import TemplateStoryFilterSet
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TwentyPagination
@@ -377,13 +380,58 @@ def del_tags(request):
 模板管理
 """
 """显示所有模板列表"""
-class TemplateStoryView(ListAPIView):
-    queryset = TemplateStory.objects.all().only('id', 'uuid', 'title', 'createTime', 'recordNum', 'status')
-    serializer_class = TemplateStorySerializer
-    pagination_class = TwentyPagination
+def show_all_template_stories(request):
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    templateID = data.get('templateID', '')
+    title = data.get('title', '')
+    startTimestamp = data.get('startTime', '')
+    endTimestamp = data.get('endTime', '')
+    pageIndex = data.get('pageIndex', '')
+    # TODO: page传过来是字符串还是int
+    page = data.get('page', '')
 
+    dic = {}
+    if templateID:
+        if not templateID.isdigit():
+            http_return(400, '模板ID有误')
 
+        templateID = int(templateID)
+        if templateID <=0:
+            http_return(400, '模板ID有误')
+        dic['id'] = templateID
 
+    if title:
+        dic['title'] = title
+
+    templateStory = TemplateStory.objects.filter(**dic).all()
+    if startTimestamp and endTimestamp:
+        if startTimestamp.isdigit() and endTimestamp.isdigit():
+            startTimestamp = int(startTimestamp) / 1000
+            endTimestamp = int(endTimestamp) / 1000
+        else:
+            return http_return(400, '参数有误')
+        # 小于2019-05-30 00:00:00的时间不合法
+        if endTimestamp < startTimestamp or endTimestamp <= 1559145600 or startTimestamp <= 1559145600:
+            return http_return(400, '时间有误')
+        startTime = datetime.fromtimestamp(startTimestamp)
+        endTime = datetime.fromtimestamp(endTimestamp)
+        t1 = datetime(startTime.year, startTime.month, startTime.day)
+        t2 = datetime(endTime.year, startTime.month, startTime.day, 23, 59, 59, 999999)
+        templateStoriey = templateStory.objects.filter(createTime__range=(t1, t2)).order_by("-createTime")
+    templateStories = templateStory.all()
+    total, stories = page_index(templateStories, page, pageIndex)
+
+    templateStoryList = []
+    for st in templateStories:
+        templateStoryList.append({
+            "uuid": st.uuid,
+            "title": st.intro,
+            "mediaUrl": mediaDict[st.listMediaUuid] if mediaDict else None,
+            "recordNum": st.recordNum,
+        })
+    return http_return(200, '成功', {"total": total, "templateStoryList": storyList})
 
 """根据时间、模板ID、模板名搜索"""
 

@@ -34,7 +34,7 @@ class Ad(BaseModle, models.Model):
     首页弹屏广告
     """
     mediaUuid = models.CharField(max_length=64, verbose_name='广告图片', null=True)
-    jumpUrl = models.CharField(max_length=128, verbose_name='跳转地址', null=True)
+    jumpUrl = models.CharField(max_length=255, verbose_name='跳转地址', null=True)
     startTime = models.DateTimeField(verbose_name='时效开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='时效结束时间', null=True)
     isDelete = models.BooleanField(verbose_name='软删除', null=True)
@@ -332,7 +332,7 @@ class Works(BaseModle, models.Model):
     作品表自由录制和模板作品
     """
     isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
-    voiceUrl = models.CharField(max_length=64, null=True)  # 用户的声音
+    voiceUrl = models.CharField(max_length=255, null=True)  # 用户的声音
     userVolume = models.FloatField(null=True)  # 用户音量
     bgmUuid = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
     bgmVolume = models.FloatField(null=True)  # 背景音乐音量
@@ -343,7 +343,7 @@ class Works(BaseModle, models.Model):
     templateUuid = models.ForeignKey(TemplateStory, on_delete=models.CASCADE, related_name='templateStoryUuid',
                                      to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
     title = models.CharField(max_length=128, null=True)  # 自由录制的标题
-    bgUrl = models.CharField(max_length=64, null=True)  # 封面图片
+    bgUrl = models.CharField(max_length=255, null=True)  # 封面图片
     feeling = models.CharField(max_length=512, null=True)  # 录制感受
     worksTime = models.IntegerField(null=True)  # 作品时长
     tags = models.ManyToManyField(Tag)  # 作品标签

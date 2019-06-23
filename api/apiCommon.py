@@ -49,7 +49,7 @@ def create_session(user_info, token, loginIP):
     user = {
         'username': user_info.username if user_info.username else None,
         'uuid': user_info.uuid,
-        'userID': user_info.userID,
+        'userId': user_info.userID,
         'tel': user_info.tel,
         'loginIp': loginIP
     }
@@ -59,6 +59,20 @@ def create_session(user_info, token, loginIP):
         logging.error(str(e))
         return False
     return True
+
+
+def get_default_name(tel):
+    """
+    获取默认用户名
+    :return:
+    """
+    if tel == '':
+        result = ''
+    else:
+        start = tel[:2]
+        end = tel[6:]
+        result = start + "****" + end
+    return result
 
 
 def check_identify(func):
@@ -76,7 +90,7 @@ def check_identify(func):
             logging.error(str(e))
             return http_return(400, '连接redis失败')
         if user_info:
-            user_data = User.objects.filter(userID=user_info.get('userID', ''), status='normal').first()
+            user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
         else:
             api = Api()
             user_info = api.check_token(token)
@@ -85,17 +99,23 @@ def check_identify(func):
             else:
                 # 记录登录ip,存入缓存
                 loginIP = user_info.get('loginIp', '')
-                user_data = User.objects.filter(userID=user_info.get('userID', ''), status='normal').first()
+                user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
                 if not user_data:
                     user_uuid = get_uuid()
                     version = Version.objects.filter(status="dafault").first()
+                    defaultIcon = user_info.get('wxAvatarUrl', '')
+                    if defaultIcon == '':
+                        defaultIcon = '42686029A3E740D78CD20E118D615DD3'
+                    defaultName = user_info.get('wxNickname', '')
+                    if defaultName == '':
+                        defaultName = get_default_name(user_info.get('phone', ''))
                     user = User(
                         uuid=user_uuid,
                         tel=user_info.get('phone', ''),
                         userID=user_info.get('userId', ''),
-                        username=user_info.get('wxNickname', ''),
+                        username=defaultName,
                         roles="normalUser",
-                        userLogo=user_info.get('wxNickname', ''),
+                        userLogo=defaultIcon,
                         gender=user_info.get('wxSex', None),
                         versionUuid=version if version else None,
                         status="normal",

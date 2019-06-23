@@ -151,6 +151,7 @@ def hour_to_seconds(data):
     s = int(data.split(":")[2])
     return h + m + s
 
+
 def get_media(objList, request):
     """
     获取媒体文件字典

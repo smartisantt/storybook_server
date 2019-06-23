@@ -76,7 +76,7 @@ def recording_index_list(request):
         return http_return(400, '参数错误')
     story = TemplateStory.objects.exclude(status="destroy")
     if sort == "latest":
-        story = story.order_by("-createTime")
+        story = story.filter(isRecommd=False).order_by("-createTime")
     elif sort == "rank":
         story = story.order_by("-recordNum")
     elif sort == "recommended":  # 推荐算法

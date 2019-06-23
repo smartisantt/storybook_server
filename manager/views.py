@@ -239,6 +239,7 @@ def add_modify_child_tags(request):
 
 
 def del_child_tags(request):
+    """删除子标签"""
     if request.method == 'POST':
         uuid = request.POST.get('uuid', '')
         if not uuid:

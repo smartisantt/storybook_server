@@ -29,6 +29,6 @@ class FileInfo(object):
 
 if __name__ == "__main__":
     file = FileInfo()
-    uuidList = []
+    uuidList = ''
     result = file.get_url(uuidList)
     print(result)

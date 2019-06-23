@@ -5,9 +5,9 @@
 from django.db import transaction
 from django.db.models import Q
 
+from common.common import get_media
 from manager import managerCommon
 from manager.models import *
-from storybook_sever import api
 from manager.managerCommon import *
 from storybook_sever.api import Api
 from datetime import datetime
@@ -172,8 +172,20 @@ def show_all_tags(request):
     """
     if request.method == 'GET':
         tags = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True).all().order_by('sortNum')
+        """
+        uuid转成url
+        用列表保存uuid然后得到url
+        """
 
         tagList = []
+        for tag in tags:
+            tagList.append(tag.mediaUuid)
+        # 获取媒体文件地址
+        if len(tagList) > 0:
+            mediaDict = get_media(tagList, request)
+            if not mediaDict:
+                return http_return(400, '获取文件失败')
+
         for tag in tags:
             childTagList= []
             for child_tag in tag.tag_set.only('uuid', 'sortNum', 'tagName'):
@@ -186,7 +198,8 @@ def show_all_tags(request):
                 "uuid": tag.uuid,
                 "tagName": tag.tagName,
                 "sortNum": tag.sortNum,
-                "iconMediaUuid": tag.iconMediaUuid,
+                "iconUrl": mediaDict[tag.mediaUuid] if mediaDict else None,
+                # "iconMediaUuid": tag.iconMediaUuid,
                 "isUsing": tag.isUsing,
                 "childTagList": childTagList,
                 "childTagsNum": len(childTagList)        # 子标签个数

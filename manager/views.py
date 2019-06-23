@@ -7,6 +7,7 @@ from rest_framework.generics import ListAPIView
 from manager import managerCommon
 from manager.models import *
 from manager.managerCommon import *
+from manager.paginations import TwentyPagination
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count
@@ -379,7 +380,7 @@ def del_tags(request):
 class TemplateStoryView(ListAPIView):
     queryset = TemplateStory.objects.all().only('id', 'uuid', 'title', 'createTime', 'recordNum', 'status')
     serializer_class = TemplateStorySerializer
-    pagination_class = None
+    pagination_class = TwentyPagination
 
 
 

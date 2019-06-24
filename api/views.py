@@ -6,7 +6,7 @@
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from manager.models import *
-from api.apiCommon import check_identify
+from api.apiCommon import *
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
@@ -70,33 +70,25 @@ def recording_index_list(request):
     if not data:
         return http_return(400, '参数错误')
     page = data.get('page', '')
-    pageIndex = data.get('pageIndex', '')
+    pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # latest最新 rank排行 recommended推荐
     if sort not in ['latest', 'rank', 'recommended']:
         return http_return(400, '参数错误')
     story = TemplateStory.objects.exclude(status="destroy")
     if sort == "latest":
-        story = story.order_by("-createTime")
+        story = story.filter(isRecommd=False).order_by("-isTop", "-createTime")
     elif sort == "rank":
         story = story.order_by("-recordNum")
     elif sort == "recommended":  # 推荐算法
-        story = story.filter(isRecommd=True).order_by("-createTime")
+        story = story.filter(isRecommd=True).order_by("-isTop", "-createTime")
     stories = story.all()
-    total, stories = page_index(stories, page, pageIndex)
-    mediaList = []
-    for story in stories:
-        mediaList.append(story.listMediaUuid)
-    # 获取媒体文件地址
-    if len(mediaList) > 0:
-        mediaDict = get_media(mediaList, request)
-        if not mediaDict:
-            return http_return(400, '获取文件失败')
+    total, stories = page_index(stories, page, pageCount)
     storyList = []
     for st in stories:
         storyList.append({
             "uuid": st.uuid,
-            "title": st.intro,
-            "mediaUrl": mediaDict[st.listMediaUuid] if mediaDict else None,
+            "title": st.title,
+            "mediaUrl": st.listUrl,
             "recordNum": st.recordNum,
         })
     return http_return(200, '成功', {"total": total, "storyList": storyList})
@@ -117,21 +109,13 @@ def recording_banner(request):
     # 按显示序号排序
     banner = banner.filter(isUsing=True).order_by('orderNum')
     banners = banner.all()
-    mediaList = []
-    for ban in banners:
-        mediaList.append(ban.mediaUuid)
-    # 获取媒体文件地址
-    if len(mediaList) > 0:
-        mediaDict = get_media(mediaList, request)
-        if not mediaDict:
-            return http_return(400, '获取文件失败')
     banList = []
     for banner in banners:
         banList.append({
             'title': banner.title,
-            'mediaUrl': mediaDict[banner.mediaUuid] if mediaDict else None,
+            'mediaUrl': banner.mediaUrl,
             'jumpType': banner.jumpType,
-            'targetUrl': banner.targetUuid,
+            'targetUuid': banner.targetUuid,
         })
     total = len(banners)
     return http_return(200, '成功', {"total": total, "banList": banList})
@@ -153,18 +137,11 @@ def recording_stroy_detail(request):
     story = TemplateStory.objects.filter(uuid=uuid, status="normal").first()
     if not story:
         return http_return(400, '模板故事不存在')
-    mediaList = []
-    mediaList.append(story.faceMediaUuid)
-    # 获取媒体文件地址
-    if len(mediaList) > 0:
-        mediaDict = get_media(mediaList, request)
-        if not mediaDict:
-            return http_return(400, '获取文件失败')
     d = {
         "uuid": story.uuid,
-        "title": story.intro if story.intro else None,
+        "title": story.title if story.title else None,
         "conten": story.content if story.content else None,
-        "mediaUuid": mediaDict[story.faceMediaUuid] if mediaDict else None
+        "mediaUrl": story.faceUrl if story.faceUrl else None
     }
     return http_return(200, '成功', {"detail": d})
 
@@ -180,25 +157,17 @@ def recording_bgmusic_list(request):
     if not data:
         return http_return(400, '参数错误')
     page = data.get('page', '')
-    pageIndex = data.get('pageIndex', '')
+    pageCount = data.get('pageCount', '')
     bgm = Bgm.objects.filter(isUsing=True).order_by('sortNum')
     bgms = bgm.all()
-    total, bgms = page_index(bgms, page, pageIndex)
-    mediaList = []
-    for bgm in bgms:
-        mediaList.append(bgm.mediaUuid)
-    # 获取媒体文件地址
-    if len(mediaList) > 0:
-        mediaDict = get_media(mediaList, request)
-        if not mediaDict:
-            return http_return(400, '获取文件失败')
+    total, bgms = page_index(bgms, page, pageCount)
     bgmList = []
     for bg in bgms:
         bgmList.append({
             "uuid": bg.uuid,
             "name": bg.name,
-            "bgmTime": bg.bgmTime,
-            "mediaUrl": mediaDict[bg.mediaUuid] if mediaDict else None,
+            "duration": bg.bgmTime,
+            "mediaUrl": bg.mediaUrl,
         })
     return http_return(200, '成功', {"total": total, "bgmList": bgmList})
 
@@ -214,11 +183,11 @@ def recording_send(request):
     if not data:
         return http_return(400, '参数错误')
     storyUuid = data.get('storyUuid', '')
-    viceUuid = data.get('viceUuid', '')
-    viceVolume = data.get('viceVolume', '')
+    voiceUrl = data.get('voiceUrl', '')
+    voiceVolume = data.get('voiceVolume', '')
     bgmUuid = data.get('bgmUuid', '')
     bgmVolume = data.get('bgmVolume', '')
-    photoMediaUuid = data.get('photoMediaUuid', '')
+    bgUrl = data.get('bgUrl', '')
     feeling = data.get('feeling', '')
     recordType = data.get('recordType', '')
     typeUuidList = data.get('typeUuidList', '')
@@ -232,18 +201,22 @@ def recording_send(request):
         bg = Bgm.objects.filter(uuid=bgmUuid).first()
     if storyUuid:
         template = TemplateStory.objects.filter(uuid=storyUuid).first()
-    if not all([viceUuid, viceVolume, recordType, typeUuidList, photoMediaUuid, worksTime]):
+    if not all([voiceUrl, voiceVolume, recordType, typeUuidList, bgUrl, worksTime]):
         return http_return(400, '参数错误')
     tags = []
     for tagUuid in typeUuidList:
         tag = Tag.objects.filter(uuid=tagUuid).first()
         if tag:
             tags.append(tag)
+    # 发布用户
+    user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     try:
         Works.objects.create(
+            uuid=get_uuid(),
+            userUuid=user if user else None,
             isUpload=1,
-            voiceMediaUuid=viceUuid,
-            userVolume=viceVolume,
+            voiceUrl=voiceUrl,
+            userVolume=voiceVolume,
             bgmUuid=bg if bg else None,
             bgmVolume=bgmVolume if bgmVolume else None,
             recordType=recordType,
@@ -252,7 +225,7 @@ def recording_send(request):
             worksType=worksType,
             templateUuid=template if template else None,
             title=title,
-            photoMediaUuid=photoMediaUuid,
+            bgUrl=bgUrl,
             feeling=feeling,
             worksTime=worksTime,
             checkStatus="unCheck"
@@ -273,13 +246,247 @@ def recording_tag_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    tag = Tag.objects.filter(parent__code="SEARCHSORT", parent__parent=None).order_by('sortNum')
+    tag = Tag.objects.filter(code="RECORDTYPE", isUsing=True, isDelete=False).order_by('sortNum')
     tags = tag.all()
     tagList = []
     for tag in tags:
         tagList.append({
             "uuid": tag.uuid,
-            "name": tag.tag_name,
+            "name": tag.tagName,
         })
     total = len(tagList)
     return http_return(200, '成功', {"total": total, "tagList": tagList})
+
+
+@check_identify
+def user_center(request):
+    """
+    用户个人中心
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    user = User.objects.filter(uuid=uuid).first()
+    if not user:
+        return http_return(400, '用户信息不存在')
+    fans = user.get_followed()
+    focus = user.get_follower()
+    isFan = False
+    myUuid = data['_cache']['uuid']
+    for focu in focus:
+        if myUuid == focu.uuid:
+            isFan = True
+            break
+    userDict = {
+        "uuid": user.uuid,
+        "name": user.username,
+        "icon": user.userLogo,
+        "id": user.id,
+        "isFan": isFan,
+        "intro": user.intro,
+        "fansCount": len(fans),
+        "focusCount": len(focus)
+    }
+    return http_return(200, '成功', {"userInfo": userDict})
+
+
+@check_identify
+def become_fans(request):
+    """
+    关注用户
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()
+    if not selfUser.set_follower(uuid):
+        return http_return(400, '关注失败')
+    return http_return(200, '关注成功')
+
+
+@check_identify
+def user_work_list(request):
+    """
+    用户故事列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    user = User.objects.filter(uuid=uuid).first()
+    works = user.userWorkUuid.order_by("-createTime").all()
+    total, works = page_index(works, page, pageCount)
+    workList = []
+    for work in works:
+        title = work.title
+        if work.worksType:
+            title = work.templateUuid.title
+        tagList = []
+        for tag in work.tags.all():
+            tagList.append({
+                'uuid': tag.uuid,
+                'name': tag.tagName
+            })
+        workList.append({
+            "uuid": work.uuid,
+            "duration": work.worksTime,
+            "mediaUrl": work.bgUrl,
+            "title": title,
+            "createTime": datetime_to_string(work.createTime),
+            "tagList": tagList
+        })
+    return http_return(200, '成功', {"total": total, "workList": workList})
+
+
+@check_identify
+def user_fans(request):
+    """
+    用户的粉丝列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    type = data.get('type', '')  # 默认返回关注的用户列表，传入fans返回粉丝用户列表
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    user = User.objects.filter(uuid=uuid).first()
+    if not user:
+        return http_return(400, '用户信息不存在')
+    users = user.get_follower()
+    if type == 'fans':
+        users = user.get_followed()
+    total, users = page_index(users, page, pageCount)
+    userList = []
+    for u in users:
+        userList.append({
+            "uuid": u.uuid,
+            "icon": u.userLogo,
+            "name": u.username
+        })
+    return http_return(200, '成功', {"total": total, "userList": userList})
+
+
+@check_identify
+def work_list(request):
+    """
+    播放列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    worksType = data.get('worksType', None)
+    work = Works.objects.filter(checkStatus='check')
+    if worksType:
+        work = work.filter(worksType=worksType)
+    works = work.order_by('-createTime').all()
+    total, works = page_index(works, page, pageCount)
+    workList = []
+    for work in works:
+        title = work.title
+        if work.worksType:
+            title = work.templateUuid.title
+        tagList = []
+        for tag in work.tags.all():
+            tagList.append({
+                'uuid': tag.uuid,
+                'name': tag.tagName
+            })
+        workList.append({
+            "uuid": work.uuid,
+            "duration": work.worksTime,
+            "mediaUrl": work.bgUrl,
+            "title": title,
+            "createTime": datetime_to_string(work.createTime),
+            "tagList": tagList
+        })
+    return http_return(200, '成功', {"total": total, "workList": workList})
+
+
+@check_identify
+def work_play(request):
+    """
+    播放作品
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    work = Works.objects.filter(uuid=uuid, checkStatus='check').first()
+    if not work:
+        return http_return(400, '故事信息不存在')
+    # 更新播放次数
+    work.playTimes += 1
+    try:
+        work.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新播放次数失败')
+    content = None
+    title = work.title
+    if work.worksType:
+        content = work.templateUuid.content
+        title = work.templateUuid.title
+    workDict = {
+        "workUuid": work.uuid,
+        "title": title,
+        "content": content,
+        "bgUrl": work.bgUrl,
+        "duration": work.worksTime,
+        "voiceUrl": work.voiceUrl,
+        "userVolume": work.userVolume,
+        "bgmUrl": work.bgmUuid.mediaUrl if work.bgmUuid else None,
+        "bgmVolume": work.bgmVolume if work.bgmUuid else None,
+        "name": work.userUuid.username,
+        "icon": work.userUuid.userLogo,
+        "createTIme": datetime_to_string(work.createTime),
+        "playTimes": work.playTimes,
+    }
+    otherWork = Works.objects.exclude(uuid=uuid).filter(userUuid__uuid=work.userUuid.uuid)
+    otherWorks = otherWork.order_by("-createTime").all()
+    total, otherWorks = page_index(otherWorks, page, pageCount)
+    workList = []
+    for otherWork in otherWorks:
+        title = otherWork.title
+        if otherWork.worksType:
+            title = otherWork.templateUuid.title
+        tagList = []
+        for tag in otherWork.tags.all():
+            tagList.append({
+                'uuid': tag.uuid,
+                'name': tag.tagName
+            })
+        workList.append({
+            "uuid": otherWork.uuid,
+            "duration": otherWork.worksTime,
+            "mediaUrl": otherWork.bgUrl,
+            "title": title,
+            "createTime": datetime_to_string(otherWork.createTime),
+            "tagList": tagList
+        })
+    return http_return(200, '成功', {"otherTotal": total, "workList": workList, "playInfo": workDict})

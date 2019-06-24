@@ -20,6 +20,8 @@ from django.http import HttpResponse
 from django.db import transaction
 from django.core.cache import cache, caches
 
+from manager.models import User, Version, LoginLog
+from storybook_sever.api import Api
 from storybook_sever.config import *
 
 
@@ -383,28 +385,7 @@ def check_admin_rule(func):
     return wrapper
 
 
-def create_session(user_info, token):
-    """
-    用户信息保存至cache
-    :param request:
-    :param user_info:
-    :return:
-    """
-    shop_keeper = {
-        'name': user_info.name,
-        'uuid': user_info.uuid,
-        'userID': user_info.userID,
-        'tel': user_info.tel,
-    }
-    try:
-        cache.set(token, shop_keeper, USER_SESSION_OVER_TIME)
-    except Exception as e:
-        logging.error(str(e))
-        return False
-    return True
-
-
-def create_cache(user_info, loginIp, token):
+def create_cache(user_info, token):
     """
     用户信息保存至cache
     :param request:
@@ -419,7 +400,6 @@ def create_cache(user_info, loginIp, token):
         'tel': user_info.tel,
         'role': user_info.roles,
         'status': user_info.status,
-        'loginIp': loginIp
     }
     # request.session.set_expiry(SHOP_SESSION_OVER_TIME)
     # request.session[token] = shop_keeper
@@ -523,6 +503,141 @@ def get_ip_address(request):
     """获取请求的IP地址"""
     ip = request.META.get('HTTP_X_FORWARDED_FOR', None)
     return ip or request.META['REMOTE_ADDR']
+
+
+def request_body(request, method='GET'):
+    """
+    转换request.body
+    :param request:
+    :return:
+    """
+    if not request:
+        return request
+    if request.method != method:
+        return False
+    try:
+        token = request.META.get('HTTP_TOKEN')
+        if not token:
+            return False
+        data = {
+            '_cache': caches['api'].get(token)
+        }
+        if request.method == 'POST':
+            if request.body:
+                try:
+                    for key, value in json.loads(request.body.decode('utf-8')).items():
+                        data[key] = value
+                except Exception as e:
+                    logging.error(str(e))
+                    pass
+            if request.POST:
+                for key, value in request.POST.items():
+                    data[key] = value
+        elif request.method == 'GET':
+            for key, value in request.GET.items():
+                data[key] = value
+        else:
+            pass
+
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    return data
+
+
+def check_identify(func):
+    """身份认证装饰器"""
+    def wrapper(request):
+        token = request.META.get('HTTP_TOKEN')
+        user_info = caches['default'].get(token)
+        if not user_info:
+            api = Api()
+            user_info = api.check_token(token)
+            if not user_info:
+                return http_return(400, '未获取到用户信息')
+            else:
+                user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
+                if not user_data:
+                    user_uuid = get_uuid()
+                    version = Version.objects.filter(status="dafault").first()
+                    user = User(
+                        uuid=user_uuid,
+                        tel=user_info.get('phone', ''),
+                        userID=user_info.get('userId', ''),
+                        username=user_info.get('wxNickname', ''),
+                        roles="normalUser",
+                        userLogo=user_info.get('wxNickname', ''),
+                        gender=user_info.get('wxSex', None),
+                        versionUuid=version if version else None,
+                        status="normal",
+                    )
+                    try:
+                        with transaction.atomic():
+                            user.save()
+                    except Exception as e:
+                        logging.error(str(e))
+                        return http_return(400, '保存失败')
+                    user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
+                try:
+                    user_data.updateTime = datetime.datetime.now()
+                    user_data.save()
+                    log = LoginLog(
+                        uuid=get_uuid(),
+                        ipAddr=user_info.get('loginIp', ''),
+                        userUuid=user_data,
+                    )
+                    log.save()
+                except Exception as e:
+                    logging.error(str(e))
+                if not create_cache(user_info, token):
+                    return http_return(400, '用户不存在')
+
+        return func(request)
+
+    return wrapper
+
+
+def request_body(request, method='GET'):
+    """
+    转换request.body
+    :param request:
+    :return:
+    """
+    if not request:
+        return request
+    if request.method != method:
+        return False
+    try:
+        token = request.META.get('HTTP_TOKEN')
+        if not token:
+            return False
+        data = {
+            '_cache': caches['default'].get(token)
+        }
+        if request.method == 'POST':
+            if request.body:
+                try:
+                    for key, value in json.loads(request.body.decode('utf-8')).items():
+                        data[key] = value
+                except Exception as e:
+                    logging.error(str(e))
+                    pass
+            if request.POST:
+                for key, value in request.POST.items():
+                    data[key] = value
+        elif request.method == 'GET':
+            for key, value in request.GET.items():
+                data[key] = value
+        else:
+            pass
+
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    return data
+
+
+
 
 if __name__ == '__main__':
     print(match_tel('13811111111'))

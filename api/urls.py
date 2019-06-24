@@ -18,4 +18,12 @@ urlpatterns = [
     path('recording/send', views.recording_send, name='recording_send'),  # 故事发布
     path('recording/tag/list', views.recording_tag_list, name='recording_tag_list'),  # 故事发布标签列表
 
+    path('user/center', views.user_center, name='user_center'),  # 主播个人主页
+    path('user/become/fan', views.become_fans, name='become_fans'),  # 关注用户
+    path('user/work/list', views.user_work_list, name='user_work_list'),  # 用户作品列表
+    path('user/fans/list', views.user_fans, name='user_fans'),  # 用户粉丝或关注用户列表
+
+    path('work/list', views.work_list, name='work_list'),  # 所有故事列表
+    path('work/play', views.work_play, name='work_play'),  # 播放故事
+
 ]

@@ -338,7 +338,7 @@ class Works(BaseModle, models.Model):
     bgmUuid = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
     bgmVolume = models.FloatField(null=True)  # 背景音乐音量
     recordType = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
-    recordDate = models.DateTimeField(null=True)  # 录制时间
+
     playTimes = models.IntegerField(null=True)  # 播放次数
     worksType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
     templateUuid = models.ForeignKey(TemplateStory, on_delete=models.CASCADE, related_name='templateStoryUuid',

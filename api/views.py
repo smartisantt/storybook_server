@@ -220,7 +220,6 @@ def recording_send(request):
             bgmUuid=bg if bg else None,
             bgmVolume=bgmVolume if bgmVolume else None,
             recordType=recordType,
-            recordDate=datetime.datetime.now(),
             playTimes=0,
             worksType=worksType,
             templateUuid=template if template else None,

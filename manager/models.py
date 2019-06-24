@@ -357,7 +357,7 @@ class Works(BaseModle, models.Model):
                                   null=True)  # 用户
     checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
-    isDelete= models.BooleanField(default=False)    # 软删除
+    isDelete = models.BooleanField(default=False)    # 软删除
 
     class Meta:
         db_table = 'tb_works'

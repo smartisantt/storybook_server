@@ -11,7 +11,7 @@ from rest_framework.viewsets import GenericViewSet
 from serializers import serializer
 
 from manager import managerCommon
-from manager.filters import  TemplateStoryFilter
+from manager.filters import TemplateStoryFilter, WorksInfoFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
@@ -19,7 +19,7 @@ from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count
 
-from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer
+from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer, WorksInfoSerializer
 from utils.errors import ParamsException
 
 
@@ -473,10 +473,50 @@ class TemplateStoryView(ListAPIView):
 
 
 """"添加模板"""
-class TemplateStoryDetailView(CreateAPIView, UpdateAPIView):
-    queryset = TemplateStory.objects.exclude(status='destroy').defer('tags', 'uuid', 'id')
-    serializer_class = TemplateStoryDetailSerializer
+# class TemplateStoryDetailView(CreateAPIView, UpdateAPIView):
+#     queryset = TemplateStory.objects.exclude(status='destroy').defer('tags', 'uuid', 'id')
+#     serializer_class = TemplateStoryDetailSerializer
 
+def add_tags(request):
+    """添加模板"""
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    faceUrl = data.get('faceUrl', '')
+    listUrl = data.get('listUrl', '')
+    title = data.get('title', '')
+    intro = data.get('intro', '')
+    content = data.get('content', '')
+    isRecommd = data.get('isRecommd', '')
+    isTop = data.get('isTop', '')
+
+    # all 都为True 才返回True
+    if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
+        return http_return(400, '参数有误')
+
+
+    tag = TemplateStory.objects.filter(Q(title=title), ~Q(status = 'destroy')).first()
+    if tag:
+        return http_return(400, '重复序号')
+    # 查询是否有重复tagName
+    tag = Tag.objects.filter(tagName=tagName, parent_id__isnull=True, isDelete=False).first()
+    if tag:
+        return http_return(400, '重复分类名')
+    try:
+        with transaction.atomic():
+            uuid = get_uuid()
+            tag = Tag(
+                uuid = uuid,
+                code = 'SEARCHSORT',
+                tagName = tagName,
+                iconUrl = iconUrl,
+                sortNum = sortNum,
+            )
+            tag.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加分类失败')
 
 
 """"修改模板"""
@@ -484,8 +524,37 @@ class TemplateStoryDetailView(CreateAPIView, UpdateAPIView):
 
 
 """模板音频"""
-class WorksDetailView(ListAPIView):
-    queryset = Works.objects.exclude()
+class WorksInfoView(ListAPIView):
+    queryset = Works.objects.filter(isDelete=False, worksType=1).defer('id')\
+        .select_related('bgmUuid', 'moduleUuid', 'userUuid')\
+        .prefetch_related('tags').order_by('-createTime')
+
+    serializer_class = WorksInfoSerializer
+    filter_class = WorksInfoFilter
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime)/1000
+            endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            return self.queryset.filter(createTime__range=(starttime, endtime))
+        return self.queryset
+
+
+
+
 
 
 

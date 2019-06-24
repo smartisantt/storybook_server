@@ -103,9 +103,10 @@ class Module(BaseModle, models.Model):
     """
     首页显示模块
     """
-    name = models.CharField(max_length=32, null=True)
+    name = models.CharField(max_length=32, null=True)       # 显示模块名 抢先听
     ordernNum = models.IntegerField(verbose_name='排序编号', null=True)
-    type = models.CharField(max_length=32, null=True)
+    type = models.CharField(max_length=32, null=True)       #显示模块类型 MOD1  MOD2  MOD3  MOD4
+    showNum = models.IntegerField(null=True)
 
     class Meta:
         db_table = 'tb_module'

@@ -17,6 +17,7 @@ from datetime import datetime
 from django.db.models import Count
 
 from manager.serializers import TemplateStorySerializer
+from utils.errors import ParamsException
 
 
 def admin(request):
@@ -178,29 +179,32 @@ def total_data(request):
 """
 def show_all_tags(request):
     """发布故事标签选择列表"""
-    if request.method == 'GET':
-        tags = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True).all().order_by('sortNum')
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    tags = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True, isDelete=False).all().order_by('sortNum')
 
-        tagList = []
-        for tag in tags:
-            childTagList= []
-            for child_tag in tag.child_tag.only('uuid', 'sortNum', 'tagName'):
+    tagList = []
+    for tag in tags:
+        childTagList= []
+        for child_tag in tag.child_tag.only('uuid', 'sortNum', 'tagName'):
+            if child_tag.isDelete == False:
                 childTagList.append({
                     "uuid": child_tag.uuid,
                     "tagName": child_tag.tagName,
                     "sortNum": child_tag.sortNum,
                 })
-            tagList.append({
-                "uuid": tag.uuid,
-                "tagName": tag.tagName,
-                "sortNum": tag.sortNum,
-                "iconUrl": tag.iconUrl,
-                "isUsing": tag.isUsing,
-                "childTagList": childTagList,
-                "childTagsNum": len(childTagList)        # 子标签个数
-            })
-        total = len(tagList)
-        return http_return(200, '成功', {"total": total, "tagList": tagList})
+        tagList.append({
+            "uuid": tag.uuid,
+            "tagName": tag.tagName,
+            "sortNum": tag.sortNum,
+            "iconUrl": tag.iconUrl,
+            "isUsing": tag.isUsing,
+            "childTagList": childTagList,
+            "childTagsNum": len(childTagList)        # 子标签个数
+        })
+    total = len(tagList)
+    return http_return(200, '成功', {"total": total, "tagList": tagList})
 
 
 def add_tags(request):
@@ -234,14 +238,62 @@ def add_tags(request):
                 uuid = uuid,
                 code = 'SEARCHSORT',
                 tagName = tagName,
-                iconMediaUuid = iconUrl,
+                iconUrl = iconUrl,
                 sortNum = sortNum,
             )
             tag.save()
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '保存分类失败')
+        return http_return(400, '添加分类失败')
+
+
+def modify_tags(request):
+    """修改一级标签"""
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    iconUrl = data.get('iconUrl', '')
+    tagName = data.get('tagName', '')
+    sortNum = data.get('sortNum', '')
+    uuid = data.get('uuid', '')
+    if not all([tagName, sortNum, uuid, iconUrl]):
+        return http_return(400, '参数错误')
+    if not isinstance(sortNum, int):
+        return http_return(400, '序号错误')
+    if sortNum <= 0:
+        return http_return(400, '序号错误')
+    tag = Tag.objects.filter(uuid=uuid).first()
+    if not tag:
+        return http_return(400, '没有对象')
+    mySortNum = tag.sortNum
+    myTagName = tag.tagName
+    iconUrl = tag.iconUrl
+
+    if sortNum != mySortNum:
+        tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+        if tag:
+            return http_return(400, '重复序号')
+
+    if tagName != myTagName:
+        tag = Tag.objects.filter(tagName=tagName, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+        if tag:
+            return http_return(400, '重复标签')
+    tag = Tag.objects.filter(uuid=uuid).first()
+    try:
+        with transaction.atomic():
+            tag.sortNum = sortNum
+            tag.tagName = tagName
+            tag.save()
+            return http_return(200, 'OK', {
+                'tagName': tagName,
+                'iconUrl': iconUrl,
+                'sortNum': sortNum,
+            })
+
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改分类失败')
 
 
 def stop_tags(request):
@@ -278,7 +330,7 @@ def del_tags(request):
         return http_return(400, '没有对象')
     try:
         with transaction.atomic():
-            tag.isDelete = False
+            tag.isDelete = True
             tag.save()
             return http_return(200, 'OK')
     except Exception as e:
@@ -350,21 +402,24 @@ def modify_child_tags(request):
         return http_return(400, '序号错误')
     if sortNum <= 0:
         return http_return(400, '序号错误')
-    tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
-    if tag:
-        return http_return(400, '重复序号')
+    tag = Tag.objects.filter(uuid=uuid).first().sortNum
+    if not tag:
+        return http_return(400, '没有对象')
+    mySortNum = tag.sortNum
+    myTagName = tag.tagName
+
+    if sortNum != mySortNum:
+        tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+        if tag:
+            return http_return(400, '重复序号')
     parentTag = Tag.objects.filter(uuid=parentUuid, code='SEARCHSORT', isDelete=False, parent_id__isnull=True).first()
     if not parentTag:
         return http_return(400, '参数有误')
 
-    # 查询是否有重复tagName
-    tag = Tag.objects.filter(tagName=tagName, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
-    if tag:
-        return http_return(400, '重复标签')
-    # 有对象才修改
-    tag = Tag.objects.filter(uuid=uuid).first()
-    if not tag:
-        return http_return(400, '没有对象')
+    if tagName != myTagName:
+        tag = Tag.objects.filter(tagName=tagName, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+        if tag:
+            return http_return(400, '重复标签')
 
     try:
         with transaction.atomic():
@@ -387,74 +442,26 @@ def modify_child_tags(request):
 模板管理
 """
 """GET 显示所有模板列表"""
-# def show_all_template_stories(request):
-#     data = request_body(request, "POST")
-#     if not data:
-#         return http_return(400, '参数错误')
-#     templateID = data.get('templateID', '')
-#     title = data.get('title', '')
-#     startTimestamp = data.get('startTime', '')
-#     endTimestamp = data.get('endTime', '')
-#     pageIndex = data.get('pageIndex', '')
-#     # TODO: page传过来是字符串还是int
-#     page = data.get('page', '')
-#
-#     dic = {}
-#     if templateID:
-#         if not templateID.isdigit():
-#             http_return(400, '模板ID有误')
-#
-#         templateID = int(templateID)
-#         if templateID <=0:
-#             http_return(400, '模板ID有误')
-#         dic['id'] = templateID
-#
-#     if title:
-#         dic['title'] = title
-#
-#     templateStory = TemplateStory.objects.filter(**dic).all()
-#     if startTimestamp and endTimestamp:
-#         if startTimestamp.isdigit() and endTimestamp.isdigit():
-#             startTimestamp = int(startTimestamp) / 1000
-#             endTimestamp = int(endTimestamp) / 1000
-#         else:
-#             return http_return(400, '参数有误')
-#         # 小于2019-05-30 00:00:00的时间不合法
-#         if endTimestamp < startTimestamp or endTimestamp <= 1559145600 or startTimestamp <= 1559145600:
-#             return http_return(400, '时间有误')
-#         startTime = datetime.fromtimestamp(startTimestamp)
-#         endTime = datetime.fromtimestamp(endTimestamp)
-#         t1 = datetime(startTime.year, startTime.month, startTime.day)
-#         t2 = datetime(endTime.year, startTime.month, startTime.day, 23, 59, 59, 999999)
-#         templateStoriey = templateStory.objects.filter(createTime__range=(t1, t2)).order_by("-createTime")
-#     templateStories = templateStory.all()
-#     total, stories = page_index(templateStories, page, pageIndex)
-#
-#     templateStoryList = []
-#     for st in templateStories:
-#         templateStoryList.append({
-#             "uuid": st.uuid,
-#             "title": st.intro,
-#             "mediaUrl": mediaDict[st.listMediaUuid] if mediaDict else None,
-#             "recordNum": st.recordNum,
-#         })
-#     return http_return(200, '成功', {"total": total, "templateStoryList": storyList})
 
 class TemplateStoryView(ListAPIView):
     queryset = TemplateStory.objects.exclude(status='destroy').\
-        only('id', 'uuid', 'title', 'createTime', 'recordNum', 'status').all()
+        only('id', 'uuid', 'title', 'createTime', 'recordNum', 'status').order_by('-createTime')
     serializer_class = TemplateStorySerializer
     filter_class = TemplateStoryFilter
-
-    ordering = ('-createTime', )
-    ordering_fields = ('uuid', 'id')
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
         endTime = self.request.query_params.get('endtime', '')
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
         if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
             startTime = int(startTime)/1000
             endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
             startTime = datetime.fromtimestamp(startTime)
             endTime = datetime.fromtimestamp(endTime)
             starttime = datetime(startTime.year, startTime.month, startTime.day)

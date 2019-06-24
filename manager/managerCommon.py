@@ -608,11 +608,11 @@ def request_body(request, method='GET'):
     if request.method != method:
         return False
     try:
-        # token = request.META.get('HTTP_TOKEN')
-        # if not token:
-        #     return False
+        token = request.META.get('HTTP_TOKEN')
+        if not token:
+            return False
         data = {
-            # '_cache': caches['default'].get(token)
+            '_cache': caches['default'].get(token)
         }
         if request.method == 'POST':
             if request.body:

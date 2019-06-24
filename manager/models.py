@@ -320,7 +320,7 @@ class Album(BaseModle, models.Model):
     """
     title = models.CharField(max_length=64, null=True)
     intro = models.CharField(max_length=256, null=True)
-    coverUuid = models.CharField(max_length=256, null=True)  # 专辑封面
+    mediaUuid = models.CharField(max_length=64, null=True)  # 专辑封面
     status = models.CharField(max_length=32, null=True)  # 专辑状态
     tags = models.ManyToManyField(Tag)  # 标签
 

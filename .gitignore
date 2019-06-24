@@ -4,8 +4,8 @@ migrations/
 *.so
 *.egg
 *.egg-info
-*.xml
-*.iml
+.idea/*.xml
+.idea/*.iml
 dist
 build
 ### Linux ###

@@ -246,7 +246,7 @@ class User(BaseModle, models.Model):
         :return:
         '''
         user_list = []
-        for followed_user in self.user.followed.all():
+        for followed_user in self.followed.all():
             user_list.append(followed_user.follower)
         return user_list
 
@@ -256,7 +256,7 @@ class User(BaseModle, models.Model):
         :return:
         '''
         user_list = []
-        for follower_user in self.user.follower.all():
+        for follower_user in self.follower.all():
             user_list.append(follower_user.followed)
         return user_list
 
@@ -273,7 +273,7 @@ class User(BaseModle, models.Model):
             return False
         # 这是关注的逻辑
         friendship = FriendShip()
-        friendship.followed = self.user
+        friendship.followed = self
         friendship.follower = user
         try:
             with transaction.atomic():

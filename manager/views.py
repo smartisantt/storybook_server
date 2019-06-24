@@ -3,9 +3,12 @@
 
 # Create your views here.
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, mixins
+from requests import Response
+from rest_framework import viewsets, mixins, status
 from rest_framework.filters import OrderingFilter
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView, CreateAPIView, UpdateAPIView
+from rest_framework.viewsets import GenericViewSet
+from serializers import serializer
 
 from manager import managerCommon
 from manager.filters import  TemplateStoryFilter
@@ -16,7 +19,7 @@ from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count
 
-from manager.serializers import TemplateStorySerializer
+from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer
 from utils.errors import ParamsException
 
 
@@ -444,8 +447,7 @@ def modify_child_tags(request):
 """GET 显示所有模板列表"""
 
 class TemplateStoryView(ListAPIView):
-    queryset = TemplateStory.objects.exclude(status='destroy').\
-        only('id', 'uuid', 'title', 'createTime', 'recordNum', 'status').order_by('-createTime')
+    queryset = TemplateStory.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
     serializer_class = TemplateStorySerializer
     filter_class = TemplateStoryFilter
 
@@ -470,13 +472,21 @@ class TemplateStoryView(ListAPIView):
         return self.queryset
 
 
-"""根据时间、模板ID、模板名搜索"""
-
-"""显示模板的详细信息"""
-
 """"添加模板"""
+class TemplateStoryDetailView(CreateAPIView, UpdateAPIView):
+    queryset = TemplateStory.objects.exclude(status='destroy').defer('tags', 'uuid', 'id')
+    serializer_class = TemplateStoryDetailSerializer
+
+
+
 """"修改模板"""
 """"删除模板"""
+
+
+"""模板音频"""
+class WorksDetailView(ListAPIView):
+    queryset = Works.objects.exclude()
+
 
 
 

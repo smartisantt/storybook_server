@@ -9,7 +9,6 @@ import string
 
 from django.core.cache import cache, caches
 from django.db import transaction
-from pip._vendor.msgpack.fallback import xrange
 
 from common.common import http_return, get_uuid
 from manager.models import *
@@ -36,7 +35,7 @@ def random_string(size=6, chars=string.ascii_uppercase + string.digits):
     :param chars:
     :return:
     """
-    return ''.join(random.choice(chars) for _s in xrange(size))
+    return ''.join(random.choice(chars) for _s in range(size))
 
 
 def create_session(user_info, token, loginIP):

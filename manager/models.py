@@ -105,9 +105,9 @@ class Module(BaseModle, models.Model):
     """
 
     orderNum = models.IntegerField(verbose_name='排序编号', null=True)
-    type = models.CharField(max_length=32, null=True)       #显示模块类型 MOD1每日一读  MOD2强先听  MOD3热门推荐
+    type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2强先听  MOD3热门推荐
     worksUuid = models.ForeignKey('Works', on_delete=models.CASCADE, related_name='moduleWorksUuid',
-                                   to_field='uuid', null=True)
+                                  to_field='uuid', null=True)
 
     class Meta:
         db_table = 'tb_module'
@@ -161,7 +161,8 @@ class HotSearch(BaseModle, models.Model):
     热搜词
     """
     keyword = models.CharField(max_length=32, null=True)  # 搜索关键词
-    orderNum = models.IntegerField(null=True)  # 排列序号
+    orderNum = models.IntegerField(null=True, default=0)  # 排列序号 0:不置顶  1：置顶
+    searchNum = models.IntegerField(null=True, default=0)
     isDelete = models.BooleanField(default=False)
 
     class Meta:
@@ -186,20 +187,18 @@ class Tag(BaseModle, models.Model):
     """
     code = models.CharField(max_length=20, null=True)  # 编码
     tagName = models.CharField(max_length=32, null=True)  # 标签名字
-    iconUrl = models.CharField(max_length=256, null=True) # 分类图标
-    sortNum = models.IntegerField(verbose_name='排序编号', null=True) # 排列顺序
-    parent = models.ForeignKey(to='self', on_delete=models.CASCADE,related_name='child_tag',
+    iconUrl = models.CharField(max_length=256, null=True)  # 分类图标
+    sortNum = models.IntegerField(verbose_name='排序编号', null=True)  # 排列顺序
+    parent = models.ForeignKey(to='self', on_delete=models.CASCADE, related_name='child_tag',
                                db_column='parent_id', to_field='uuid', null=True)  # 爸爸标签id
-    isUsing = models.BooleanField(default=True)                     # 标签状态停用还是使用
-    isDelete = models.BooleanField(default=False)                    # 标签是否删除
+    isUsing = models.BooleanField(default=True)  # 标签状态停用还是使用
+    isDelete = models.BooleanField(default=False)  # 标签是否删除
 
     def __str__(self):
         return self.tagName
 
     class Meta:
         db_table = 'tb_tag'
-
-
 
 
 class TemplateStory(BaseModle, models.Model):
@@ -311,7 +310,7 @@ class Viewpager(BaseModle, models.Model):
     jumpType = models.CharField(max_length=64, null=True)  # 跳转类型 1专辑 2作品 3故事 4外部链接
     targetUuid = models.CharField(max_length=128, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
-    location = models.IntegerField(null=True) #1：录制首页轮播图 0：首页轮播图
+    location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图
 
     class Meta:
         db_table = 'tb_viewpager'
@@ -355,10 +354,10 @@ class Works(BaseModle, models.Model):
     albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',
                                   null=True)  # 专辑
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='userWorkUuid', to_field='uuid',
-                                  null=True)  # 用户
+                                 null=True)  # 用户
     checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
-    isDelete = models.BooleanField(default=False)    # 软删除
+    isDelete = models.BooleanField(default=False)  # 软删除
 
     class Meta:
         db_table = 'tb_works'

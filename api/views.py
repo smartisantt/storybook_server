@@ -241,7 +241,7 @@ def recording_send(request):
                 uuid=get_uuid(),
                 userUuid=user,
                 workUuid=work,
-                recordType=5,
+                type=5,
             )
     except Exception as e:
         logging.error(str(e))
@@ -474,7 +474,7 @@ def work_play(request):
                 uuid=get_uuid(),
                 userUuid=selfUser,
                 workUuid=work,
-                recordType=4,
+                type=4,
             )
     except Exception as e:
         logging.error(str(e))

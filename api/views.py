@@ -107,7 +107,7 @@ def recording_banner(request):
     nowDatetime = datetime.datetime.now()
     banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
     # 按显示序号排序
-    banner = banner.filter(isUsing=True).order_by('orderNum')
+    banner = banner.filter(isUsing=True, location=1).order_by('orderNum')
     banners = banner.all()
     banList = []
     for banner in banners:
@@ -324,7 +324,7 @@ def user_work_list(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     user = User.objects.filter(uuid=uuid).first()
-    works = user.userWorkUuid.order_by("-createTime").all()
+    works = user.userWorkUuid.filter(isDelete=False).order_by("-createTime").all()
     total, works = page_index(works, page, pageCount)
     workList = []
     for work in works:
@@ -394,7 +394,7 @@ def work_list(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     worksType = data.get('worksType', None)
-    work = Works.objects.filter(checkStatus='check')
+    work = Works.objects.filter(checkStatus='check', isDelete=False)
     if worksType:
         work = work.filter(worksType=worksType)
     works = work.order_by('-createTime').all()
@@ -436,7 +436,7 @@ def work_play(request):
     pageCount = data.get('pageCount', '')
     if not uuid:
         return http_return(400, '参数错误')
-    work = Works.objects.filter(uuid=uuid, checkStatus='check').first()
+    work = Works.objects.filter(uuid=uuid, checkStatus='check', isDelete=False).first()
     if not work:
         return http_return(400, '故事信息不存在')
     # 更新播放次数
@@ -466,7 +466,7 @@ def work_play(request):
         "createTIme": datetime_to_string(work.createTime),
         "playTimes": work.playTimes,
     }
-    otherWork = Works.objects.exclude(uuid=uuid).filter(userUuid__uuid=work.userUuid.uuid)
+    otherWork = Works.objects.exclude(uuid=uuid, isDelete=True).filter(userUuid__uuid=work.userUuid.uuid)
     otherWorks = otherWork.order_by("-createTime").all()
     total, otherWorks = page_index(otherWorks, page, pageCount)
     workList = []
@@ -489,3 +489,45 @@ def work_play(request):
             "tagList": tagList
         })
     return http_return(200, '成功', {"otherTotal": total, "workList": workList, "playInfo": workDict})
+
+
+@check_identify
+def index_banner(request):
+    """
+    首页轮播图
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    nowDatetime = datetime.datetime.now()
+    banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
+    # 按显示序号排序
+    banner = banner.filter(isUsing=True, location=0).order_by('orderNum')
+    banners = banner.all()
+    banList = []
+    for banner in banners:
+        banList.append({
+            'title': banner.title,
+            'mediaUrl': banner.mediaUrl,
+            'jumpType': banner.jumpType,
+            'targetUuid': banner.targetUuid,
+        })
+    total = len(banners)
+    return http_return(200, '成功', {"total": total, "banList": banList})
+
+@check_identify
+def index_list(request):
+    """
+    首页列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    modules = Module.objects.order_by("orderNum").all()
+    for module in modules:
+        list
+

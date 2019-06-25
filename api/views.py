@@ -107,7 +107,7 @@ def recording_banner(request):
     nowDatetime = datetime.datetime.now()
     banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
     # 按显示序号排序
-    banner = banner.filter(isUsing=True, location=1).order_by('orderNum')
+    banner = banner.filter(location=1).order_by('orderNum')
     banners = banner.all()
     banList = []
     for banner in banners:
@@ -201,7 +201,7 @@ def recording_send(request):
         bg = Bgm.objects.filter(uuid=bgmUuid).first()
     if storyUuid:
         template = TemplateStory.objects.filter(uuid=storyUuid).first()
-    if not all([voiceUrl, voiceVolume, recordType, typeUuidList, bgUrl, worksTime]):
+    if not all([voiceUrl, voiceVolume, recordType, typeUuidList, worksTime]):
         return http_return(400, '参数错误')
     tags = []
     for tagUuid in typeUuidList:
@@ -328,8 +328,10 @@ def user_work_list(request):
     total, works = page_index(works, page, pageCount)
     workList = []
     for work in works:
+        bgUrl = work.bgUrl
         title = work.title
         if work.worksType:
+            bgUrl = work.templateUuid.listUrl
             title = work.templateUuid.title
         tagList = []
         for tag in work.tags.all():
@@ -340,7 +342,7 @@ def user_work_list(request):
         workList.append({
             "uuid": work.uuid,
             "duration": work.worksTime,
-            "mediaUrl": work.bgUrl,
+            "mediaUrl": bgUrl,
             "title": title,
             "createTime": datetime_to_string(work.createTime),
             "tagList": tagList
@@ -401,8 +403,10 @@ def work_list(request):
     total, works = page_index(works, page, pageCount)
     workList = []
     for work in works:
+        bgUrl = work.bgUrl
         title = work.title
         if work.worksType:
+            bgUrl = work.templateUuid.listUrl
             title = work.templateUuid.title
         tagList = []
         for tag in work.tags.all():
@@ -413,7 +417,7 @@ def work_list(request):
         workList.append({
             "uuid": work.uuid,
             "duration": work.worksTime,
-            "mediaUrl": work.bgUrl,
+            "mediaUrl": bgUrl,
             "title": title,
             "createTime": datetime_to_string(work.createTime),
             "tagList": tagList
@@ -448,14 +452,16 @@ def work_play(request):
         return http_return(400, '更新播放次数失败')
     content = None
     title = work.title
+    bgUrl = work.bgUrl
     if work.worksType:
         content = work.templateUuid.content
         title = work.templateUuid.title
+        bgUrl = work.templateUuid.faceUrl
     workDict = {
         "workUuid": work.uuid,
         "title": title,
         "content": content,
-        "bgUrl": work.bgUrl,
+        "bgUrl": bgUrl,
         "duration": work.worksTime,
         "voiceUrl": work.voiceUrl,
         "userVolume": work.userVolume,
@@ -504,7 +510,7 @@ def index_banner(request):
     nowDatetime = datetime.datetime.now()
     banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
     # 按显示序号排序
-    banner = banner.filter(isUsing=True, location=0).order_by('orderNum')
+    banner = banner.filter(location=0).order_by('orderNum')
     banners = banner.all()
     banList = []
     for banner in banners:
@@ -517,6 +523,7 @@ def index_banner(request):
     total = len(banners)
     return http_return(200, '成功', {"total": total, "banList": banList})
 
+
 @check_identify
 def index_list(request):
     """
@@ -527,7 +534,62 @@ def index_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    modules = Module.objects.order_by("orderNum").all()
-    for module in modules:
-        list
-
+    # 每日一读
+    everList = []
+    ever = Module.objects.filter(type='MOD1').order_by("orderNum").first()
+    title = ever.worksUuid.title
+    intro = None
+    bgUrl = ever.worksUuid.bgUrl
+    if ever.worksUuid.worksType:
+        title = ever.worksUuid.templateUuid.title
+        intro = ever.worksUuid.templateUuid.intro
+        bgUrl = ever.worksUuid.templateUuid.listUrl
+    everList.append({
+        "uuid": ever.worksUuid.uuid,
+        "title": title,
+        "intro": intro,
+        "mediaUrl": bgUrl,
+    })
+    # 抢先听
+    firstList = []
+    firsts = Module.objects.filter(type='MOD2').order_by("orderNum").all()[:4]
+    for first in firsts:
+        title = first.worksUuid.title
+        bgUrl = ever.worksUuid.bgUrl
+        if ever.worksUuid.worksType:
+            title = first.worksUuid.templateUuid.title
+            bgUrl = first.worksUuid.templateUuid.listUrl
+        firstList.append({
+            "uuid": first.worksUuid.uuid,
+            "title": title,
+            "mediaUrl": bgUrl,
+        })
+    # 热门推荐
+    hotList = []
+    hots = Module.objects.filter(type='MOD3').order_by("orderNum").all()[:4]
+    for hot in hots:
+        title = hot.worksUuid.title
+        bgUrl = hot.worksUuid.bgUrl
+        if ever.worksUuid.worksType:
+            title = hot.worksUuid.templateUuid.title
+            bgUrl = hot.worksUuid.templateUuid.listUrl
+        hotList.append({
+            "uuid": hot.worksUuid.uuid,
+            "title": title,
+            "mediaUrl": bgUrl,
+        })
+    # 猜你喜欢
+    likeList = []
+    works = Works.objects.filter(isDelete=False, checkStatus="check").order_by("-playTimes").all()[:6]
+    for work in works:
+        title = work.title
+        bgUrl = work.bgUrl
+        if work.worksType:
+            title = work.templateUuid.title
+            bgUrl = work.templateUuid.listUrl
+        likeList.append({
+            "uuid": work.uuid,
+            "title": title,
+            "mediaUrl": bgUrl
+        })
+    return http_return(200, '成功',{"everList": everList, "firstList": firstList, "hotList": hotList, "likeList": likeList})

@@ -21,7 +21,7 @@ class Activity(BaseModle, models.Model):
     name = models.CharField(max_length=255, verbose_name="活动名称", null=True)
     intro = models.CharField(max_length=1024, verbose_name="活动介绍", null=True)
     status = models.CharField(max_length=32, verbose_name="活动状态", null=True)
-    mediaUuid = models.CharField(max_length=256, verbose_name="活动图片", null=True)
+    mediaUrl = models.CharField(max_length=256, verbose_name="活动图片", null=True)
     startTime = models.DateTimeField(verbose_name='活动开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='活动结束时间', null=True)
 
@@ -105,7 +105,7 @@ class Module(BaseModle, models.Model):
     """
 
     orderNum = models.IntegerField(verbose_name='排序编号', null=True)
-    type = models.CharField(max_length=32, null=True)       #显示模块类型 MOD1  MOD2  MOD3  MOD4
+    type = models.CharField(max_length=32, null=True)       #显示模块类型 MOD1每日一读  MOD2强先听  MOD3热门推荐
     worksUuid = models.ForeignKey('Works', on_delete=models.CASCADE, related_name='moduleWorksUuid',
                                    to_field='uuid', null=True)
 
@@ -311,6 +311,7 @@ class Viewpager(BaseModle, models.Model):
     jumpType = models.CharField(max_length=64, null=True)  # 跳转类型 1专辑 2作品 3故事 4外部链接
     targetUuid = models.CharField(max_length=128, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
+    location = models.IntegerField(null=True) #1：录制首页轮播图 0：首页轮播图
 
     class Meta:
         db_table = 'tb_viewpager'

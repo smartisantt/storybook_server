@@ -450,6 +450,8 @@ def work_play(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新播放次数失败')
+    # 记录播放历史
+
     content = None
     title = work.title
     bgUrl = work.bgUrl

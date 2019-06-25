@@ -5,7 +5,7 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from manager import views
-from manager.views import TemplateStoryView, TemplateStoryDetailView, WorksInfoView
+from manager.views import TemplateStoryView, WorksInfoView
 
 app_name = 'manager'
 
@@ -25,7 +25,8 @@ urlpatterns = [
 
     # path('templatestories/', views.show_all_template_stories, name='show_all_template_stories'),
     path('template/templatestories/', TemplateStoryView.as_view()),
-    path('template/create/', TemplateStoryDetailView.as_view()),
+
+
     path('template/templateworks/', WorksInfoView.as_view()),
 
 ]

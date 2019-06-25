@@ -472,13 +472,8 @@ class TemplateStoryView(ListAPIView):
         return self.queryset
 
 
-""""添加模板"""
-# class TemplateStoryDetailView(CreateAPIView, UpdateAPIView):
-#     queryset = TemplateStory.objects.exclude(status='destroy').defer('tags', 'uuid', 'id')
-#     serializer_class = TemplateStoryDetailSerializer
-
-def add_tags(request):
-    """添加模板故事的模板"""
+def add_template(request):
+    """添加模板"""
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')
@@ -494,17 +489,15 @@ def add_tags(request):
     if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    tag = TemplateStory.objects.exclude(status = 'destroy').filter(title=title).first()
-    if tag:
+    templateStory = TemplateStory.objects.filter(title=title).exclude(status = 'destroy').first()
+    if templateStory:
         return http_return(400, '重复模板名')
-
 
     try:
         with transaction.atomic():
             uuid = get_uuid()
             templateStory = TemplateStory(
                 uuid = uuid,
-                status = 'normal',
                 faceUrl = faceUrl,
                 listUrl = listUrl,
                 title = title,
@@ -522,7 +515,80 @@ def add_tags(request):
 
 
 """"修改模板"""
+def modify_template(request):
+    """修改模板"""
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    faceUrl = data.get('faceUrl', '')
+    listUrl = data.get('listUrl', '')
+    title = data.get('title', '')
+    intro = data.get('intro', '')
+    content = data.get('content', '')
+    isRecommd = data.get('isRecommd', '')
+    isTop = data.get('isTop', '')
+
+    # all 都为True 才返回True
+    if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
+        return http_return(400, '参数有误')
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
+    if not templateStory:
+        return http_return(400, '没有对象')
+
+
+    myTitle = templateStory.title
+
+    # 如果修改标题
+    if myTitle != title:
+        templateStory = TemplateStory.objects.filter(title=title).exclude(status='destroy').first()
+        if templateStory:
+            return http_return(400, '重复标题')
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    try:
+        with transaction.atomic():
+            templateStory.faceUrl = faceUrl
+            templateStory.listUrl = listUrl
+            templateStory.title = title
+            templateStory.intro = intro
+            templateStory.content = content
+            templateStory.isRecommd = isRecommd
+            templateStory.isTop = isTop
+            templateStory.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加模板失败')
+
+
+
 """"删除模板"""
+def del_template(request):
+    """删除模板"""
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+
+    if not uuid:
+        return http_return(400, '参数有误')
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    if not templateStory:
+        return http_return(400, '没有对象')
+
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    try:
+        with transaction.atomic():
+            templateStory.status = 'destroy'
+            templateStory.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除模板失败')
 
 
 """模板音频"""

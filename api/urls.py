@@ -26,4 +26,7 @@ urlpatterns = [
     path('work/list', views.work_list, name='work_list'),  # 所有故事列表
     path('work/play', views.work_play, name='work_play'),  # 播放故事
 
+    path('index/banner', views.index_banner, name='index_banner'),  # 首页轮播图
+
+
 ]

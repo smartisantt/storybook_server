@@ -103,10 +103,11 @@ class Module(BaseModle, models.Model):
     """
     首页显示模块
     """
-    name = models.CharField(max_length=32, null=True)       # 显示模块名 抢先听
+
     orderNum = models.IntegerField(verbose_name='排序编号', null=True)
     type = models.CharField(max_length=32, null=True)       #显示模块类型 MOD1  MOD2  MOD3  MOD4
-    showNum = models.IntegerField(null=True)
+    worksUuid = models.ForeignKey('Works', on_delete=models.CASCADE, related_name='moduleWorksUuid',
+                                   to_field='uuid', null=True)
 
     class Meta:
         db_table = 'tb_module'
@@ -349,8 +350,7 @@ class Works(BaseModle, models.Model):
     feeling = models.CharField(max_length=512, null=True)  # 录制感受
     worksTime = models.IntegerField(null=True)  # 作品时长
     tags = models.ManyToManyField(Tag)  # 作品标签
-    moduleUuid = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='moduleWorksUuid',
-                                   to_field='uuid', null=True)  # 在首页哪个模块显示
+
     albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',
                                   null=True)  # 专辑
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='userWorkUuid', to_field='uuid',

@@ -603,6 +603,12 @@ class WorksInfoView(ListAPIView):
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
         endTime = self.request.query_params.get('endtime', '')
+        title = self.request.query_params.get('title', '')
+        id = self.request.query_params.get('id', '')                # 故事ID
+        username = self.request.query_params.get('username', '')    # 用户名
+        template = self.request.query_params.get('template', '')    # 模板名
+        tag = self.request.query_params.get('tag', '')      # 类型标签
+        recordtype = self.request.query_params.get('recordtype', '')      # 录制形式
         if (startTime and not endTime) or  (not startTime and endTime):
             raise ParamsException({'code': 400, 'msg': '时间错误'})
         if startTime and endTime:
@@ -617,7 +623,8 @@ class WorksInfoView(ListAPIView):
             endTime = datetime.fromtimestamp(endTime)
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            return self.queryset.filter(createTime__range=(starttime, endtime))
+            self.queryset.filter(createTime__range=(starttime, endtime))
+        # if 。。。。
         return self.queryset
 
 

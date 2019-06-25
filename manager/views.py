@@ -17,7 +17,7 @@ from manager.managerCommon import *
 from manager.paginations import TenPagination
 from storybook_sever.api import Api
 from datetime import datetime
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer, WorksInfoSerializer
 from utils.errors import ParamsException
@@ -478,7 +478,7 @@ class TemplateStoryView(ListAPIView):
 #     serializer_class = TemplateStoryDetailSerializer
 
 def add_tags(request):
-    """添加模板"""
+    """添加模板故事的模板"""
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')
@@ -494,29 +494,31 @@ def add_tags(request):
     if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
+    tag = TemplateStory.objects.exclude(status = 'destroy').filter(title=title).first()
+    if tag:
+        return http_return(400, '重复模板名')
 
-    tag = TemplateStory.objects.filter(Q(title=title), ~Q(status = 'destroy')).first()
-    if tag:
-        return http_return(400, '重复序号')
-    # 查询是否有重复tagName
-    tag = Tag.objects.filter(tagName=tagName, parent_id__isnull=True, isDelete=False).first()
-    if tag:
-        return http_return(400, '重复分类名')
+
     try:
         with transaction.atomic():
             uuid = get_uuid()
-            tag = Tag(
+            templateStory = TemplateStory(
                 uuid = uuid,
-                code = 'SEARCHSORT',
-                tagName = tagName,
-                iconUrl = iconUrl,
-                sortNum = sortNum,
+                status = 'normal',
+                faceUrl = faceUrl,
+                listUrl = listUrl,
+                title = title,
+                intro = intro,
+                content = content,
+                isRecommd = isRecommd,
+                isTop = isTop,
+                recordNum = 0
             )
-            tag.save()
+            templateStory.save()
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '添加分类失败')
+        return http_return(400, '添加模板失败')
 
 
 """"修改模板"""

@@ -23,8 +23,13 @@ urlpatterns = [
     path('tags/addchildtags/', views.add_child_tags, name='add_child_tags'),
     path('tags/modifychildtags/', views.modify_child_tags, name='modify_child_tags'),
 
+
     # path('templatestories/', views.show_all_template_stories, name='show_all_template_stories'),
+
     path('template/templatestories/', TemplateStoryView.as_view()),
+    path('tags/addtemplate/', views.add_template, name='add_template'),
+    path('tags/modifytemplate/', views.modify_template, name='modify_template'),
+    path('tags/deltemplate/', views.del_template, name='del_template'),
 
 
     path('template/templateworks/', WorksInfoView.as_view()),

@@ -76,11 +76,11 @@ def recording_index_list(request):
         return http_return(400, '参数错误')
     story = TemplateStory.objects.exclude(status="destroy")
     if sort == "latest":
-        story = story.filter(isRecommd=False).order_by("-isTop", "-createTime")
+        story = story.filter(isRecommd=False).order_by("-isTop", "-updateTime")
     elif sort == "rank":
         story = story.order_by("-recordNum")
     elif sort == "recommended":  # 推荐算法
-        story = story.filter(isRecommd=True).order_by("-isTop", "-createTime")
+        story = story.filter(isRecommd=True).order_by("-isTop", "-updateTime")
     stories = story.all()
     total, stories = page_index(stories, page, pageCount)
     storyList = []
@@ -211,8 +211,9 @@ def recording_send(request):
     # 发布用户
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     try:
+        uuid = get_uuid()
         Works.objects.create(
-            uuid=get_uuid(),
+            uuid=uuid,
             userUuid=user if user else None,
             isUpload=1,
             voiceUrl=voiceUrl,
@@ -232,6 +233,19 @@ def recording_send(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '发布失败')
+    # 记录历史
+    work = Works.objects.filter(uuid=uuid).first()
+    try:
+        with transaction.atomic():
+            Behavior.objects.create(
+                uuid=get_uuid(),
+                userUuid=user,
+                workUuid=work,
+                recordType=5,
+            )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '保存记录失败')
     return http_return(200, '发布成功')
 
 
@@ -446,12 +460,25 @@ def work_play(request):
     # 更新播放次数
     work.playTimes += 1
     try:
-        work.save()
+        with transaction.atomic():
+            work.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新播放次数失败')
     # 记录播放历史
-
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()
+    try:
+        with transaction.atomic():
+            Behavior.objects.create(
+                uuid=get_uuid(),
+                userUuid=selfUser,
+                workUuid=work,
+                recordType=4,
+            )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '保存记录失败')
     content = None
     title = work.title
     bgUrl = work.bgUrl
@@ -594,4 +621,19 @@ def index_list(request):
             "title": title,
             "mediaUrl": bgUrl
         })
-    return http_return(200, '成功',{"everList": everList, "firstList": firstList, "hotList": hotList, "likeList": likeList})
+    return http_return(200, '成功',
+                       {"everList": everList, "firstList": firstList, "hotList": hotList, "likeList": likeList})
+
+
+@check_identify
+def search_history_list(request):
+    """
+    搜索历史
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()

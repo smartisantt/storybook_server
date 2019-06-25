@@ -136,16 +136,6 @@ class Sign(BaseModle, models.Model):
         db_table = 'tb_sign'
 
 
-class Records(BaseModle, models.Model):
-    """播放记录/最近录过记录表"""
-    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRecordUuid', to_field='uuid')
-    workUuid = models.ForeignKey('Works', models.CASCADE, null=True, related_name='workRecordUuid', to_field='uuid')
-    recordType = models.CharField(max_length=20, null=True)  # 播放记录  / 最近录过
-
-    class Meta:
-        db_table = 'tb_records'
-
-
 class FriendShip(BaseModle, models.Model):
     """当前用户和其他用户关系表"""
     followed = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followed')
@@ -236,7 +226,6 @@ class User(BaseModle, models.Model):
 
     versionUuid = models.ForeignKey('Version', models.CASCADE, null=True, related_name='versionUserUuid',
                                     to_field='uuid')
-    works = models.ManyToManyField(to='Works', through=Records)
 
     class Meta:
         db_table = 'tb_user'
@@ -361,3 +350,17 @@ class Works(BaseModle, models.Model):
 
     class Meta:
         db_table = 'tb_works'
+
+
+class Behavior(BaseModle, models.Model):
+    """
+    用户对作品的行为记录表
+    """
+    userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='buUuid', to_field='uuid', null=True)
+    workUuid = models.ForeignKey(Works, on_delete=models.CASCADE, related_name='bwkUuid', to_field='uuid', null=True)
+    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录 5:发布记录
+    status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
+    rmark = models.CharField(max_length=256, null=True)
+
+    class Meta:
+        db_table = 'tb_behavior'

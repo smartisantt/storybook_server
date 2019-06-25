@@ -3,20 +3,23 @@
 
 # Create your views here.
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, mixins
+from requests import Response
+from rest_framework import viewsets, mixins, status
 from rest_framework.filters import OrderingFilter
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView, CreateAPIView, UpdateAPIView
+from rest_framework.viewsets import GenericViewSet
+from serializers import serializer
 
 from manager import managerCommon
-from manager.filters import  TemplateStoryFilter
+from manager.filters import TemplateStoryFilter, WorksInfoFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
 from storybook_sever.api import Api
 from datetime import datetime
-from django.db.models import Count
+from django.db.models import Count, Q
 
-from manager.serializers import TemplateStorySerializer
+from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer, WorksInfoSerializer
 from utils.errors import ParamsException
 
 
@@ -444,8 +447,7 @@ def modify_child_tags(request):
 """GET 显示所有模板列表"""
 
 class TemplateStoryView(ListAPIView):
-    queryset = TemplateStory.objects.exclude(status='destroy').\
-        only('id', 'uuid', 'title', 'createTime', 'recordNum', 'status').order_by('-createTime')
+    queryset = TemplateStory.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
     serializer_class = TemplateStorySerializer
     filter_class = TemplateStoryFilter
 
@@ -470,13 +472,165 @@ class TemplateStoryView(ListAPIView):
         return self.queryset
 
 
-"""根据时间、模板ID、模板名搜索"""
+def add_template(request):
+    """添加模板"""
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    faceUrl = data.get('faceUrl', '')
+    listUrl = data.get('listUrl', '')
+    title = data.get('title', '')
+    intro = data.get('intro', '')
+    content = data.get('content', '')
+    isRecommd = data.get('isRecommd', '')
+    isTop = data.get('isTop', '')
 
-"""显示模板的详细信息"""
+    # all 都为True 才返回True
+    if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
+        return http_return(400, '参数有误')
 
-""""添加模板"""
+    templateStory = TemplateStory.objects.filter(title=title).exclude(status = 'destroy').first()
+    if templateStory:
+        return http_return(400, '重复模板名')
+
+    try:
+        with transaction.atomic():
+            uuid = get_uuid()
+            templateStory = TemplateStory(
+                uuid = uuid,
+                faceUrl = faceUrl,
+                listUrl = listUrl,
+                title = title,
+                intro = intro,
+                content = content,
+                isRecommd = isRecommd,
+                isTop = isTop,
+                recordNum = 0
+            )
+            templateStory.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加模板失败')
+
+
 """"修改模板"""
+def modify_template(request):
+    """修改模板"""
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    faceUrl = data.get('faceUrl', '')
+    listUrl = data.get('listUrl', '')
+    title = data.get('title', '')
+    intro = data.get('intro', '')
+    content = data.get('content', '')
+    isRecommd = data.get('isRecommd', '')
+    isTop = data.get('isTop', '')
+
+    # all 都为True 才返回True
+    if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
+        return http_return(400, '参数有误')
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
+    if not templateStory:
+        return http_return(400, '没有对象')
+
+
+    myTitle = templateStory.title
+
+    # 如果修改标题
+    if myTitle != title:
+        templateStory = TemplateStory.objects.filter(title=title).exclude(status='destroy').first()
+        if templateStory:
+            return http_return(400, '重复标题')
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    try:
+        with transaction.atomic():
+            templateStory.faceUrl = faceUrl
+            templateStory.listUrl = listUrl
+            templateStory.title = title
+            templateStory.intro = intro
+            templateStory.content = content
+            templateStory.isRecommd = isRecommd
+            templateStory.isTop = isTop
+            templateStory.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加模板失败')
+
+
+
 """"删除模板"""
+def del_template(request):
+    """删除模板"""
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+
+    if not uuid:
+        return http_return(400, '参数有误')
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    if not templateStory:
+        return http_return(400, '没有对象')
+
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    try:
+        with transaction.atomic():
+            templateStory.status = 'destroy'
+            templateStory.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除模板失败')
+
+
+"""模板音频"""
+class WorksInfoView(ListAPIView):
+    queryset = Works.objects.filter(isDelete=False, worksType=1).defer('id')\
+        .select_related('bgmUuid', 'moduleUuid', 'userUuid')\
+        .prefetch_related('tags').order_by('-createTime')
+
+    serializer_class = WorksInfoSerializer
+    filter_class = WorksInfoFilter
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+        title = self.request.query_params.get('title', '')
+        id = self.request.query_params.get('id', '')                # 故事ID
+        username = self.request.query_params.get('username', '')    # 用户名
+        template = self.request.query_params.get('template', '')    # 模板名
+        tag = self.request.query_params.get('tag', '')      # 类型标签
+        recordtype = self.request.query_params.get('recordtype', '')      # 录制形式
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime)/1000
+            endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            self.queryset.filter(createTime__range=(starttime, endtime))
+        # if 。。。。
+        return self.queryset
+
+
+
+
+
 
 
 

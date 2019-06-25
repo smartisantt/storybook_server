@@ -21,7 +21,7 @@ class Activity(BaseModle, models.Model):
     name = models.CharField(max_length=255, verbose_name="活动名称", null=True)
     intro = models.CharField(max_length=1024, verbose_name="活动介绍", null=True)
     status = models.CharField(max_length=32, verbose_name="活动状态", null=True)
-    mediaUuid = models.CharField(max_length=256, verbose_name="活动图片", null=True)
+    mediaUrl = models.CharField(max_length=256, verbose_name="活动图片", null=True)
     startTime = models.DateTimeField(verbose_name='活动开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='活动结束时间', null=True)
 
@@ -103,9 +103,11 @@ class Module(BaseModle, models.Model):
     """
     首页显示模块
     """
-    name = models.CharField(max_length=32, null=True)
-    ordernNum = models.IntegerField(verbose_name='排序编号', null=True)
-    type = models.CharField(max_length=32, null=True)
+
+    orderNum = models.IntegerField(verbose_name='排序编号', null=True)
+    type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2强先听  MOD3热门推荐
+    worksUuid = models.ForeignKey('Works', on_delete=models.CASCADE, related_name='moduleWorksUuid',
+                                  to_field='uuid', null=True)
 
     class Meta:
         db_table = 'tb_module'
@@ -159,7 +161,8 @@ class HotSearch(BaseModle, models.Model):
     热搜词
     """
     keyword = models.CharField(max_length=32, null=True)  # 搜索关键词
-    orderNum = models.IntegerField(null=True)  # 排列序号
+    orderNum = models.IntegerField(null=True, default=0)  # 排列序号 0:不置顶  1：置顶
+    searchNum = models.IntegerField(null=True, default=0)
     isDelete = models.BooleanField(default=False)
 
     class Meta:
@@ -184,20 +187,18 @@ class Tag(BaseModle, models.Model):
     """
     code = models.CharField(max_length=20, null=True)  # 编码
     tagName = models.CharField(max_length=32, null=True)  # 标签名字
-    iconUrl = models.CharField(max_length=256, null=True) # 分类图标
-    sortNum = models.IntegerField(verbose_name='排序编号', null=True) # 排列顺序
-    parent = models.ForeignKey(to='self', on_delete=models.CASCADE,related_name='child_tag',
+    iconUrl = models.CharField(max_length=256, null=True)  # 分类图标
+    sortNum = models.IntegerField(verbose_name='排序编号', null=True)  # 排列顺序
+    parent = models.ForeignKey(to='self', on_delete=models.CASCADE, related_name='child_tag',
                                db_column='parent_id', to_field='uuid', null=True)  # 爸爸标签id
-    isUsing = models.BooleanField(default=True)                     # 标签状态停用还是使用
-    isDelete = models.BooleanField(default=False)                    # 标签是否删除
+    isUsing = models.BooleanField(default=True)  # 标签状态停用还是使用
+    isDelete = models.BooleanField(default=False)  # 标签是否删除
 
     def __str__(self):
         return self.tagName
 
     class Meta:
         db_table = 'tb_tag'
-
-
 
 
 class TemplateStory(BaseModle, models.Model):
@@ -309,6 +310,7 @@ class Viewpager(BaseModle, models.Model):
     jumpType = models.CharField(max_length=64, null=True)  # 跳转类型 1专辑 2作品 3故事 4外部链接
     targetUuid = models.CharField(max_length=128, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
+    location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图
 
     class Meta:
         db_table = 'tb_viewpager'
@@ -338,7 +340,7 @@ class Works(BaseModle, models.Model):
     bgmUuid = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
     bgmVolume = models.FloatField(null=True)  # 背景音乐音量
     recordType = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
-    recordDate = models.DateTimeField(null=True)  # 录制时间
+
     playTimes = models.IntegerField(null=True)  # 播放次数
     worksType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
     templateUuid = models.ForeignKey(TemplateStory, on_delete=models.CASCADE, related_name='templateStoryUuid',
@@ -348,14 +350,14 @@ class Works(BaseModle, models.Model):
     feeling = models.CharField(max_length=512, null=True)  # 录制感受
     worksTime = models.IntegerField(null=True)  # 作品时长
     tags = models.ManyToManyField(Tag)  # 作品标签
-    moduleUuid = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='moduleWorksUuid',
-                                   to_field='uuid', null=True)  # 在首页哪个模块显示
+
     albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',
                                   null=True)  # 专辑
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='userWorkUuid', to_field='uuid',
-                                  null=True)  # 用户
+                                 null=True)  # 用户
     checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
+    isDelete = models.BooleanField(default=False)  # 软删除
 
     class Meta:
         db_table = 'tb_works'

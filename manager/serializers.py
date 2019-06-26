@@ -48,14 +48,12 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('nickName', 'avatar', 'roles', 'uuid')
 
+
 class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
-    pass
-
-
-class AudioStoryInfoSerializer(serializers.ModelSerializer):
     tagsInfo = serializers.SerializerMethodField()
     bgmInfo = serializers.SerializerMethodField()
     userInfo = serializers.SerializerMethodField()
+    # storyInfo = serializers.SerializerMethodField()
 
     @staticmethod
     def get_tagsInfo(audioinfo):
@@ -69,9 +67,41 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
     def get_userInfo(audioinfo):
         return UserSerializer(audioinfo.userUuid).data
 
+    # @staticmethod
+    # def get_storyInfo(audioinfo):
+    #     return StorySerializer(audioinfo.storyUuid).data
+
     class Meta:
         model = AudioStory
-        exclude = ('name', 'bgIcon')
+        exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
+
+
+
+class AudioStoryInfoSerializer(serializers.ModelSerializer):
+    tagsInfo = serializers.SerializerMethodField()
+    bgmInfo = serializers.SerializerMethodField()
+    userInfo = serializers.SerializerMethodField()
+    storyInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_tagsInfo(audioinfo):
+        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+
+    @staticmethod
+    def get_bgmInfo(audioinfo):
+        return BgmSimpleSerializer(audioinfo.bgm).data
+
+    @staticmethod
+    def get_userInfo(audioinfo):
+        return UserSerializer(audioinfo.userUuid).data
+
+    @staticmethod
+    def get_storyInfo(audioinfo):
+        return StorySerializer(audioinfo.storyUuid).data
+
+    class Meta:
+        model = AudioStory
+        exclude = ('name', 'bgIcon', 'tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
 
 
 

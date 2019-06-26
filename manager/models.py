@@ -120,7 +120,8 @@ class Rank(BaseModle, models.Model):
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRankUuid', to_field='uuid')
     activityUuid = models.ForeignKey(Activity, models.CASCADE, null=True, related_name='activityRankUuid',
                                      to_field='uuid')
-    audioUuid = models.OneToOneField('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid', to_field='uuid')
+    audioUuid = models.OneToOneField('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid',
+                                     to_field='uuid')
 
     class Meta:
         db_table = 'tb_rank'
@@ -219,6 +220,7 @@ class User(BaseModle, models.Model):
     startTime = models.DateTimeField(null=True)  # 禁止起始时间
     endTime = models.DateTimeField(null=True)  # 禁止结束时间
     tel = models.CharField(max_length=20)
+    intro = models.CharField(max_length=255, null=True)  # 用户介绍
     avatar = models.CharField(max_length=255, null=True)  # 用户头像
     gender = models.IntegerField(null=True)  # 性别 0未知  1男  2女
     status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
@@ -329,7 +331,7 @@ class AudioStory(BaseModle, models.Model):
     bgm = models.ForeignKey('Bgm', on_delete=models.CASCADE, related_name='bgmaudiosUuid', to_field='uuid')
     bgmVolume = models.FloatField(null=True)  # 背景音乐音量
     type = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
-    audioStoryType = models.BooleanField(default=True)   # 1模板录制 0 自由音频
+    audioStoryType = models.BooleanField(default=True)  # 1模板录制 0 自由音频
     playTimes = models.IntegerField(null=True)  # 播放次数
     name = models.CharField(max_length=128, null=True)  # 自由录制的标题
     bgIcon = models.CharField(max_length=255, null=True)  # 封面图片
@@ -337,17 +339,17 @@ class AudioStory(BaseModle, models.Model):
     duration = models.IntegerField(null=True)  # 作品时长
     tags = models.ManyToManyField('Tag')  # 作品标签
     storyUuid = models.ForeignKey('Story', on_delete=models.CASCADE, related_name='storyAudioStory',
-                              to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
+                                  to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
     albumUuid = models.ForeignKey('Album', on_delete=models.CASCADE, related_name='albumAudioUuid', to_field='uuid',
                                   null=True)  # 专辑
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='useAudioUuid', to_field='uuid',
-                                  null=True)  # 用户
+                                 null=True)  # 用户
     checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
     isDelete = models.BooleanField(default=False)  # 软删除
 
     class Meta:
-        db_table = 'tb_audio_stoty'
+        db_table = 'tb_audio_story'
 
 
 class Behavior(BaseModle, models.Model):
@@ -355,7 +357,8 @@ class Behavior(BaseModle, models.Model):
     用户对作品的行为记录表
     """
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='busUuid', to_field='uuid', null=True)
-    audioUuid = models.ForeignKey(AudioStory, on_delete=models.CASCADE, related_name='bauUuid', to_field='uuid', null=True)
+    audioUuid = models.ForeignKey(AudioStory, on_delete=models.CASCADE, related_name='bauUuid', to_field='uuid',
+                                  null=True)
     type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.CharField(max_length=256, null=True)

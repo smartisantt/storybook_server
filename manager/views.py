@@ -667,10 +667,10 @@ class AudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
         if name:
             self.queryset = self.queryset.filter(
-                templateUuid__in=Story.objects.filter(name_icontains=name).all())
+                storyUuid__in=Story.objects.filter(name__icontains=name).all())
         if tag:
             self.queryset = self.queryset.filter(
-                tags=Tag.objects.filter(code='RECORDTYPE', name=tag).first())
+                tags=Tag.objects.filter(name=tag).first())
 
         return self.queryset
 
@@ -689,6 +689,9 @@ def add_works(request):
     pass
 
 
+# 所有模板
+
+
 """自由音频"""
 class FreedomAudioStoryInfoView(ListAPIView):
     queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0)\
@@ -704,9 +707,9 @@ class FreedomAudioStoryInfoView(ListAPIView):
 
         # id = self.request.query_params.get('id', '')                # 故事ID
         nickName = self.request.query_params.get('nickName', '')    # 用户名
-        # title = self.request.query_params.get('title', '')    # 模板名
+        # name = self.request.query_params.get('name', '')    # 模板名
         tag = self.request.query_params.get('tag', '')      # 类型标签
-        # recordtype = self.request.query_params.get('recordtype', '')      # 录制形式
+        # type = self.request.query_params.get('type', '')      # 录制形式
         if (startTime and not endTime) or  (not startTime and endTime):
             raise ParamsException({'code': 400, 'msg': '时间错误'})
         if startTime and endTime:
@@ -727,7 +730,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
 
         if tag:
             self.queryset = self.queryset.filter(
-                tags=Tag.objects.filter(code='RECORDTYPE', name=tag).first())
+                tags__exists=Tag.objects.filter(name=tag).first())
 
         return self.queryset
 

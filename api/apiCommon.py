@@ -141,3 +141,47 @@ def check_identify(func):
         return func(request)
 
     return wrapper
+
+
+def save_search(data):
+    """
+    存储搜索记录
+    :param request:
+    :return:
+    """
+    # 存储搜索记录
+    keyWord = data.get('keyWord', '')
+    uuid = data['_cache']['uuid']
+    user = User.objects.filter(uuid=uuid).first()
+    try:
+        with transaction.atomic():
+            SearchHistory.objects.create(
+                uuid=get_uuid(),
+                searchName=keyWord,
+                userUuid=user,
+            )
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    # 累加搜索次数
+    hot = HotSearch.objects.filter(keyword=keyWord).first()
+    if hot:
+        try:
+            with transaction.atomic():
+                hot.searchNum += 1
+                hot.save()
+        except Exception as e:
+            logging(str(e))
+            return False
+    else:
+        try:
+            with transaction.atomic():
+                HotSearch.objects.create(
+                    uuid=get_uuid(),
+                    keyword=keyWord,
+                    searchNum=1,
+                )
+        except Exception as e:
+            logging(str(e))
+            return False
+    return True

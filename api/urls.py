@@ -27,6 +27,11 @@ urlpatterns = [
     path('audio/play', views.audio_play, name='audio_play'),  # 播放故事
 
     path('index/banner', views.index_banner, name='index_banner'),  # 首页轮播图
-    path('index/list', views.index_list, name='index_list')  # 首页展示列表
+    path('index/list', views.index_list, name='index_list'),  # 首页展示列表
+
+    path('search/all', views.search_all, name='search_all'),  # 搜索
+    path('search/audio', views.search_audio, name='search_audio'),  # 搜索模板音频
+    path('search/user', views.search_user, name='search_user'),  # 搜索主播
+    path('search/hot', views.search_hot, name='search_hot'),  # 热搜词
 
 ]

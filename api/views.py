@@ -277,18 +277,18 @@ def user_center(request):
         return http_return(400, '用户信息不存在')
     fans = user.get_followers()
     focus = user.get_follows()
-    isFan = False
+    isFollow = False
     myUuid = data['_cache']['uuid']
     for focu in focus:
         if myUuid == focu.uuid:
-            isFan = True
+            isFollow = True
             break
     userDict = {
         "uuid": user.uuid,
         "name": user.nickName,
         "avatar": user.avatar,
         "id": user.id,
-        "isFan": isFan,
+        "isFollow": isFollow,
         "intro": user.intro,
         "followers": len(fans),
         "follows": len(focus)
@@ -353,7 +353,7 @@ def user_audio_list(request):
             "createTime": datetime_to_string(audio.createTime),
             "tagList": tagList
         })
-    return http_return(200, '成功', {"total": total, "audioList": audioList})
+    return http_return(200, '成功', {"total": total, "audioStoryList": audioList})
 
 
 @check_identify
@@ -431,7 +431,7 @@ def audio_list(request):
             "createTime": datetime_to_string(audio.createTime),
             "tagList": tagList
         })
-    return http_return(200, '成功', {"total": total, "audioList": audioList})
+    return http_return(200, '成功', {"total": total, "audioStoryList": audioList})
 
 
 @check_identify
@@ -491,10 +491,14 @@ def audio_play(request):
         "audioVolume": audio.userVolume,
         "bgmUrl": audio.bgm.url if audio.bgm else None,
         "bgmVolume": audio.bgmVolume if audio.bgm else None,
-        "nickName": audio.userUuid.nickName if audio.userUuid else None,
-        "avatar": audio.userUuid.avatar if audio.userUuid else None,
         "createTIme": datetime_to_string(audio.createTime),
         "playTimes": audio.playTimes,
+    }
+    userInfo = {
+        "uuid": audio.userUuid.uuid if audio.userUuid else None,
+        "nickName": audio.userUuid.nickName if audio.userUuid else None,
+        "avatar": audio.userUuid.avatar if audio.userUuid else None,
+        "createTime": datetime_to_string(audio.userUuid.createTime) if audio.userUuid else None,
     }
     otheraudio = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(userUuid__uuid=audio.userUuid.uuid)
     otheraudios = otheraudio.order_by("-createTime").all()
@@ -518,7 +522,40 @@ def audio_play(request):
             "createTime": datetime_to_string(otheraudio.createTime),
             "tagList": tagList
         })
-    return http_return(200, '成功', {"otherTotal": total, "audioList": audioList, "playInfo": audioDict})
+
+    return http_return(200, '成功',
+                       {"total": total,
+                        "audioStoryList": audioList,
+                        "audioStoryInfo": audioDict,
+                        "userInfo": userInfo})
+
+
+@check_identify
+def audio_like(request):
+    """
+    点赞
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', None)
+    if not uuid:
+        return http_return(400, '参数错误')
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    selfUuid = data['_cache']['uuid']
+    user = User.objects.filter(uuid=selfUuid).first()
+    try:
+        Behavior.objects.create(
+            userUuid=user,
+            audioUuid=audio,
+
+        )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '点赞失败')
+    return http_return(200, '点赞成功')
 
 
 @check_identify
@@ -561,63 +598,63 @@ def index_list(request):
     # 每日一读
     everList = []
     ever = Module.objects.filter(type='MOD1').order_by("orderNum").first()
-    title = ever.audiosUuid.title
+    name = ever.audiosUuid.name
     intro = None
-    bgUrl = ever.audiosUuid.bgUrl
+    bgIcon = ever.audiosUuid.bgIcon
     if ever.audiosUuid.audiosType:
-        title = ever.audiosUuid.templateUuid.title
-        intro = ever.audiosUuid.templateUuid.intro
-        bgUrl = ever.audiosUuid.templateUuid.listUrl
+        name = ever.audiosUuid.audioUuid.name
+        intro = ever.audiosUuid.audioUuid.intro
+        bgIcon = ever.audiosUuid.audioUuid.listIcon
     everList.append({
         "uuid": ever.audiosUuid.uuid,
-        "title": title,
+        "name": name,
         "intro": intro,
-        "mediaUrl": bgUrl,
+        "icon": bgIcon,
     })
     # 抢先听
     firstList = []
     firsts = Module.objects.filter(type='MOD2').order_by("orderNum").all()[:4]
     for first in firsts:
-        title = first.audiosUuid.title
-        bgUrl = ever.audiosUuid.bgUrl
+        name = first.audiosUuid.name
+        bgIcon = ever.audiosUuid.bgIcon
         if ever.audiosUuid.audiosType:
-            title = first.audiosUuid.templateUuid.title
-            bgUrl = first.audiosUuid.templateUuid.listUrl
+            name = first.audiosUuid.audioUuid.name
+            bgIcon = first.audiosUuid.audioUuid.listIcon
         firstList.append({
             "uuid": first.audiosUuid.uuid,
-            "title": title,
-            "mediaUrl": bgUrl,
+            "name": name,
+            "icon": bgIcon,
         })
     # 热门推荐
     hotList = []
     hots = Module.objects.filter(type='MOD3').order_by("orderNum").all()[:4]
     for hot in hots:
-        title = hot.audiosUuid.title
-        bgUrl = hot.audiosUuid.bgUrl
+        name = hot.audiosUuid.name
+        bgIcon = hot.audiosUuid.bgIcon
         if ever.audiosUuid.audiosType:
-            title = hot.audiosUuid.templateUuid.title
-            bgUrl = hot.audiosUuid.templateUuid.listUrl
+            name = hot.audiosUuid.audioUuid.name
+            bgIcon = hot.audiosUuid.audioUuid.listIcon
         hotList.append({
             "uuid": hot.audiosUuid.uuid,
-            "title": title,
-            "mediaUrl": bgUrl,
+            "name": name,
+            "icon": bgIcon,
         })
     # 猜你喜欢
     likeList = []
     audios = AudioStory.objects.filter(isDelete=False, checkStatus="check").order_by("-playTimes").all()[:6]
     for audio in audios:
-        title = audio.title
-        bgUrl = audio.bgUrl
+        name = audio.name
+        bgIcon = audio.bgIcon
         if audio.audiosType:
-            title = audio.templateUuid.title
-            bgUrl = audio.templateUuid.listUrl
+            name = audio.audioUuid.name
+            bgIcon = audio.audioUuid.listIcon
         likeList.append({
             "uuid": audio.uuid,
-            "title": title,
-            "mediaUrl": bgUrl
+            "name": name,
+            "icon": bgIcon
         })
     return http_return(200, '成功',
-                       {"everList": everList, "firstList": firstList, "hotList": hotList, "likeList": likeList})
+                       {"daliyReadList": everList, "listenFirstList": firstList, "hotRecommdList": hotList, "mayLikeList": likeList})
 
 
 @check_identify
@@ -667,7 +704,7 @@ def search_all(request):
             "audioCount": audioCount,
             "followers": followers,
         })
-    return http_return(200, '成功', {"audioList": audioList, "userList": userList})
+    return http_return(200, '成功', {"audioStoryList": audioList, "userList": userList})
 
 
 @check_identify
@@ -709,7 +746,7 @@ def search_audio(request):
             "publisher": au.userUuid.nickName,
             "duration": au.duration,
         })
-    return http_return(200, '成功', {"audioList": audioList, "total": total})
+    return http_return(200, '成功', {"audioStoryList": audioList, "total": total})
 
 
 @check_identify
@@ -744,7 +781,7 @@ def search_user(request):
             "uuid": u.uuid,
             "avatar": u.avatar,
             "nickName": u.nickName,
-            "audioCount": audioCount,
+            "audioStoryCount": audioCount,
             "followers": followers,
         })
     return http_return(200, '成功', {"total": total, "userList": userList})

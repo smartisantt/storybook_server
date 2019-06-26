@@ -118,7 +118,7 @@ def recording_banner(request):
             'target': banner.target,
         })
     total = len(banners)
-    return http_return(200, '成功', {"total": total, "banList": banList})
+    return http_return(200, '成功', {"total": total, "bannerList": banList})
 
 
 @check_identify
@@ -143,7 +143,7 @@ def recording_stroy_detail(request):
         "content": story.content if story.content else None,
         "icon": story.faceIcon if story.faceIcon else None
     }
-    return http_return(200, '成功', {"detail": d})
+    return http_return(200, '成功', d)
 
 
 @check_identify
@@ -543,7 +543,7 @@ def index_banner(request):
             'target': banner.target,
         })
     total = len(banners)
-    return http_return(200, '成功', {"total": total, "banList": banList})
+    return http_return(200, '成功', {"total": total, "bannerList": banList})
 
 
 @check_identify

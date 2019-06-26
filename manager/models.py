@@ -195,8 +195,8 @@ class Story(BaseModle, models.Model):
     """
     模板故事
     """
-    faceUrl = models.CharField(max_length=255, null=True)  # 封面图片
-    listUrl = models.CharField(max_length=255, null=True)  # 列表图片
+    faceIcon = models.CharField(max_length=255, null=True)  # 封面图片
+    listIcon = models.CharField(max_length=255, null=True)  # 列表图片
     name = models.CharField(max_length=512, null=True)  # 标题
     intro = models.CharField(max_length=512, null=True)  # 介绍(标题)
     content = models.TextField(null=True)  # 故事内容
@@ -207,7 +207,7 @@ class Story(BaseModle, models.Model):
     tags = models.ManyToManyField(Tag)
 
     class Meta:
-        db_table = 'tb_templatestory'
+        db_table = 'tb_story'
 
 
 class User(BaseModle, models.Model):
@@ -326,38 +326,36 @@ class AudioStory(BaseModle, models.Model):
     isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
     voiceUrl = models.CharField(max_length=255, null=True)  # 用户的声音
     userVolume = models.FloatField(null=True)  # 用户音量
-    bgm = models.ForeignKey(Bgm, on_delete=models.CASCADE, related_name='bgmWorksUuid', to_field='uuid')
+    bgm = models.ForeignKey('Bgm', on_delete=models.CASCADE, related_name='bgmaudiosUuid', to_field='uuid')
     bgmVolume = models.FloatField(null=True)  # 背景音乐音量
     type = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
-
     playTimes = models.IntegerField(null=True)  # 播放次数
-    worksType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
-    story = models.ForeignKey(Story, on_delete=models.CASCADE, related_name='templateStoryUuid',
-                              to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
+    audiosType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
     name = models.CharField(max_length=128, null=True)  # 自由录制的标题
     bgIcon = models.CharField(max_length=255, null=True)  # 封面图片
     remarks = models.CharField(max_length=512, null=True)  # 录制感受
     duration = models.IntegerField(null=True)  # 作品时长
-    tags = models.ManyToManyField(Tag)  # 作品标签
-
-    albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',
+    tags = models.ManyToManyField('Tag')  # 作品标签
+    storyUuid = models.ForeignKey('Story', on_delete=models.CASCADE, related_name='storyAudioStory',
+                              to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
+    albumUuid = models.ForeignKey('Album', on_delete=models.CASCADE, related_name='albumAudioUuid', to_field='uuid',
                                   null=True)  # 专辑
-    publisher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='userWorkUuid', to_field='uuid',
+    userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='useAudioUuid', to_field='uuid',
                                   null=True)  # 用户
     checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
     isDelete = models.BooleanField(default=False)  # 软删除
 
     class Meta:
-        db_table = 'tb_works'
+        db_table = 'tb_audio_stoty'
 
 
 class Behavior(BaseModle, models.Model):
     """
     用户对作品的行为记录表
     """
-    userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='buUuid', to_field='uuid', null=True)
-    workUuid = models.ForeignKey(AudioStory, on_delete=models.CASCADE, related_name='bwkUuid', to_field='uuid', null=True)
+    userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='busUuid', to_field='uuid', null=True)
+    audioUuid = models.ForeignKey(AudioStory, on_delete=models.CASCADE, related_name='bauUuid', to_field='uuid', null=True)
     type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.CharField(max_length=256, null=True)

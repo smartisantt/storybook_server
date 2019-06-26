@@ -118,7 +118,7 @@ def recording_banner(request):
             'target': banner.target,
         })
     total = len(banners)
-    return http_return(200, '成功', {"total": total, "banList": banList})
+    return http_return(200, '成功', {"total": total, "bannerList": banList})
 
 
 @check_identify
@@ -143,7 +143,7 @@ def recording_stroy_detail(request):
         "content": story.content if story.content else None,
         "icon": story.faceIcon if story.faceIcon else None
     }
-    return http_return(200, '成功', {"detail": d})
+    return http_return(200, '成功', d)
 
 
 @check_identify
@@ -326,6 +326,8 @@ def user_audio_list(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     user = User.objects.filter(uuid=uuid).first()
+    if not user:
+        return http_return(400,'用户信息不存在')
     audios = user.useAudioUuid.filter(isDelete=False).order_by("-createTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioList = []
@@ -541,7 +543,7 @@ def index_banner(request):
             'target': banner.target,
         })
     total = len(banners)
-    return http_return(200, '成功', {"total": total, "banList": banList})
+    return http_return(200, '成功', {"total": total, "bannerList": banList})
 
 
 @check_identify

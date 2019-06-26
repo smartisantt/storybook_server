@@ -37,7 +37,7 @@ urlpatterns = [
 
 
     # 自由音频
-    path('freedom/freedomworks/', FreedomAudioStoryInfoView.as_view()),
+    path('story/freedomaudio/', FreedomAudioStoryInfoView.as_view()),
 
     # 审核
     path('check/checkworks/', CheckAudioStoryInfoView.as_view()),

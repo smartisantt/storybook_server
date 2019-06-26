@@ -11,7 +11,7 @@ from rest_framework.viewsets import GenericViewSet
 from serializers import serializer
 
 from manager import managerCommon
-from manager.filters import TemplateStoryFilter, WorksInfoFilter
+from manager.filters import StoryFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
@@ -19,7 +19,7 @@ from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q
 
-from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer, WorksInfoSerializer
+from manager.serializers import StorySerializer, StoryDetailSerializer, WorksInfoSerializer
 from utils.errors import ParamsException
 
 
@@ -446,10 +446,10 @@ def modify_child_tags(request):
 """
 """GET 显示所有模板列表"""
 
-class TemplateStoryView(ListAPIView):
+class StoryView(ListAPIView):
     queryset = Story.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
-    serializer_class = TemplateStorySerializer
-    filter_class = TemplateStoryFilter
+    serializer_class = StorySerializer
+    filter_class = StoryFilter
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -489,14 +489,14 @@ def add_template(request):
     if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    templateStory = Story.objects.filter(title=title).exclude(status ='destroy').first()
-    if templateStory:
+    Story = Story.objects.filter(title=title).exclude(status ='destroy').first()
+    if Story:
         return http_return(400, '重复模板名')
 
     try:
         with transaction.atomic():
             uuid = get_uuid()
-            templateStory = Story(
+            Story = Story(
                 uuid = uuid,
                 faceUrl = faceUrl,
                 listUrl = listUrl,
@@ -507,7 +507,7 @@ def add_template(request):
                 isTop = isTop,
                 recordNum = 0
             )
-            templateStory.save()
+            Story.save()
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -533,30 +533,30 @@ def modify_template(request):
     if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status ='destroy').first()
-    if not templateStory:
+    Story = Story.objects.filter(uuid=uuid).exclude(status ='destroy').first()
+    if not Story:
         return http_return(400, '没有对象')
 
 
-    myTitle = templateStory.title
+    myTitle = Story.title
 
     # 如果修改标题
     if myTitle != title:
-        templateStory = Story.objects.filter(title=title).exclude(status='destroy').first()
-        if templateStory:
+        Story = Story.objects.filter(title=title).exclude(status='destroy').first()
+        if Story:
             return http_return(400, '重复标题')
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    Story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
-            templateStory.faceUrl = faceUrl
-            templateStory.listUrl = listUrl
-            templateStory.title = title
-            templateStory.intro = intro
-            templateStory.content = content
-            templateStory.isRecommd = isRecommd
-            templateStory.isTop = isTop
-            templateStory.save()
+            Story.faceUrl = faceUrl
+            Story.listUrl = listUrl
+            Story.title = title
+            Story.intro = intro
+            Story.content = content
+            Story.isRecommd = isRecommd
+            Story.isTop = isTop
+            Story.save()
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -575,16 +575,16 @@ def del_template(request):
     if not uuid:
         return http_return(400, '参数有误')
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
-    if not templateStory:
+    Story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    if not Story:
         return http_return(400, '没有对象')
 
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    Story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
-            templateStory.status = 'destroy'
-            templateStory.save()
+            Story.status = 'destroy'
+            Story.save()
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))

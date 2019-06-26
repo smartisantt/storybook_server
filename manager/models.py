@@ -106,7 +106,7 @@ class Module(BaseModle, models.Model):
 
     orderNum = models.IntegerField(verbose_name='排序编号', null=True)
     type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2强先听  MOD3热门推荐
-    audioUuid = models.ForeignKey('manager.models.AudioStory', on_delete=models.CASCADE, related_name='moduleAudioUuid',
+    audioUuid = models.ForeignKey('AudioStory', on_delete=models.CASCADE, related_name='moduleAudioUuid',
                                   to_field='uuid', null=True)
 
     class Meta:
@@ -120,7 +120,7 @@ class Rank(BaseModle, models.Model):
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRankUuid', to_field='uuid')
     activityUuid = models.ForeignKey(Activity, models.CASCADE, null=True, related_name='activityRankUuid',
                                      to_field='uuid')
-    audioUuid = models.OneToOneField('manager.models.AudioStory', models.CASCADE, null=True, related_name='audioRankUuid', to_field='uuid')
+    audioUuid = models.OneToOneField('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid', to_field='uuid')
 
     class Meta:
         db_table = 'tb_rank'

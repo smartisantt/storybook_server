@@ -112,10 +112,10 @@ def recording_banner(request):
     banList = []
     for banner in banners:
         banList.append({
-            'title': banner.title,
-            'mediaUrl': banner.mediaUrl,
-            'jumpType': banner.jumpType,
-            'targetUuid': banner.targetUuid,
+            'name': banner.name,
+            'icon': banner.icon,
+            'type': banner.type,
+            'target': banner.target,
         })
     total = len(banners)
     return http_return(200, '成功', {"total": total, "banList": banList})
@@ -139,9 +139,9 @@ def recording_stroy_detail(request):
         return http_return(400, '模板故事不存在')
     d = {
         "uuid": story.uuid,
-        "title": story.title if story.title else None,
-        "conten": story.content if story.content else None,
-        "mediaUrl": story.faceUrl if story.faceUrl else None
+        "name": story.name if story.name else None,
+        "content": story.content if story.content else None,
+        "icon": story.faceIcon if story.faceIcon else None
     }
     return http_return(200, '成功', {"detail": d})
 
@@ -166,8 +166,8 @@ def recording_bgmusic_list(request):
         bgmList.append({
             "uuid": bg.uuid,
             "name": bg.name,
-            "duration": bg.bgmTime,
-            "mediaUrl": bg.mediaUrl,
+            "duration": bg.duration,
+            "url": bg.url,
         })
     return http_return(200, '成功', {"total": total, "bgmList": bgmList})
 
@@ -183,28 +183,29 @@ def recording_send(request):
     if not data:
         return http_return(400, '参数错误')
     storyUuid = data.get('storyUuid', '')
-    voiceUrl = data.get('voiceUrl', '')
-    voiceVolume = data.get('voiceVolume', '')
+    audioUrl = data.get('audioUrl', '')
+    audioVolume = data.get('audioVolume', '')
     bgmUuid = data.get('bgmUuid', '')
     bgmVolume = data.get('bgmVolume', '')
-    bgUrl = data.get('bgUrl', '')
-    feeling = data.get('feeling', '')
-    recordType = data.get('recordType', '')
-    typeUuidList = data.get('typeUuidList', '')
-    audiosTime = data.get('audiosTime', '')
-    title = None
-    audiosType = True
+    remarks = data.get('remarks', '')
+    type = data.get('type', '')
+    storyTagUuidList = data.get('storyTagUuidList', '')
+    audioDuration = data.get('audioDuration', '')
+    name = None
+    icon = None
+    audioStoryType = True
     if not storyUuid:
-        title = data.get('title', '')
-        audiosType = False
+        name = data.get('name', '')
+        icon = data.get('icon', '')
+        audioStoryType = False
     if bgmUuid:
-        bg = Bgm.objects.filter(uuid=bgmUuid).first()
+        bgm = Bgm.objects.filter(uuid=bgmUuid).first()
     if storyUuid:
-        template = Story.objects.filter(uuid=storyUuid).first()
-    if not all([voiceUrl, voiceVolume, recordType, typeUuidList, audiosTime]):
+        story = Story.objects.filter(uuid=storyUuid).first()
+    if not all([audioUrl, audioVolume, type, storyTagUuidList, audioDuration]):
         return http_return(400, '参数错误')
     tags = []
-    for tagUuid in typeUuidList:
+    for tagUuid in storyTagUuidList:
         tag = Tag.objects.filter(uuid=tagUuid).first()
         if tag:
             tags.append(tag)
@@ -216,18 +217,18 @@ def recording_send(request):
             uuid=uuid,
             userUuid=user if user else None,
             isUpload=1,
-            voiceUrl=voiceUrl,
-            userVolume=voiceVolume,
-            bgmUuid=bg if bg else None,
+            voiceUrl=audioUrl,
+            userVolume=audioVolume,
+            bgm=bgm if bgm else None,
             bgmVolume=bgmVolume if bgmVolume else None,
-            recordType=recordType,
+            type=type,
             playTimes=0,
-            audiosType=audiosType,
-            templateUuid=template if template else None,
-            title=title,
-            bgUrl=bgUrl,
-            feeling=feeling,
-            audiosTime=audiosTime,
+            audioStoryType=audioStoryType,
+            storyUuid=story if story else None,
+            name=name,
+            bgIcon=icon,
+            remarks=remarks,
+            duration=audioDuration,
             checkStatus="unCheck"
         ).tags.add(*tags)
     except Exception as e:
@@ -252,7 +253,7 @@ def recording_tag_list(request):
     for tag in tags:
         tagList.append({
             "uuid": tag.uuid,
-            "name": tag.tagName,
+            "name": tag.name,
         })
     total = len(tagList)
     return http_return(200, '成功', {"total": total, "tagList": tagList})
@@ -282,13 +283,13 @@ def user_center(request):
             break
     userDict = {
         "uuid": user.uuid,
-        "name": user.username,
-        "icon": user.userLogo,
+        "name": user.nickName,
+        "avatar": user.avatar,
         "id": user.id,
         "isFan": isFan,
         "intro": user.intro,
-        "fansCount": len(fans),
-        "focusCount": len(focus)
+        "followers": len(fans),
+        "follows": len(focus)
     }
     return http_return(200, '成功', {"userInfo": userDict})
 
@@ -325,26 +326,26 @@ def user_audio_list(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     user = User.objects.filter(uuid=uuid).first()
-    audios = user.useraudioUuid.filter(isDelete=False).order_by("-createTime").all()
+    audios = user.useAudioUuid.filter(isDelete=False).order_by("-createTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioList = []
     for audio in audios:
-        bgUrl = audio.bgUrl
-        title = audio.title
-        if audio.audiosType:
-            bgUrl = audio.templateUuid.listUrl
-            title = audio.templateUuid.title
+        icon = audio.bgIcon
+        name = audio.name
+        if audio.audioStoryType:
+            icon = audio.storyUuid.listIcon
+            name = audio.storyUuid.name
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.tagName
+                'name': tag.name
             })
         audioList.append({
             "uuid": audio.uuid,
-            "duration": audio.audiosTime,
-            "mediaUrl": bgUrl,
-            "title": title,
+            "duration": audio.duration,
+            "icon": icon,
+            "name": name,
             "createTime": datetime_to_string(audio.createTime),
             "tagList": tagList
         })
@@ -362,7 +363,7 @@ def user_fans(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type', '')  # 默认返回关注的用户列表，传入fans返回粉丝用户列表
+    type = data.get('type', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     if not uuid:
@@ -370,16 +371,19 @@ def user_fans(request):
     user = User.objects.filter(uuid=uuid).first()
     if not user:
         return http_return(400, '用户信息不存在')
-    users = user.get_follows()
-    if type == 'fans':
+    if type == 'follows':
+        users = user.get_follows()
+    elif type == 'followers':
         users = user.get_followers()
+    else:
+        return http_return(400, '参数错误')
     total, users = page_index(users, page, pageCount)
     userList = []
     for u in users:
         userList.append({
             "uuid": u.uuid,
-            "icon": u.userLogo,
-            "name": u.username
+            "avatar": u.avatar,
+            "name": u.nickName
         })
     return http_return(200, '成功', {"total": total, "userList": userList})
 
@@ -396,30 +400,30 @@ def audio_list(request):
         return http_return(400, '参数错误')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
-    audiosType = data.get('audiosType', None)
+    audioStoryType = data.get('audioStoryType', None)
     audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
-    if audiosType:
-        audio = audio.filter(audiosType=audiosType)
+    if audioStoryType:
+        audio = audio.filter(audioStoryType=audioStoryType)
     audios = audio.order_by('-createTime').all()
     total, audios = page_index(audios, page, pageCount)
     audioList = []
     for audio in audios:
-        bgUrl = audio.bgUrl
-        title = audio.title
-        if audio.audiosType:
-            bgUrl = audio.templateUuid.listUrl
-            title = audio.templateUuid.title
+        bgIcon = audio.bgIcon
+        name = audio.name
+        if audio.audioStoryType:
+            bgIcon = audio.storyUuid.listIcon
+            name = audio.storyUuid.name
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.tagName
+                'name': tag.name
             })
         audioList.append({
             "uuid": audio.uuid,
-            "duration": audio.audiosTime,
-            "mediaUrl": bgUrl,
-            "title": title,
+            "duration": audio.duration,
+            "icon": bgIcon,
+            "name": name,
             "createTime": datetime_to_string(audio.createTime),
             "tagList": tagList
         })
@@ -467,24 +471,24 @@ def audio_play(request):
         logging.error(str(e))
         return http_return(400, '保存记录失败')
     content = None
-    title = audio.title
-    bgUrl = audio.bgUrl
-    if audio.audiosType:
-        content = audio.templateUuid.content
-        title = audio.templateUuid.title
-        bgUrl = audio.templateUuid.faceUrl
+    name = audio.name
+    bgIcon = audio.bgIcon
+    if audio.audioStoryType:
+        content = audio.storyUuid.content
+        name = audio.storyUuid.name
+        bgIcon = audio.storyUuid.faceIcon
     audioDict = {
-        "audioUuid": audio.uuid,
-        "title": title,
+        "uuid": audio.uuid,
+        "name": name,
         "content": content,
-        "bgUrl": bgUrl,
-        "duration": audio.audiosTime,
-        "voiceUrl": audio.voiceUrl,
-        "userVolume": audio.userVolume,
-        "bgmUrl": audio.bgmUuid.mediaUrl if audio.bgmUuid else None,
-        "bgmVolume": audio.bgmVolume if audio.bgmUuid else None,
-        "name": audio.userUuid.username,
-        "icon": audio.userUuid.userLogo,
+        "icon": bgIcon,
+        "duration": audio.duration,
+        "audioUrl": audio.voiceUrl,
+        "audioVolume": audio.userVolume,
+        "bgmUrl": audio.bgm.url if audio.bgm else None,
+        "bgmVolume": audio.bgmVolume if audio.bgm else None,
+        "nickName": audio.userUuid.nickName if audio.userUuid else None,
+        "avatar": audio.userUuid.avatar if audio.userUuid else None,
         "createTIme": datetime_to_string(audio.createTime),
         "playTimes": audio.playTimes,
     }
@@ -493,20 +497,20 @@ def audio_play(request):
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = []
     for otheraudio in otheraudios:
-        title = otheraudio.title
-        if otheraudio.audiosType:
-            title = otheraudio.templateUuid.title
+        name = otheraudio.name
+        if otheraudio.audioStoryType:
+            name = otheraudio.storyUuid.name
         tagList = []
         for tag in otheraudio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.tagName
+                'name': tag.name
             })
         audioList.append({
             "uuid": otheraudio.uuid,
-            "duration": otheraudio.audiosTime,
-            "mediaUrl": otheraudio.bgUrl,
-            "title": title,
+            "duration": otheraudio.duration,
+            "icon": otheraudio.bgIcon,
+            "name": name,
             "createTime": datetime_to_string(otheraudio.createTime),
             "tagList": tagList
         })
@@ -531,10 +535,10 @@ def index_banner(request):
     banList = []
     for banner in banners:
         banList.append({
-            'title': banner.title,
-            'mediaUrl': banner.mediaUrl,
-            'jumpType': banner.jumpType,
-            'targetUuid': banner.targetUuid,
+            'name': banner.name,
+            'icon': banner.icon,
+            'type': banner.type,
+            'target': banner.target,
         })
     total = len(banners)
     return http_return(200, '成功', {"total": total, "banList": banList})

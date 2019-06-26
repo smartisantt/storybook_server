@@ -46,7 +46,7 @@ def create_session(user_info, token, loginIP):
     :return:
     """
     user = {
-        'username': user_info.username if user_info.username else None,
+        'nickName': user_info.nickName if user_info.nickName else None,
         'uuid': user_info.uuid,
         'userId': user_info.userID,
         'tel': user_info.tel,
@@ -110,9 +110,9 @@ def check_identify(func):
                         uuid=user_uuid,
                         tel=user_info.get('phone', ''),
                         userID=user_info.get('userId', ''),
-                        username=defaultName,
+                        nickName=defaultName,
                         roles="normalUser",
-                        userLogo=defaultIcon,
+                        avatar=defaultIcon,
                         gender=user_info.get('wxSex', None),
                         versionUuid=version if version else None,
                         status="normal",

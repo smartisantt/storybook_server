@@ -633,7 +633,7 @@ def del_story(request):
 # """模板音频"""
 class AudioStoryInfoView(ListAPIView):
     queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=1)\
-        .select_related('bgmUuid', 'userUuid')\
+        .select_related('bgm', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
     serializer_class = AudioStoryInfoSerializer
@@ -692,7 +692,7 @@ def add_works(request):
 """自由音频"""
 class FreedomAudioStoryInfoView(ListAPIView):
     queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0)\
-        .select_related('bgmUuid', 'userUuid')\
+        .select_related('bgm', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
     serializer_class = FreedomAudioStoryInfoSerializer
@@ -703,7 +703,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
         endTime = self.request.query_params.get('endtime', '')
 
         # id = self.request.query_params.get('id', '')                # 故事ID
-        username = self.request.query_params.get('username', '')    # 用户名
+        nickName = self.request.query_params.get('nickName', '')    # 用户名
         # title = self.request.query_params.get('title', '')    # 模板名
         tag = self.request.query_params.get('tag', '')      # 类型标签
         # recordtype = self.request.query_params.get('recordtype', '')      # 录制形式
@@ -722,12 +722,12 @@ class FreedomAudioStoryInfoView(ListAPIView):
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
-        if username:
-            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(username__icontains=username).all())
+        if nickName:
+            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
         if tag:
             self.queryset = self.queryset.filter(
-                tags=Tag.objects.filter(code='RECORDTYPE', tagName=tag).first())
+                tags=Tag.objects.filter(code='RECORDTYPE', name=tag).first())
 
         return self.queryset
 

@@ -6,11 +6,11 @@ from manager.models import Tag, Story, AudioStory
 
 class StoryFilter(django_filters.rest_framework.FilterSet):
     """模板id，模板名，日期，"""
-    title = django_filters.CharFilter('title', lookup_expr='contains')
+    name = django_filters.CharFilter('name', lookup_expr='contains')
 
     class Meta:
         model = Story
-        fields = ('id', 'title')
+        fields = ('id', 'name')
 
 
 class TemplateWorksInfoFilter(django_filters.rest_framework.FilterSet):
@@ -44,7 +44,10 @@ class FreedomAudioStoryInfoFilter(django_filters.rest_framework.FilterSet):
     pass
 
 class AudioStoryInfoFilter(django_filters.rest_framework.FilterSet):
-    pass
+
+    class Meta:
+        model = AudioStory
+        fields = ('id', 'type')
 
 
 

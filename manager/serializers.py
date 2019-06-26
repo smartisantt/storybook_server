@@ -33,7 +33,7 @@ class TagsSimpleSerialzer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        fields = ('id', 'tagName', 'code')
+        exclude = ("parent", "isDelete", "isUsing")
 
 
 class WorksInfoSerializer(serializers.ModelSerializer):
@@ -52,7 +52,10 @@ class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
 
 
 class AudioStoryInfoSerializer(serializers.ModelSerializer):
-    pass
+
+    class Meta:
+        model = AudioStory
+        exclude = ('name', 'bgIcon')
 
 
 

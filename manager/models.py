@@ -202,7 +202,7 @@ class Story(BaseModle, models.Model):
     content = models.TextField(null=True)  # 故事内容
     recordNum = models.IntegerField(null=True)  # 录制次数
     status = models.CharField(max_length=32, null=True, default="normal")  # normal启用 forbid禁用 destroy删除
-    isRecommd = models.BooleanField(default=True)  # 显示位置 默认推荐 否则是 最新
+    isRecommd = models.BooleanField(default=True)  # 显示位置 默认1推荐 否则是 0最新
     isTop = models.IntegerField(default=0)  # 置顶 默认为0 置顶为1
     tags = models.ManyToManyField(Tag)
 
@@ -331,7 +331,6 @@ class AudioStory(BaseModle, models.Model):
     type = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
     audioStoryType = models.BooleanField(default=True)   # 1模板录制 0 自由音频
     playTimes = models.IntegerField(null=True)  # 播放次数
-    audiosType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
     name = models.CharField(max_length=128, null=True)  # 自由录制的标题
     bgIcon = models.CharField(max_length=255, null=True)  # 封面图片
     remarks = models.CharField(max_length=512, null=True)  # 录制感受

@@ -16,7 +16,7 @@ from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
-    AudioStoryInfoSerializer
+    AudioStoryInfoSerializer, TagsSimpleSerialzer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q
@@ -444,6 +444,16 @@ def modify_child_tags(request):
         return http_return(400, '修改分类失败')
 
 
+# 获取类型标签下的所有字标签
+class TypeTagView(ListAPIView):
+    queryset = Tag.objects.filter(code='SEARCHSORT', parent__name='类型', isDelete=False).\
+        only('id', 'name', 'sortNum', 'uuid').all()
+    serializer_class = TagsSimpleSerialzer
+    pagination_class = None
+
+
+
+
 """
 模板管理
 """
@@ -474,42 +484,42 @@ class StoryView(ListAPIView):
         return self.queryset
 
 
-def add_template(request):
+def add_story(request):
     """添加模板"""
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')
-    faceUrl = data.get('faceUrl', '')
-    listUrl = data.get('listUrl', '')
-    title = data.get('title', '')
+    faceIcon = data.get('faceIcon', '')
+    listIcon = data.get('listIcon', '')
+    name = data.get('name', '')
     intro = data.get('intro', '')
     content = data.get('content', '')
     isRecommd = data.get('isRecommd', '')
     isTop = data.get('isTop', '')
 
     # all 都为True 才返回True
-    if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
+    if not all([name, faceIcon, listIcon, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    templateStory = Story.objects.filter(title=title).exclude(status = 'destroy').first()
-    if templateStory:
+    story = Story.objects.filter(name=name).exclude(status = 'destroy').first()
+    if story:
         return http_return(400, '重复模板名')
 
     try:
         with transaction.atomic():
             uuid = get_uuid()
-            templateStory = Story(
+            story = Story(
                 uuid = uuid,
-                faceUrl = faceUrl,
-                listUrl = listUrl,
-                title = title,
+                faceIcon = faceIcon,
+                listIcon = listIcon,
+                name = name,
                 intro = intro,
                 content = content,
                 isRecommd = isRecommd,
                 isTop = isTop,
                 recordNum = 0
             )
-            templateStory.save()
+            story.save()
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -517,53 +527,53 @@ def add_template(request):
 
 
 
-def modify_template(request):
+def modify_story(request):
     """修改模板"""
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    faceUrl = data.get('faceUrl', '')
-    listUrl = data.get('listUrl', '')
-    title = data.get('title', '')
+    faceIcon = data.get('faceIcon', '')
+    listIcon = data.get('listIcon', '')
+    name = data.get('name', '')
     intro = data.get('intro', '')
     content = data.get('content', '')
     isRecommd = data.get('isRecommd', '')
     isTop = data.get('isTop', '')
 
     # all 都为True 才返回True
-    if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
+    if not all([faceIcon, listIcon, name, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
-    if not templateStory:
+    story = Story.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
+    if not story:
         return http_return(400, '没有对象')
 
-    myTitle = templateStory.title
+    myName = story.name
     # 如果修改标题
-    if myTitle != title:
-        templateStory = Story.objects.filter(title=title).exclude(status='destroy').first()
-        if templateStory:
+    if myName != name:
+        story = Story.objects.filter(name=name).exclude(status='destroy').first()
+        if story:
             return http_return(400, '重复标题')
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
-            templateStory.faceUrl = faceUrl
-            templateStory.listUrl = listUrl
-            templateStory.title = title
-            templateStory.intro = intro
-            templateStory.content = content
-            templateStory.isRecommd = isRecommd
-            templateStory.isTop = isTop
-            templateStory.save()
+            story.faceIcon = faceIcon
+            story.listIcon = listIcon
+            story.name = name
+            story.intro = intro
+            story.content = content
+            story.isRecommd = isRecommd
+            story.isTop = isTop
+            story.save()
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加模板失败')
 
 # 改变模板状态
-def change_template_status(request):
+def change_story_status(request):
     """停用模板 恢复模板"""
     data = request_body(request, "POST")
     if not data:
@@ -573,28 +583,28 @@ def change_template_status(request):
     if not uuid:
         return http_return(400, '参数有误')
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
-    if not templateStory:
+    story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    if not story:
         return http_return(400, '没有对象')
 
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
             # normal启用 forbid禁用 destroy删除
-            if templateStory.status == 'normal':
-                templateStory.status = 'forbid'
-            elif templateStory.status == 'forbid':
-                templateStory.status = 'normal'
-            templateStory.save()
-            return http_return(200, 'OK', {"status": templateStory.status})
+            if story.status == 'normal':
+                story.status = 'forbid'
+            elif story.status == 'forbid':
+                story.status = 'normal'
+            story.save()
+            return http_return(200, 'OK', {"status": story.status})
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '改变模板状态失败')
 
 
 # """"删除模板"""
-def del_template(request):
+def del_story(request):
     """删除模板"""
     data = request_body(request, "POST")
     if not data:
@@ -604,16 +614,16 @@ def del_template(request):
     if not uuid:
         return http_return(400, '参数有误')
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
-    if not templateStory:
+    story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    if not story:
         return http_return(400, '没有对象')
 
 
-    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
-            templateStory.status = 'destroy'
-            templateStory.save()
+            story.status = 'destroy'
+            story.save()
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -634,10 +644,10 @@ class AudioStoryInfoView(ListAPIView):
         endTime = self.request.query_params.get('endtime', '')
 
         # id = self.request.query_params.get('id', '')                # 故事ID
-        username = self.request.query_params.get('username', '')    # 用户名
-        title = self.request.query_params.get('title', '')    # 模板名
+        nickName = self.request.query_params.get('nickName', '')    # 用户名
+        name = self.request.query_params.get('name', '')    # 模板名
         tag = self.request.query_params.get('tag', '')      # 类型标签
-        # recordtype = self.request.query_params.get('recordtype', '')      # 录制形式
+        # type = self.request.query_params.get('type', '')      # 录制形式
         if (startTime and not endTime) or  (not startTime and endTime):
             raise ParamsException({'code': 400, 'msg': '时间错误'})
         if startTime and endTime:
@@ -653,23 +663,18 @@ class AudioStoryInfoView(ListAPIView):
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
-        if username:
-            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(username__icontains=username).all())
-        if title:
+        if nickName:
+            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
+        if name:
             self.queryset = self.queryset.filter(
-                templateUuid__in=Story.objects.filter(title__icontains=title).all())
+                templateUuid__in=Story.objects.filter(name_icontains=name).all())
         if tag:
             self.queryset = self.queryset.filter(
-                tags=Tag.objects.filter(code='RECORDTYPE', tagName=tag).first())
+                tags=Tag.objects.filter(code='RECORDTYPE', name=tag).first())
 
         return self.queryset
 
 
-# 获取类型标签下的所有字标签
-# class TypeTagView(ListAPIView):
-#     queryset = Tag.objects.filter(code='SEARCHSORT', parent__tagName='类型', isDelete=False).\
-#         only('tagName', 'sortNum')
-#     serializer_class = TypeTagSerializer
 
 
 """批量下载"""

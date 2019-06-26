@@ -5,7 +5,7 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from manager import views
-from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView
+from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, TypeTagView
 
 app_name = 'manager'
 
@@ -21,18 +21,19 @@ urlpatterns = [
     path('tags/addchildtags/', views.add_child_tags, name='add_child_tags'),
     path('tags/modifychildtags/', views.modify_child_tags, name='modify_child_tags'),
     # 所有分类标签的字标签
-    # path('tags/typetags/', TypeTagView.as_view()),
+    path('tags/typetags/', TypeTagView.as_view()),
 
 
     # 模板故事路由
-    path('template/templatestories/', StoryView.as_view()),
-    path('template/addtemplate/', views.add_template, name='add_template'),
-    path('template/modifytemplate/', views.modify_template, name='modify_template'),
-    path('template/deltemplate/', views.del_template, name='del_template'),
-    path('template/changetemplatestatus/', views.change_template_status, name='change_template_status'),
+    path('story/stories/', StoryView.as_view()),
+    path('story/addstory/', views.add_story, name='add_story'),
+    path('story/modifystory/', views.modify_story, name='modify_story'),
+    path('story/delstory/', views.del_story, name='del_story'),
+    path('story/changestorystatus/', views.change_story_status, name='change_story_status'),
+
 
     # 模板音频
-    path('template/templateworks/', AudioStoryInfoView.as_view()),
+    path('story/audio/', AudioStoryInfoView.as_view()),
 
 
     # 自由音频

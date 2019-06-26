@@ -21,7 +21,7 @@ class Activity(BaseModle, models.Model):
     name = models.CharField(max_length=255, verbose_name="活动名称", null=True)
     intro = models.CharField(max_length=1024, verbose_name="活动介绍", null=True)
     status = models.CharField(max_length=32, verbose_name="活动状态", null=True)
-    mediaUuid = models.CharField(max_length=256, verbose_name="活动图片", null=True)
+    mediaUrl = models.CharField(max_length=256, verbose_name="活动图片", null=True)
     startTime = models.DateTimeField(verbose_name='活动开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='活动结束时间', null=True)
 
@@ -105,9 +105,9 @@ class Module(BaseModle, models.Model):
     """
 
     orderNum = models.IntegerField(verbose_name='排序编号', null=True)
-    type = models.CharField(max_length=32, null=True)       #显示模块类型 MOD1  MOD2  MOD3  MOD4
+    type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2强先听  MOD3热门推荐
     worksUuid = models.ForeignKey('Works', on_delete=models.CASCADE, related_name='moduleWorksUuid',
-                                   to_field='uuid', null=True)
+                                  to_field='uuid', null=True)
 
     class Meta:
         db_table = 'tb_module'
@@ -136,16 +136,6 @@ class Sign(BaseModle, models.Model):
         db_table = 'tb_sign'
 
 
-class Records(BaseModle, models.Model):
-    """播放记录/最近录过记录表"""
-    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRecordUuid', to_field='uuid')
-    workUuid = models.ForeignKey('Works', models.CASCADE, null=True, related_name='workRecordUuid', to_field='uuid')
-    recordType = models.CharField(max_length=20, null=True)  # 播放记录  / 最近录过
-
-    class Meta:
-        db_table = 'tb_records'
-
-
 class FriendShip(BaseModle, models.Model):
     """当前用户和其他用户关系表"""
     followed = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followed')
@@ -161,7 +151,8 @@ class HotSearch(BaseModle, models.Model):
     热搜词
     """
     keyword = models.CharField(max_length=32, null=True)  # 搜索关键词
-    orderNum = models.IntegerField(null=True)  # 排列序号
+    orderNum = models.IntegerField(null=True, default=0)  # 排列序号 0:不置顶  1：置顶
+    searchNum = models.IntegerField(null=True, default=0)
     isDelete = models.BooleanField(default=False)
 
     class Meta:
@@ -186,20 +177,18 @@ class Tag(BaseModle, models.Model):
     """
     code = models.CharField(max_length=20, null=True)  # 编码
     tagName = models.CharField(max_length=32, null=True)  # 标签名字
-    iconUrl = models.CharField(max_length=256, null=True) # 分类图标
-    sortNum = models.IntegerField(verbose_name='排序编号', null=True) # 排列顺序
-    parent = models.ForeignKey(to='self', on_delete=models.CASCADE,related_name='child_tag',
+    iconUrl = models.CharField(max_length=256, null=True)  # 分类图标
+    sortNum = models.IntegerField(verbose_name='排序编号', null=True)  # 排列顺序
+    parent = models.ForeignKey(to='self', on_delete=models.CASCADE, related_name='child_tag',
                                db_column='parent_id', to_field='uuid', null=True)  # 爸爸标签id
-    isUsing = models.BooleanField(default=True)                     # 标签状态停用还是使用
-    isDelete = models.BooleanField(default=False)                    # 标签是否删除
+    isUsing = models.BooleanField(default=True)  # 标签状态停用还是使用
+    isDelete = models.BooleanField(default=False)  # 标签是否删除
 
     def __str__(self):
         return self.tagName
 
     class Meta:
         db_table = 'tb_tag'
-
-
 
 
 class TemplateStory(BaseModle, models.Model):
@@ -237,7 +226,6 @@ class User(BaseModle, models.Model):
 
     versionUuid = models.ForeignKey('Version', models.CASCADE, null=True, related_name='versionUserUuid',
                                     to_field='uuid')
-    works = models.ManyToManyField(to='Works', through=Records)
 
     class Meta:
         db_table = 'tb_user'
@@ -311,6 +299,7 @@ class Viewpager(BaseModle, models.Model):
     jumpType = models.CharField(max_length=64, null=True)  # 跳转类型 1专辑 2作品 3故事 4外部链接
     targetUuid = models.CharField(max_length=128, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
+    location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图
 
     class Meta:
         db_table = 'tb_viewpager'
@@ -354,10 +343,24 @@ class Works(BaseModle, models.Model):
     albumUuid = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='albumWorkUuid', to_field='uuid',
                                   null=True)  # 专辑
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='userWorkUuid', to_field='uuid',
-                                  null=True)  # 用户
+                                 null=True)  # 用户
     checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
-    isDelete = models.BooleanField(default=False)    # 软删除
+    isDelete = models.BooleanField(default=False)  # 软删除
 
     class Meta:
         db_table = 'tb_works'
+
+
+class Behavior(BaseModle, models.Model):
+    """
+    用户对作品的行为记录表
+    """
+    userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='buUuid', to_field='uuid', null=True)
+    workUuid = models.ForeignKey(Works, on_delete=models.CASCADE, related_name='bwkUuid', to_field='uuid', null=True)
+    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录 5:发布记录
+    status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
+    rmark = models.CharField(max_length=256, null=True)
+
+    class Meta:
+        db_table = 'tb_behavior'

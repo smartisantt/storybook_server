@@ -1,5 +1,5 @@
 migrations/
-.idea/
+/.idea
 *.py[cod]
 *.so
 *.egg

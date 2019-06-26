@@ -326,6 +326,8 @@ def user_audio_list(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     user = User.objects.filter(uuid=uuid).first()
+    if not user:
+        return http_return(400,'用户信息不存在')
     audios = user.useAudioUuid.filter(isDelete=False).order_by("-createTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioList = []

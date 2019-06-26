@@ -18,6 +18,15 @@ class StorySerializer(serializers.ModelSerializer):
         exclude = ('tags', )
 
 
+class StorySimpleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Story
+        fields = ('uuid', 'name')
+
+
+
+
 class TemplateStory(object):
     pass
 
@@ -47,6 +56,14 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('nickName', 'avatar', 'roles', 'uuid')
+
+
+class UserSearchSerializer(serializers.ModelSerializer):
+
+
+    class Meta:
+        model = User
+        fields = ('uuid', 'nickName')
 
 
 class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
@@ -106,5 +123,28 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
 
 
 class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
-    pass
+    tagsInfo = serializers.SerializerMethodField()
+    bgmInfo = serializers.SerializerMethodField()
+    userInfo = serializers.SerializerMethodField()
+    storyInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_tagsInfo(audioinfo):
+        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+
+    @staticmethod
+    def get_bgmInfo(audioinfo):
+        return BgmSimpleSerializer(audioinfo.bgm).data
+
+    @staticmethod
+    def get_userInfo(audioinfo):
+        return UserSerializer(audioinfo.userUuid).data
+
+    @staticmethod
+    def get_storyInfo(audioinfo):
+        return StorySerializer(audioinfo.storyUuid).data
+
+    class Meta:
+        model = AudioStory
+        exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
 

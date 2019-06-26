@@ -11,7 +11,6 @@ from rest_framework.viewsets import GenericViewSet
 from serializers import serializer
 
 from manager import managerCommon
-from manager.filters import TemplateStoryFilter, FreedomWorksInfoFilter, TemplateWorksInfoFilter, CheckWorksInfoFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
@@ -19,8 +18,6 @@ from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q
 
-from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer, TemplateWorksInfoSerializer, \
-    FreedomWorksInfoSerializer, CheckWorksInfoSerializer, TypeTagSerializer
 from utils.errors import ParamsException
 
 
@@ -93,10 +90,9 @@ def login(request):
                     uuid=get_uuid(),
                     tel=user_info.get('phone', ''),
                     userID=userID,
-                    username=user_info.get('wxNickname', ''),
-                    roles="adminUser",
-                    # roles="normalUser",
-                    userLogo=user_info.get('wxNickname', ''),
+                    nickName=user_info.get('wxNickname', ''),
+                    roles="normalUser",
+                    avatar=user_info.get('wxAvatarUrl', ''),
                     gender=user_info.get('wxSex', 0),
                     status='normal'
                 )
@@ -157,7 +153,7 @@ def total_data(request):
         # 用户总人数
         totalUsers = User.objects.exclude(status='destroy').count()
         # 音频总数
-        totalWorks = Works.objects.all().count()
+        totalAudioStory = AudioStory.objects.all().count()
         # 专辑总数
         totalAlbums = Album.objects.all().count()
         # 新增用户人数
@@ -165,16 +161,16 @@ def total_data(request):
         # 活跃用户人数
         activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id')).count()
         # 新增音频数
-        newWorks = Works.objects.filter(createTime__range=(t1, t2)).count()
+        newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
 
         return http_return(200, 'OK',
                            {
                                'totalUsers': totalUsers,
-                               'totalWorks': totalWorks,
+                               'totalAudioStory': totalAudioStory,
                                'totalAlbums': totalAlbums,
                                'newUsers': newUsers,
                                'activityUsers': activityUsers,
-                               'newWorks': newWorks
+                               'newAudioStory': newAudioStory
                            })
 
 
@@ -445,11 +441,11 @@ def modify_child_tags(request):
 """
 模板管理
 """
-class TemplateStoryView(ListAPIView):
+class StoryView(ListAPIView):
     """GET 显示所有模板列表"""
-    queryset = TemplateStory.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
-    serializer_class = TemplateStorySerializer
-    filter_class = TemplateStoryFilter
+    queryset = Story.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
+    serializer_class = StorySerializer
+    filter_class = StoryFilter
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -489,14 +485,14 @@ def add_template(request):
     if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    templateStory = TemplateStory.objects.filter(title=title).exclude(status = 'destroy').first()
+    templateStory = Story.objects.filter(title=title).exclude(status = 'destroy').first()
     if templateStory:
         return http_return(400, '重复模板名')
 
     try:
         with transaction.atomic():
             uuid = get_uuid()
-            templateStory = TemplateStory(
+            templateStory = Story(
                 uuid = uuid,
                 faceUrl = faceUrl,
                 listUrl = listUrl,
@@ -533,18 +529,18 @@ def modify_template(request):
     if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
     if not templateStory:
         return http_return(400, '没有对象')
 
     myTitle = templateStory.title
     # 如果修改标题
     if myTitle != title:
-        templateStory = TemplateStory.objects.filter(title=title).exclude(status='destroy').first()
+        templateStory = Story.objects.filter(title=title).exclude(status='destroy').first()
         if templateStory:
             return http_return(400, '重复标题')
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
             templateStory.faceUrl = faceUrl
@@ -571,12 +567,12 @@ def change_template_status(request):
     if not uuid:
         return http_return(400, '参数有误')
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     if not templateStory:
         return http_return(400, '没有对象')
 
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
             # normal启用 forbid禁用 destroy删除
@@ -602,12 +598,12 @@ def del_template(request):
     if not uuid:
         return http_return(400, '参数有误')
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     if not templateStory:
         return http_return(400, '没有对象')
 
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
             templateStory.status = 'destroy'
@@ -619,13 +615,13 @@ def del_template(request):
 
 
 # """模板音频"""
-class TemplateWorksInfoView(ListAPIView):
-    queryset = Works.objects.filter(isDelete=False, worksType=1)\
+class TemplateAudioStoryInfoView(ListAPIView):
+    queryset = AudioStory.objects.filter(isDelete=False, worksType=1)\
         .select_related('bgmUuid', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
-    serializer_class = TemplateWorksInfoSerializer
-    filter_class = TemplateWorksInfoFilter
+    serializer_class = TemplateAudioStoryInfoSerializer
+    filter_class = TemplateAudioStoryInfoFilter
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -655,7 +651,7 @@ class TemplateWorksInfoView(ListAPIView):
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(username__icontains=username).all())
         if title:
             self.queryset = self.queryset.filter(
-                templateUuid__in=TemplateStory.objects.filter(title__icontains=title).all())
+                templateUuid__in=Story.objects.filter(title__icontains=title).all())
         if tag:
             self.queryset = self.queryset.filter(
                 tags=Tag.objects.filter(code='RECORDTYPE', tagName=tag).first())
@@ -683,13 +679,13 @@ def add_works(request):
 
 
 """自由音频"""
-class FreedomWorksInfoView(ListAPIView):
-    queryset = Works.objects.filter(isDelete=False, worksType=0)\
+class FreedomAudioStoryInfoView(ListAPIView):
+    queryset = AudioStory.objects.filter(isDelete=False, worksType=0)\
         .select_related('bgmUuid', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
-    serializer_class = FreedomWorksInfoSerializer
-    filter_class = FreedomWorksInfoFilter
+    serializer_class = FreedomAudioStoryInfoSerializer
+    filter_class = FreedomAudioStoryInfoFilter
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -727,13 +723,13 @@ class FreedomWorksInfoView(ListAPIView):
 
 
 # 内容审核
-class CheckWorksInfoView(ListAPIView):
-    queryset = Works.objects.filter(isDelete=False )\
+class CheckAudioStoryInfoView(ListAPIView):
+    queryset = AudioStory.objects.filter(isDelete=False )\
         .select_related('bgmUuid', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
-    serializer_class = CheckWorksInfoSerializer
-    filter_class = CheckWorksInfoFilter
+    serializer_class = CheckAudioStoryInfoSerializer
+    filter_class = CheckAudioStoryInfoFilter
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -768,9 +764,9 @@ class CheckWorksInfoView(ListAPIView):
         # worksType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
         if title:
             titleInTemplateQuerySet = self.queryset.filter(
-                templateUuid__in=TemplateStory.objects.filter(title__icontains=title).all())
-            titleInWorksQuerySet = self.queryset.filter(title__icontains=title).all()
-            self.queryset = titleInTemplateQuerySet|titleInWorksQuerySet
+                templateUuid__in=Story.objects.filter(title__icontains=title).all())
+            titleInAudioStoryQuerySet = self.queryset.filter(title__icontains=title).all()
+            self.queryset = titleInTemplateQuerySet|titleInAudioStoryQuerySet
         return self.queryset
 
 
@@ -790,7 +786,7 @@ def config_tags(request):
 
         if not worksUuid:
             return http_return(400, '参数错误')
-        works = Works.objects.filter(uuid=worksUuid).first()
+        works = AudioStory.objects.filter(uuid=worksUuid).first()
 
         if not works:
             return http_return(400, '找不到此音频')

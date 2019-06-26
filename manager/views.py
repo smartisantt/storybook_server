@@ -777,40 +777,42 @@ class CheckWorksInfoView(ListAPIView):
 
 # 配置标签
 def config_tags(request):
-    data = request_body(request, 'POST')
-    if not data:
-        return http_return(400, '参数错误')
-    worksUuid = data.get('worksuuid', '')
-    if not worksUuid:
-        return http_return(400, '参数错误')
-    works = Works.objects.filter(uuid=worksUuid).first()
-    if not works:
-        return http_return(400, '找不到此音频')
+    # data = request_body(request, 'POST')
+    # if not data:
+    #     return http_return(400, '参数错误')
+    # worksUuid = data.get('worksuuid', '')
+    # typeUuidList = data.get('typeUuidList', '')
     if request.method == 'POST':
-        tagsUuidList = request.POST.getlist('tagsuuid')
-        if not tagsUuidList:
-            try:
-                with transaction.atomic():
-                    works.tags = None
-                    works.save()
-                    return http_return(200, 'OK')
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '配置标签失败')
-        else:
-            for tagUuid in tagsUuidList:
-                tag = Tag.objects.filter(uuid=tagUuid).first()
-                if not tag:
-                    return http_return(400, '错误标签')
-                try:
-                    with transaction.atomic():
-                        works.tags.append(tag)
-                        works.save()
+        worksUuid = request.POST.get('worksuuid', '')
+        typeUuidList = request.POST.getlist('typeUuidList', '')
+        if not all([worksUuid, typeUuidList]):
+            return http_return(400, '参数错误')
 
-                except Exception as e:
-                    logging.error(str(e))
-                    return http_return(400, '配置标签失败')
-            return http_return(200, 'OK')
+        if not worksUuid:
+            return http_return(400, '参数错误')
+        works = Works.objects.filter(uuid=worksUuid).first()
+
+        if not works:
+            return http_return(400, '找不到此音频')
+        # 作品类型  是用的模板1 还是自由录制0
+        worksType = works.worksType
+
+        tags = []
+        for tagUuid in typeUuidList:
+            tag = Tag.objects.filter(uuid=tagUuid).first()
+            if not tag:
+                return http_return(400, '无效标签')
+            tags.append(tag)
+
+        try:
+            with transaction.atomic():
+                works.tags.clear()
+                works.tags.add(*tags)
+                return http_return(200, 'OK')
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '配置标签失败')
+
 
 
 

@@ -393,10 +393,10 @@ def create_cache(user_info, token):
     :return:
     """
     user_data = {
-        'name': user_info.username,
+        'nickName': user_info.nickName,
         'uuid': user_info.uuid,
         'userID': user_info.userID,
-        'logo': user_info.userLogo,
+        'avatar': user_info.avatar,
         'tel': user_info.tel,
         'role': user_info.roles,
         'status': user_info.status,
@@ -564,9 +564,9 @@ def check_identify(func):
                         uuid=user_uuid,
                         tel=user_info.get('phone', ''),
                         userID=user_info.get('userId', ''),
-                        username=user_info.get('wxNickname', ''),
+                        nickName=user_info.get('wxNickname', ''),
                         roles="normalUser",
-                        userLogo=user_info.get('wxNickname', ''),
+                        avatar=user_info.get('wxNickname', ''),
                         gender=user_info.get('wxSex', None),
                         versionUuid=version if version else None,
                         status="normal",

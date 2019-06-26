@@ -3,14 +3,14 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import TemplateStory, Works, Tag
+from manager.models import Story, AudioStory, Tag
 from utils.errors import ParamsException
 
 
 class TemplateStorySerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = TemplateStory
+        model = Story
         exclude = ('tags', )
 
     def validate(self, attrs):
@@ -31,7 +31,7 @@ class TemplateStoryDetailSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """创建"""
         validated_data['uuid'] = get_uuid()
-        templteStory = TemplateStory.objects.create(**validated_data)
+        templteStory = Story.objects.create(**validated_data)
         return templteStory
 
     def update(self, instance, validated_data):
@@ -43,7 +43,7 @@ class TemplateStoryDetailSerializer(serializers.ModelSerializer):
         return instance
 
     class Meta:
-        model = TemplateStory
+        model = Story
         exclude = ('tags', 'uuid', 'id')
 
 
@@ -61,6 +61,6 @@ class WorksInfoSerializer(serializers.ModelSerializer):
         return TagsSimpleSerialzer(work.tags, many=True).data
 
     class Meta:
-        model = Works
+        model = AudioStory
         exclude = ('id', )
 

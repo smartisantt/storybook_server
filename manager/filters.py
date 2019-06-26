@@ -1,7 +1,7 @@
 
 import django_filters
 
-from manager.models import TemplateStory, Works, Tag
+from manager.models import Story, AudioStory, Tag
 
 
 class TemplateStoryFilter(django_filters.rest_framework.FilterSet):
@@ -9,7 +9,7 @@ class TemplateStoryFilter(django_filters.rest_framework.FilterSet):
     title = django_filters.CharFilter('title', lookup_expr='contains')
 
     class Meta:
-        model = TemplateStory
+        model = Story
         fields = ('id', 'title')
 
 
@@ -24,5 +24,5 @@ class WorksInfoFilter(django_filters.rest_framework.FilterSet):
         )
 
     class Meta:
-        model = Works
+        model = AudioStory
         fields = ('id', 'recordType', )

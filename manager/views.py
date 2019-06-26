@@ -156,7 +156,7 @@ def total_data(request):
         # 用户总人数
         totalUsers = User.objects.exclude(status='destroy').count()
         # 音频总数
-        totalWorks = Works.objects.all().count()
+        totalWorks = AudioStory.objects.all().count()
         # 专辑总数
         totalAlbums = Album.objects.all().count()
         # 新增用户人数
@@ -164,7 +164,7 @@ def total_data(request):
         # 活跃用户人数
         activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id')).count()
         # 新增音频数
-        newWorks = Works.objects.filter(createTime__range=(t1, t2)).count()
+        newWorks = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
 
         return http_return(200, 'OK',
                            {
@@ -190,7 +190,7 @@ def show_all_tags(request):
     tagList = []
     for tag in tags:
         childTagList= []
-        for child_tag in tag.child_tag.only('uuid', 'sortNum', 'tagName'):
+        for child_tag in tag.child_tag.only('uuid', 'sortNum', 'name'):
             if child_tag.isDelete == False:
                 childTagList.append({
                     "uuid": child_tag.uuid,
@@ -447,7 +447,7 @@ def modify_child_tags(request):
 """GET 显示所有模板列表"""
 
 class TemplateStoryView(ListAPIView):
-    queryset = TemplateStory.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
+    queryset = Story.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
     serializer_class = TemplateStorySerializer
     filter_class = TemplateStoryFilter
 
@@ -489,14 +489,14 @@ def add_template(request):
     if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    templateStory = TemplateStory.objects.filter(title=title).exclude(status = 'destroy').first()
+    templateStory = Story.objects.filter(title=title).exclude(status ='destroy').first()
     if templateStory:
         return http_return(400, '重复模板名')
 
     try:
         with transaction.atomic():
             uuid = get_uuid()
-            templateStory = TemplateStory(
+            templateStory = Story(
                 uuid = uuid,
                 faceUrl = faceUrl,
                 listUrl = listUrl,
@@ -533,7 +533,7 @@ def modify_template(request):
     if not all([faceUrl, listUrl, title, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status ='destroy').first()
     if not templateStory:
         return http_return(400, '没有对象')
 
@@ -542,11 +542,11 @@ def modify_template(request):
 
     # 如果修改标题
     if myTitle != title:
-        templateStory = TemplateStory.objects.filter(title=title).exclude(status='destroy').first()
+        templateStory = Story.objects.filter(title=title).exclude(status='destroy').first()
         if templateStory:
             return http_return(400, '重复标题')
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
             templateStory.faceUrl = faceUrl
@@ -575,12 +575,12 @@ def del_template(request):
     if not uuid:
         return http_return(400, '参数有误')
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     if not templateStory:
         return http_return(400, '没有对象')
 
 
-    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    templateStory = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
             templateStory.status = 'destroy'
@@ -593,8 +593,8 @@ def del_template(request):
 
 """模板音频"""
 class WorksInfoView(ListAPIView):
-    queryset = Works.objects.filter(isDelete=False, worksType=1).defer('id')\
-        .select_related('bgmUuid', 'moduleUuid', 'userUuid')\
+    queryset = AudioStory.objects.filter(isDelete=False, worksType=1).defer('id')\
+        .select_related('bgm', 'moduleUuid', 'publisher')\
         .prefetch_related('tags').order_by('-createTime')
 
     serializer_class = WorksInfoSerializer

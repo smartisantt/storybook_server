@@ -74,7 +74,7 @@ def recording_index_list(request):
     sort = data.get('sort', '')  # latest最新 rank排行 recommended推荐
     if sort not in ['latest', 'rank', 'recommended']:
         return http_return(400, '参数错误')
-    story = TemplateStory.objects.exclude(status="destroy")
+    story = Story.objects.exclude(status="destroy")
     if sort == "latest":
         story = story.filter(isRecommd=False).order_by("-isTop", "-updateTime")
     elif sort == "rank":
@@ -105,7 +105,7 @@ def recording_banner(request):
     if not data:
         return http_return(400, '参数错误')
     nowDatetime = datetime.datetime.now()
-    banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
+    banner = CycleBanner.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
     # 按显示序号排序
     banner = banner.filter(location=1).order_by('orderNum')
     banners = banner.all()
@@ -134,7 +134,7 @@ def recording_stroy_detail(request):
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数错误')
-    story = TemplateStory.objects.filter(uuid=uuid, status="normal").first()
+    story = Story.objects.filter(uuid=uuid, status="normal").first()
     if not story:
         return http_return(400, '模板故事不存在')
     d = {
@@ -200,7 +200,7 @@ def recording_send(request):
     if bgmUuid:
         bg = Bgm.objects.filter(uuid=bgmUuid).first()
     if storyUuid:
-        template = TemplateStory.objects.filter(uuid=storyUuid).first()
+        template = Story.objects.filter(uuid=storyUuid).first()
     if not all([voiceUrl, voiceVolume, recordType, typeUuidList, worksTime]):
         return http_return(400, '参数错误')
     tags = []
@@ -212,7 +212,7 @@ def recording_send(request):
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     try:
         uuid = get_uuid()
-        Works.objects.create(
+        AudioStory.objects.create(
             uuid=uuid,
             userUuid=user if user else None,
             isUpload=1,
@@ -233,19 +233,6 @@ def recording_send(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '发布失败')
-    # 记录历史
-    work = Works.objects.filter(uuid=uuid).first()
-    try:
-        with transaction.atomic():
-            Behavior.objects.create(
-                uuid=get_uuid(),
-                userUuid=user,
-                workUuid=work,
-                type=5,
-            )
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '保存记录失败')
     return http_return(200, '发布成功')
 
 
@@ -285,8 +272,8 @@ def user_center(request):
     user = User.objects.filter(uuid=uuid).first()
     if not user:
         return http_return(400, '用户信息不存在')
-    fans = user.get_followed()
-    focus = user.get_follower()
+    fans = user.get_followers()
+    focus = user.get_follows()
     isFan = False
     myUuid = data['_cache']['uuid']
     for focu in focus:
@@ -319,7 +306,7 @@ def become_fans(request):
     uuid = data.get('uuid', '')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
-    if not selfUser.set_follower(uuid):
+    if not selfUser.set_follows(uuid):
         return http_return(400, '关注失败')
     return http_return(200, '关注成功')
 
@@ -383,9 +370,9 @@ def user_fans(request):
     user = User.objects.filter(uuid=uuid).first()
     if not user:
         return http_return(400, '用户信息不存在')
-    users = user.get_follower()
+    users = user.get_follows()
     if type == 'fans':
-        users = user.get_followed()
+        users = user.get_followers()
     total, users = page_index(users, page, pageCount)
     userList = []
     for u in users:
@@ -410,7 +397,7 @@ def work_list(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     worksType = data.get('worksType', None)
-    work = Works.objects.filter(checkStatus='check', isDelete=False)
+    work = AudioStory.objects.filter(checkStatus='check', isDelete=False)
     if worksType:
         work = work.filter(worksType=worksType)
     works = work.order_by('-createTime').all()
@@ -454,7 +441,7 @@ def work_play(request):
     pageCount = data.get('pageCount', '')
     if not uuid:
         return http_return(400, '参数错误')
-    work = Works.objects.filter(uuid=uuid, checkStatus='check', isDelete=False).first()
+    work = AudioStory.objects.filter(uuid=uuid, checkStatus='check', isDelete=False).first()
     if not work:
         return http_return(400, '故事信息不存在')
     # 更新播放次数
@@ -501,7 +488,7 @@ def work_play(request):
         "createTIme": datetime_to_string(work.createTime),
         "playTimes": work.playTimes,
     }
-    otherWork = Works.objects.exclude(uuid=uuid, isDelete=True).filter(userUuid__uuid=work.userUuid.uuid)
+    otherWork = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(userUuid__uuid=work.userUuid.uuid)
     otherWorks = otherWork.order_by("-createTime").all()
     total, otherWorks = page_index(otherWorks, page, pageCount)
     workList = []
@@ -537,7 +524,7 @@ def index_banner(request):
     if not data:
         return http_return(400, '参数错误')
     nowDatetime = datetime.datetime.now()
-    banner = Viewpager.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
+    banner = CycleBanner.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
     # 按显示序号排序
     banner = banner.filter(location=0).order_by('orderNum')
     banners = banner.all()
@@ -609,7 +596,7 @@ def index_list(request):
         })
     # 猜你喜欢
     likeList = []
-    works = Works.objects.filter(isDelete=False, checkStatus="check").order_by("-playTimes").all()[:6]
+    works = AudioStory.objects.filter(isDelete=False, checkStatus="check").order_by("-playTimes").all()[:6]
     for work in works:
         title = work.title
         bgUrl = work.bgUrl

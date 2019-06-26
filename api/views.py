@@ -3,6 +3,8 @@
 
 
 # Create your views here.
+from django.db.models import Q
+
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from manager.models import *
@@ -327,7 +329,7 @@ def user_audio_list(request):
     pageCount = data.get('pageCount', '')
     user = User.objects.filter(uuid=uuid).first()
     if not user:
-        return http_return(400,'用户信息不存在')
+        return http_return(400, '用户信息不存在')
     audios = user.useAudioUuid.filter(isDelete=False).order_by("-createTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioList = []
@@ -619,7 +621,7 @@ def index_list(request):
 
 
 @check_identify
-def search_history_list(request):
+def search_all(request):
     """
     搜索历史
     :param request:
@@ -628,5 +630,142 @@ def search_history_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
+    keyWord = data.get('keyWord')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
+    if not selfUser:
+        return http_return(400, '未获取到用户信息')
+    if not keyWord:
+        return http_return(400, '参数错误')
+    if not save_search(data):
+        return http_return(400, '存储搜索记录失败')
+    audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
+    user = User.objects.filter(roles='normalUser')
+    audio = audio.filter(Q(storyUuid__name__contains=keyWord) | Q(name__contains=keyWord)).order_by("-isTop",
+                                                                                                    "-createTime")
+    user = user.filter(nickName__contains=keyWord).order_by("-createTime")
+    audioList = []
+    for au in audio.all()[:6]:
+        icon = au.bgIcon
+        name = au.name
+        if au.audioStoryType:
+            icon = au.storyUuid.listIcon
+            name = au.storyUuid.name
+        audioList.append({
+            "uuid": au.uuid,
+            "icon": icon,
+            "name": name,
+        })
+    userList = []
+    for u in user.all()[:6]:
+        audioCount = u.useAudioUuid.filter(isDelete=False).count()
+        followers = len(u.get_followers())
+        userList.append({
+            "uuid": u.uuid,
+            "avatar": u.avatar,
+            "nickName": u.nickName,
+            "audioCount": audioCount,
+            "followers": followers,
+        })
+    return http_return(200, '成功', {"audioList": audioList, "userList": userList})
+
+
+@check_identify
+def search_audio(request):
+    """
+    搜索音频
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    keyWord = data.get('keyWord')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()
+    if not selfUser:
+        return http_return(400, '未获取到用户信息')
+    if not keyWord:
+        return http_return(400, '参数错误')
+    if not save_search(data):
+        return http_return(400, '存储搜索记录失败')
+    audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
+    audio = audio.filter(Q(storyUuid__name__contains=keyWord) | Q(name__contains=keyWord)).order_by("-createTime")
+    audios = audio.all()
+    total, audios = page_index(audios, page, pageCount)
+    audioList = []
+    for au in audios:
+        icon = au.bgIcon
+        name = au.name
+        if au.audioStoryType:
+            icon = au.storyUuid.listIcon
+            name = au.storyUuid.name
+        audioList.append({
+            "uuid": au.uuid,
+            "icon": icon,
+            "name": name,
+            "publisher": au.userUuid.nickName,
+            "duration": au.duration,
+        })
+    return http_return(200, '成功', {"audioList": audioList, "total": total})
+
+
+@check_identify
+def search_user(request):
+    """
+    搜索历史
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    keyWord = data.get('keyWord')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()
+    if not selfUser:
+        return http_return(400, '未获取到用户信息')
+    if not keyWord:
+        return http_return(400, '参数错误')
+    if not save_search(data):
+        return http_return(400, '存储搜索记录失败')
+    user = User.objects.filter(roles='normalUser')
+    users = user.filter(nickName__contains=keyWord).order_by("-createTime").all()
+    total, users = page_index(users, page, pageCount)
+    userList = []
+    for u in users:
+        audioCount = u.useAudioUuid.filter(isDelete=False).count()
+        followers = len(u.get_followers())
+        userList.append({
+            "uuid": u.uuid,
+            "avatar": u.avatar,
+            "nickName": u.nickName,
+            "audioCount": audioCount,
+            "followers": followers,
+        })
+    return http_return(200, '成功', {"total": total, "userList": userList})
+
+
+@check_identify
+def search_hot(request):
+    """
+    热搜关键字
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    hots = HotSearch.objects.filter(isDelete=False).order_by("-orderNum", "-searchNum").all()[:10]
+    total = len(hots)
+    hotSearchList = []
+    for hot in hots:
+        hotSearchList.append({
+            "uuid": hot.uuid,
+            "name": hot.keyword,
+        })
+    return http_return(200, "成功", {"total": total, "hotSearchList": hotSearchList})

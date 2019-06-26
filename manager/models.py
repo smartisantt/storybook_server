@@ -165,7 +165,6 @@ class SearchHistory(BaseModle, models.Model):
     搜索历史表
     """
     searchName = models.CharField(max_length=20, null=True)  # 搜索名字
-    searchTime = models.DateTimeField(null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userSearchUuid', to_field='uuid')
 
     class Meta:

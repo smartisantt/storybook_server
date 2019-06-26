@@ -132,7 +132,7 @@ def login(request):
 首页数据
 """
 def total_data(request):
-    data = managerCommon.request_body(request, 'GET')
+    data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
     # 前端传入毫秒为单位的时间戳
@@ -186,23 +186,24 @@ def show_all_tags(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    tags = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True, isDelete=False).all().order_by('sortNum')
+    tags = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True, isDelete=False).\
+        all().order_by('sortNum')
 
     tagList = []
     for tag in tags:
         childTagList= []
-        for child_tag in tag.child_tag.only('uuid', 'sortNum', 'tagName'):
+        for child_tag in tag.child_tag.only('uuid', 'sortNum', 'name'):
             if child_tag.isDelete == False:
                 childTagList.append({
                     "uuid": child_tag.uuid,
-                    "tagName": child_tag.tagName,
+                    "name": child_tag.name,
                     "sortNum": child_tag.sortNum,
                 })
         tagList.append({
             "uuid": tag.uuid,
-            "tagName": tag.tagName,
+            "name": tag.name,
             "sortNum": tag.sortNum,
-            "iconUrl": tag.iconUrl,
+            "icon": tag.icon,
             "isUsing": tag.isUsing,
             "childTagList": childTagList,
             "childTagsNum": len(childTagList)        # 子标签个数
@@ -216,12 +217,12 @@ def add_tags(request):
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')
-    iconUrl = data.get('iconUrl', '')
-    tagName = data.get('tagName', '')
+    icon = data.get('icon', '')
+    name = data.get('name', '')
     sortNum = data.get('sortNum', '')
 
     # all 都为True 才返回True
-    if not all([tagName, sortNum, iconUrl]):
+    if not all([name, sortNum, icon]):
         return http_return(400, '参数有误')
     if not isinstance(sortNum, int):
         return http_return(400, '序号错误')
@@ -232,7 +233,7 @@ def add_tags(request):
     if tag:
         return http_return(400, '重复序号')
     # 查询是否有重复tagName
-    tag = Tag.objects.filter(tagName=tagName, parent_id__isnull=True, isDelete=False).first()
+    tag = Tag.objects.filter(name=name, parent_id__isnull=True, isDelete=False).first()
     if tag:
         return http_return(400, '重复分类名')
     try:
@@ -241,8 +242,8 @@ def add_tags(request):
             tag = Tag(
                 uuid = uuid,
                 code = 'SEARCHSORT',
-                tagName = tagName,
-                iconUrl = iconUrl,
+                name = name,
+                icon = icon,
                 sortNum = sortNum,
             )
             tag.save()
@@ -257,11 +258,11 @@ def modify_tags(request):
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')
-    iconUrl = data.get('iconUrl', '')
-    tagName = data.get('tagName', '')
+    icon = data.get('icon', '')
+    name = data.get('name', '')
     sortNum = data.get('sortNum', '')
     uuid = data.get('uuid', '')
-    if not all([tagName, sortNum, uuid, iconUrl]):
+    if not all([name, sortNum, uuid, icon]):
         return http_return(400, '参数错误')
     if not isinstance(sortNum, int):
         return http_return(400, '序号错误')
@@ -271,27 +272,27 @@ def modify_tags(request):
     if not tag:
         return http_return(400, '没有对象')
     mySortNum = tag.sortNum
-    myTagName = tag.tagName
-    iconUrl = tag.iconUrl
+    myName = tag.name
+    icon = tag.icon
 
     if sortNum != mySortNum:
         tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
         if tag:
             return http_return(400, '重复序号')
 
-    if tagName != myTagName:
-        tag = Tag.objects.filter(tagName=tagName, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+    if name != myName:
+        tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
         if tag:
             return http_return(400, '重复标签')
     tag = Tag.objects.filter(uuid=uuid).first()
     try:
         with transaction.atomic():
             tag.sortNum = sortNum
-            tag.tagName = tagName
+            tag.name = name
             tag.save()
             return http_return(200, 'OK', {
-                'tagName': tagName,
-                'iconUrl': iconUrl,
+                'name': name,
+                'icon': icon,
                 'sortNum': sortNum,
             })
 
@@ -315,7 +316,8 @@ def stop_tags(request):
         with transaction.atomic():
             tag.isUsing = not tag.isUsing
             tag.save()
-            return http_return(200, 'OK')
+            # 标签状态停用0 还是使用1
+            return http_return(200, 'OK', {"status":tag.isUsing})
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存分类失败')
@@ -348,9 +350,9 @@ def add_child_tags(request):
     if not data:
         return http_return(400, '参数错误')
     parentUuid = data.get('parentUuid', '')
-    tagName = data.get('tagName', '')
+    name = data.get('name', '')
     sortNum = data.get('sortNum', '')
-    if not all([parentUuid, tagName, sortNum]):
+    if not all([parentUuid, name, sortNum]):
         return http_return(400, '参数错误')
     if not isinstance(sortNum, int):
         return http_return(400, '序号错误')
@@ -360,11 +362,11 @@ def add_child_tags(request):
     parentTag = Tag.objects.filter(uuid=parentUuid, code='SEARCHSORT', isDelete=False, parent_id__isnull=True).first()
     if not parentTag:
         return http_return(400, '参数有误')
-    # 查询是否有重复tagName
-    tag = Tag.objects.filter(tagName=tagName, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+    # 查询是否有重复name
+    tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
     if tag:
         return http_return(400, '重复标签')
-    # 查询是否有重复tagName
+    # 查询是否有重复sortNum
     tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
     if tag:
         return http_return(400, '重复序号')
@@ -375,14 +377,14 @@ def add_child_tags(request):
             tag = Tag(
                 uuid=uuid,
                 code='SEARCHSORT',
-                tagName=tagName,
+                name=name,
                 sortNum=sortNum,
                 parent=parentTag
             )
             tag.save()
             return http_return(200, 'OK', {
                 'uuid': uuid,
-                'tagName': tagName,
+                'name': name,
                 'sortNum': sortNum,
                 'parentUuid': parentUuid
             })
@@ -397,20 +399,20 @@ def modify_child_tags(request):
     if not data:
         return http_return(400, '参数错误')
     parentUuid = data.get('parentUuid', '')
-    tagName = data.get('tagName', '')
+    name = data.get('name', '')
     sortNum = data.get('sortNum', '')
     uuid = data.get('uuid', '')
-    if not all([parentUuid, tagName, sortNum, uuid]):
+    if not all([parentUuid, name, sortNum, uuid]):
         return http_return(400, '参数错误')
     if not isinstance(sortNum, int):
         return http_return(400, '序号错误')
     if sortNum <= 0:
         return http_return(400, '序号错误')
-    tag = Tag.objects.filter(uuid=uuid).first().sortNum
+    tag = Tag.objects.filter(uuid=uuid).first()
     if not tag:
         return http_return(400, '没有对象')
     mySortNum = tag.sortNum
-    myTagName = tag.tagName
+    myName = tag.name
 
     if sortNum != mySortNum:
         tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
@@ -420,19 +422,19 @@ def modify_child_tags(request):
     if not parentTag:
         return http_return(400, '参数有误')
 
-    if tagName != myTagName:
-        tag = Tag.objects.filter(tagName=tagName, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+    if name != myName:
+        tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
         if tag:
             return http_return(400, '重复标签')
-
+    tag = Tag.objects.filter(uuid=uuid).first()
     try:
         with transaction.atomic():
             tag.sortNum = sortNum
-            tag.tagName = tagName
+            tag.name = name
             tag.save()
             return http_return(200, 'OK', {
                 'uuid': uuid,
-                'tagName': tagName,
+                'name': name,
                 'sortNum': sortNum,
                 'parentUuid': parentUuid
             })

@@ -35,23 +35,39 @@ class TagsSimpleSerialzer(serializers.ModelSerializer):
         model = Tag
         exclude = ("parent", "isDelete", "isUsing")
 
-
-class WorksInfoSerializer(serializers.ModelSerializer):
-    tags = serializers.SerializerMethodField()
-
-    def get_tags(self, work):
-        return TagsSimpleSerialzer(work.tags, many=True).data
+class BgmSimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = AudioStory
-        exclude = ('id', )
+        model = Bgm
+        fields = ('name', 'url', 'duration')
 
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('nickName', 'avatar', 'roles', 'uuid')
 
 class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
     pass
 
 
 class AudioStoryInfoSerializer(serializers.ModelSerializer):
+    tagsInfo = serializers.SerializerMethodField()
+    bgmInfo = serializers.SerializerMethodField()
+    userInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_tagsInfo(audioinfo):
+        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+
+    @staticmethod
+    def get_bgmInfo(audioinfo):
+        return BgmSimpleSerializer(audioinfo.bgm).data
+
+    @staticmethod
+    def get_userInfo(audioinfo):
+        return UserSerializer(audioinfo.userUuid).data
 
     class Meta:
         model = AudioStory

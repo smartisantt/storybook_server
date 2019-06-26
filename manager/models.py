@@ -76,10 +76,10 @@ class Feedback(BaseModle, models.Model):
     questiontype = models.CharField(max_length=26,
                                     null=True)
     content = models.CharField(max_length=1024, null=True)
-    mediauuid1 = models.CharField(max_length=64, null=True)
-    mediauuid2 = models.CharField(max_length=64, null=True)
-    mediauuid3 = models.CharField(max_length=64, null=True)
-    mediauuid4 = models.CharField(max_length=64, null=True)
+    url1 = models.CharField(max_length=64, null=True)
+    url2 = models.CharField(max_length=64, null=True)
+    url3 = models.CharField(max_length=64, null=True)
+    url4 = models.CharField(max_length=64, null=True)
     tel = models.CharField(max_length=20, null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userFeedbackUuid', to_field='uuid')
 

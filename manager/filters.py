@@ -41,7 +41,11 @@ class CheckWorksInfoFilter(django_filters.rest_framework.FilterSet):
 
 
 class FreedomAudioStoryInfoFilter(django_filters.rest_framework.FilterSet):
-    pass
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+
+    class Meta:
+        model = AudioStory
+        fields = ('id', 'type', 'name')
 
 class AudioStoryInfoFilter(django_filters.rest_framework.FilterSet):
 

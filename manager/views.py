@@ -11,9 +11,12 @@ from rest_framework.viewsets import GenericViewSet
 from serializers import serializer
 
 from manager import managerCommon
+from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
+from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
+    AudioStoryInfoSerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q
@@ -102,7 +105,7 @@ def login(request):
                 except Exception as e:
                     logging.error(str(e))
                     return http_return(400, '保存失败')
-            user = User.objects.filter(userID=userID).only('userID').first()
+            user = User.objects.filter(userID=userID).exclude(status__in=['destroy','forbbiden_login']).first()
             print(user.uuid)
             role = user.roles
 
@@ -159,7 +162,8 @@ def total_data(request):
         # 新增用户人数
         newUsers = User.objects.filter(createTime__range=(t1, t2)).count()
         # 活跃用户人数
-        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id')).count()
+        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id').\
+            annotate(Count('userUuid_id')).count()
         # 新增音频数
         newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
 
@@ -615,13 +619,13 @@ def del_template(request):
 
 
 # """模板音频"""
-class TemplateAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, worksType=1)\
+class AudioStoryInfoView(ListAPIView):
+    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=1)\
         .select_related('bgmUuid', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
-    serializer_class = TemplateAudioStoryInfoSerializer
-    filter_class = TemplateAudioStoryInfoFilter
+    serializer_class = AudioStoryInfoSerializer
+    filter_class = AudioStoryInfoFilter
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -660,10 +664,10 @@ class TemplateAudioStoryInfoView(ListAPIView):
 
 
 # 获取类型标签下的所有字标签
-class TypeTagView(ListAPIView):
-    queryset = Tag.objects.filter(code='SEARCHSORT', parent__tagName='类型', isDelete=False).\
-        only('tagName', 'sortNum')
-    serializer_class = TypeTagSerializer
+# class TypeTagView(ListAPIView):
+#     queryset = Tag.objects.filter(code='SEARCHSORT', parent__tagName='类型', isDelete=False).\
+#         only('tagName', 'sortNum')
+#     serializer_class = TypeTagSerializer
 
 
 """批量下载"""
@@ -680,7 +684,7 @@ def add_works(request):
 
 """自由音频"""
 class FreedomAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, worksType=0)\
+    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0)\
         .select_related('bgmUuid', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 

@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import Tag, User, Bgm, AudioStory
+from manager.models import Tag, User, Bgm, AudioStory, Story
 from utils.errors import ParamsException
 
 
@@ -11,10 +11,10 @@ class TemplateStory(object):
     pass
 
 
-class TemplateStorySerializer(serializers.ModelSerializer):
+class StorySerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = TemplateStory
+        model = Story
         exclude = ('tags', )
 
 
@@ -45,4 +45,17 @@ class WorksInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = AudioStory
         exclude = ('id', )
+
+
+class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
+    pass
+
+
+class AudioStoryInfoSerializer(serializers.ModelSerializer):
+    pass
+
+
+
+class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
+    pass
 

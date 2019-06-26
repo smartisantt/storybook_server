@@ -26,7 +26,6 @@ class MyJsonRenderer(JSONRenderer):
             # 表示程序是正常运行的，需自己组装code和msg参数
             code = 200
             msg = 'OK'
-            a = data.values()
             res = {
                 'code': code,
                 'msg': msg,

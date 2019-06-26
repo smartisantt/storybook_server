@@ -20,11 +20,11 @@ urlpatterns = [
 
     path('user/center', views.user_center, name='user_center'),  # 主播个人主页
     path('user/become/fan', views.become_fans, name='become_fans'),  # 关注用户
-    path('user/work/list', views.user_work_list, name='user_work_list'),  # 用户作品列表
+    path('user/audio/list', views.user_audio_list, name='user_audio_list'),  # 用户作品列表
     path('user/fans/list', views.user_fans, name='user_fans'),  # 用户粉丝或关注用户列表
 
-    path('work/list', views.work_list, name='work_list'),  # 所有故事列表
-    path('work/play', views.work_play, name='work_play'),  # 播放故事
+    path('audio/list', views.audio_list, name='audio_list'),  # 所有故事列表
+    path('audio/play', views.audio_play, name='audio_play'),  # 播放故事
 
     path('index/banner', views.index_banner, name='index_banner'),  # 首页轮播图
     path('index/list', views.index_list, name='index_list')  # 首页展示列表

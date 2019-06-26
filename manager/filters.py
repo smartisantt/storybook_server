@@ -1,28 +1,57 @@
 
 import django_filters
 
-from manager.models import TemplateStory, Works, Tag
+from manager.models import Tag, Story, AudioStory
 
 
-class TemplateStoryFilter(django_filters.rest_framework.FilterSet):
+class StoryFilter(django_filters.rest_framework.FilterSet):
     """模板id，模板名，日期，"""
-    title = django_filters.CharFilter('title', lookup_expr='contains')
+    name = django_filters.CharFilter('name', lookup_expr='contains')
 
     class Meta:
-        model = TemplateStory
-        fields = ('id', 'title')
+        model = Story
+        fields = ('id', 'name')
 
 
-class WorksInfoFilter(django_filters.rest_framework.FilterSet):
-    """"""
-    typetag = django_filters.CharFilter(method='filter_by_tag')
-
-    @staticmethod
-    def filter_by_tag(queryset, name, value):
-        return queryset.filter(
-
-        )
+class TemplateWorksInfoFilter(django_filters.rest_framework.FilterSet):
+    recordtype = django_filters.NumberFilter(field_name='type')
 
     class Meta:
-        model = Works
-        fields = ('id', 'recordType', )
+        model = AudioStory
+        fields = ('id', 'type', )
+
+
+class FreedomWorksInfoFilter(django_filters.rest_framework.FilterSet):
+    recordtype = django_filters.NumberFilter(field_name='type')
+    title = django_filters.CharFilter(field_name='title', lookup_expr='icontains')
+
+    class Meta:
+        model = AudioStory
+        fields = ('id', 'type', 'title')
+
+
+class CheckWorksInfoFilter(django_filters.rest_framework.FilterSet):
+
+    checkstatus = django_filters.CharFilter(field_name='checkStatus')
+
+
+    class Meta:
+        model = AudioStory
+        fields = ('id', 'checkStatus')
+
+
+class FreedomAudioStoryInfoFilter(django_filters.rest_framework.FilterSet):
+    pass
+
+class AudioStoryInfoFilter(django_filters.rest_framework.FilterSet):
+
+    class Meta:
+        model = AudioStory
+        fields = ('id', 'type')
+
+
+
+class CheckAudioStoryInfoFilter(django_filters.rest_framework.FilterSet):
+    pass
+
+

@@ -5,7 +5,8 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from manager import views
-from manager.views import TemplateStoryView, WorksInfoView
+from manager.views import TemplateStoryView, TemplateWorksInfoView, FreedomWorksInfoView, CheckWorksInfoView, \
+    TypeTagView
 
 app_name = 'manager'
 
@@ -20,6 +21,8 @@ urlpatterns = [
     path('tags/stoptags/', views.stop_tags, name='stop_tags'),
     path('tags/addchildtags/', views.add_child_tags, name='add_child_tags'),
     path('tags/modifychildtags/', views.modify_child_tags, name='modify_child_tags'),
+    # 所有分类标签的字标签
+    path('tags/typetags/', TypeTagView.as_view()),
 
 
     # 模板故事路由
@@ -27,9 +30,19 @@ urlpatterns = [
     path('template/addtemplate/', views.add_template, name='add_template'),
     path('template/modifytemplate/', views.modify_template, name='modify_template'),
     path('template/deltemplate/', views.del_template, name='del_template'),
+    path('template/changetemplatestatus/', views.change_template_status, name='change_template_status'),
+
+    # 模板音频
+    path('template/templateworks/', TemplateWorksInfoView.as_view()),
 
 
-    path('template/templateworks/', WorksInfoView.as_view()),
+    # 自由音频
+    path('freedom/freedomworks/', FreedomWorksInfoView.as_view()),
+
+    # 审核
+    path('check/checkworks/', CheckWorksInfoView.as_view()),
+
+    path('check/configtags/', views.config_tags, name='config_tags'),
 
 ]
 

@@ -11,15 +11,16 @@ from rest_framework.viewsets import GenericViewSet
 from serializers import serializer
 
 from manager import managerCommon
-from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter
+from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
+    UserSearchFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
-    AudioStoryInfoSerializer, TagsSimpleSerialzer
+    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer
 from storybook_sever.api import Api
 from datetime import datetime
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Exists
 
 from utils.errors import ParamsException
 
@@ -484,6 +485,13 @@ class StoryView(ListAPIView):
         return self.queryset
 
 
+
+class StorySimpleView(ListAPIView):
+    queryset = Story.objects.filter(status="normal")
+    serializer_class = StorySimpleSerializer
+    pagination_class = None
+
+
 def add_story(request):
     """添加模板"""
     data = request_body(request, "POST")
@@ -669,6 +677,7 @@ class AudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(
                 storyUuid__in=Story.objects.filter(name__icontains=name).all())
         if tag:
+            # Todo
             self.queryset = self.queryset.filter(
                 tags=Tag.objects.filter(name=tag).first())
 
@@ -683,13 +692,66 @@ def download_works(request):
 
 
 
+# 用户名模糊搜索
+class UserSearchView(ListAPIView):
+    queryset = User.objects.only('uuid', 'nickName').order_by("nickName")
+    serializer_class = UserSearchSerializer
+    filter_class = UserSearchFilter
+    pagination_class = None
+
+
 
 """添加音频"""
-def add_works(request):
-    pass
+def add_audio_story(request):
+    if request.method == 'POST':
+        print(request.POST)
+        storyUuid = request.POST.get('storyuuid')
+        nickName = request.POST.get('nickname', '')
+        remarks = request.POST.get('remarks', '')
+        duration = request.POST.get('duration', '')
+        url = request.POST.get('url', '')
+        tagsUuidList = request.POST.getlist('tagsuuidlist', '')
+
+        if not all([storyUuid, nickName, remarks, url, duration, tagsUuidList]):
+            return http_return(400, '参数错误')
+
+        story = Story.objects.filter(uuid=storyUuid).first()
+        if not story:
+            return http_return(400, '模板错误')
+
+        user = User.objects.filter(nickName=nickName).first()
+        if not user:
+            return http_return(400, '找不到用户')
+
+        tags = []
+        for tagUuid in tagsUuidList:
+            tag = Tag.objects.filter(uuid=tagUuid).first()
+            if not tag:
+                return http_return(400, '无效标签')
+            tags.append(tag)
+
+        try:
+            uuid = get_uuid()
+            AudioStory.objects.create(
+                uuid=uuid,
+                userUuid=user,
+                isUpload=1,
+                voiceUrl=url,
+                bgm=None,
+                playTimes=0,
+                audioStoryType=1, # 1模板录制 0 自由音频
+                storyUuid=storyUuid,
+                remarks=remarks,
+                duration=duration,
+                checkStatus="check"
+            ).tags.add(*tags)
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '添加失败')
+        return http_return(200, 'OK')
 
 
-# 所有模板
+
 
 
 """自由音频"""
@@ -729,8 +791,9 @@ class FreedomAudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
         if tag:
+            # Todo
             self.queryset = self.queryset.filter(
-                tags__exists=Tag.objects.filter(name=tag).first())
+                tags=Tag.objects.filter(name=tag).first())
 
         return self.queryset
 
@@ -739,7 +802,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
 # 内容审核
 class CheckAudioStoryInfoView(ListAPIView):
     queryset = AudioStory.objects.filter(isDelete=False )\
-        .select_related('bgmUuid', 'userUuid')\
+        .select_related('bgm', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
     serializer_class = CheckAudioStoryInfoSerializer
@@ -750,8 +813,8 @@ class CheckAudioStoryInfoView(ListAPIView):
         endTime = self.request.query_params.get('endtime', '')
 
         # id = self.request.query_params.get('id', '')                # 故事ID
-        username = self.request.query_params.get('username', '')    # 用户名
-        title = self.request.query_params.get('title', '')          # 作品名
+        nickName = self.request.query_params.get('nickName', '')    # 用户名
+        name = self.request.query_params.get('name', '')          # 作品名
 
         # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
         # checkstatus = self.request.query_params.get('checkstatus', '')      # 类型标签
@@ -771,16 +834,16 @@ class CheckAudioStoryInfoView(ListAPIView):
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
-        if username:
-            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(username__icontains=username).all())
+        if nickName:
+            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
-        # title 要在自由作品和模板作品中选择
-        # worksType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
-        if title:
-            titleInTemplateQuerySet = self.queryset.filter(
-                templateUuid__in=Story.objects.filter(title__icontains=title).all())
-            titleInAudioStoryQuerySet = self.queryset.filter(title__icontains=title).all()
-            self.queryset = titleInTemplateQuerySet|titleInAudioStoryQuerySet
+        # name 要在自由作品和模板作品中选择
+        # 作品类型  是用的模板1 还是自由录制0
+        if name:
+            nameInAudioStoryQuerySet = self.queryset.filter(
+                storyUuid__in=Story.objects.filter(name__icontains=name).all())
+            nameInFreedomAudioStoryQuerySet = self.queryset.filter(name__icontains=name).all()
+            self.queryset = nameInAudioStoryQuerySet|nameInFreedomAudioStoryQuerySet
         return self.queryset
 
 
@@ -793,22 +856,28 @@ def config_tags(request):
     # worksUuid = data.get('worksuuid', '')
     # typeUuidList = data.get('typeUuidList', '')
     if request.method == 'POST':
-        worksUuid = request.POST.get('worksuuid', '')
-        typeUuidList = request.POST.getlist('typeUuidList', '')
-        if not all([worksUuid, typeUuidList]):
-            return http_return(400, '参数错误')
+        audioStoryUuid = request.POST.get('audiostoryuuid', '')
+        tagsUuidList = request.POST.getlist('tagsuuidlist', '')
 
-        if not worksUuid:
+        if not audioStoryUuid:
             return http_return(400, '参数错误')
-        works = AudioStory.objects.filter(uuid=worksUuid).first()
+        audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
 
-        if not works:
+        if not audioStory:
             return http_return(400, '找不到此音频')
-        # 作品类型  是用的模板1 还是自由录制0
-        worksType = works.worksType
+
+        # 一个标签都没有选
+        if not tagsUuidList:
+            try:
+                with transaction.atomic():
+                    audioStory.tags.clear()
+                    return http_return(200, 'OK')
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '配置标签失败')
 
         tags = []
-        for tagUuid in typeUuidList:
+        for tagUuid in tagsUuidList:
             tag = Tag.objects.filter(uuid=tagUuid).first()
             if not tag:
                 return http_return(400, '无效标签')
@@ -816,8 +885,8 @@ def config_tags(request):
 
         try:
             with transaction.atomic():
-                works.tags.clear()
-                works.tags.add(*tags)
+                audioStory.tags.clear()
+                audioStory.tags.add(*tags)
                 return http_return(200, 'OK')
         except Exception as e:
             logging.error(str(e))

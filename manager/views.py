@@ -234,7 +234,7 @@ def add_tags(request):
     if tag:
         return http_return(400, '重复序号')
     # 查询是否有重复tagName
-    tag = Tag.objects.filter(name=name, parent_id__isnull=True, isDelete=False).first()
+    tag = Tag.objects.filter(name=name, parent_id__isnull=True, code='SEARCHSORT', isDelete=False).first()
     if tag:
         return http_return(400, '重复分类名')
     try:
@@ -364,11 +364,11 @@ def add_child_tags(request):
     if not parentTag:
         return http_return(400, '参数有误')
     # 查询是否有重复name
-    tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+    tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id=parentUuid).first()
     if tag:
         return http_return(400, '重复标签')
     # 查询是否有重复sortNum
-    tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+    tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id=parentUuid).first()
     if tag:
         return http_return(400, '重复序号')
     #创建新标签
@@ -703,52 +703,53 @@ class UserSearchView(ListAPIView):
 
 """添加音频"""
 def add_audio_story(request):
-    if request.method == 'POST':
-        print(request.POST)
-        storyUuid = request.POST.get('storyuuid')
-        nickName = request.POST.get('nickname', '')
-        remarks = request.POST.get('remarks', '')
-        duration = request.POST.get('duration', '')
-        url = request.POST.get('url', '')
-        tagsUuidList = request.POST.getlist('tagsuuidlist', '')
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    storyUuid = data.get('storyuuid', '')
+    nickName = data.get('nickname', '')
+    remarks = data.get('remarks', '')
+    duration = data.get('duration', '')
+    url = data.get('url', '')
+    tagsUuidList = data.get('tagsuuidlist', '')
 
-        if not all([storyUuid, nickName, remarks, url, duration, tagsUuidList]):
-            return http_return(400, '参数错误')
 
-        story = Story.objects.filter(uuid=storyUuid).first()
-        if not story:
-            return http_return(400, '模板错误')
+    if not all([storyUuid, nickName, remarks, url, duration, tagsUuidList]):
+        return http_return(400, '参数错误')
 
-        user = User.objects.filter(nickName=nickName).first()
-        if not user:
-            return http_return(400, '找不到用户')
+    story = Story.objects.filter(uuid=storyUuid).first()
+    if not story:
+        return http_return(400, '模板错误')
 
-        tags = []
-        for tagUuid in tagsUuidList:
-            tag = Tag.objects.filter(uuid=tagUuid).first()
-            if not tag:
-                return http_return(400, '无效标签')
-            tags.append(tag)
+    user = User.objects.filter(nickName=nickName).first()
+    if not user:
+        return http_return(400, '找不到用户')
 
-        try:
-            uuid = get_uuid()
-            AudioStory.objects.create(
-                uuid=uuid,
-                userUuid=user,
-                isUpload=1,
-                voiceUrl=url,
-                bgm=None,
-                playTimes=0,
-                audioStoryType=1, # 1模板录制 0 自由音频
-                storyUuid=storyUuid,
-                remarks=remarks,
-                duration=duration,
-                checkStatus="check"
-            ).tags.add(*tags)
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '添加失败')
-        return http_return(200, 'OK')
+    tags = []
+    for tagUuid in tagsUuidList:
+        tag = Tag.objects.filter(uuid=tagUuid).first()
+        if not tag:
+            return http_return(400, '无效标签')
+        tags.append(tag)
+
+    try:
+        uuid = get_uuid()
+        AudioStory.objects.create(
+            uuid=uuid,
+            userUuid=user,
+            isUpload=1,
+            voiceUrl=url,
+            playTimes=0,
+            audioStoryType=1, # 1模板录制 0 自由音频
+            storyUuid=story,
+            remarks=remarks,
+            duration=duration,
+            checkStatus="check"
+        ).tags.add(*tags)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+    return http_return(200, 'OK')
 
 
 
@@ -850,11 +851,6 @@ class CheckAudioStoryInfoView(ListAPIView):
 
 # 配置标签
 def config_tags(request):
-    # data = request_body(request, 'POST')
-    # if not data:
-    #     return http_return(400, '参数错误')
-    # worksUuid = data.get('worksuuid', '')
-    # typeUuidList = data.get('typeUuidList', '')
     if request.method == 'POST':
         audioStoryUuid = request.POST.get('audiostoryuuid', '')
         tagsUuidList = request.POST.getlist('tagsuuidlist', '')
@@ -893,11 +889,6 @@ def config_tags(request):
             return http_return(400, '配置标签失败')
 
 
-
-
-
-
-# 停用
 
 
 

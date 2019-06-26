@@ -13,16 +13,28 @@ class TemplateStoryFilter(django_filters.rest_framework.FilterSet):
         fields = ('id', 'title')
 
 
-class WorksInfoFilter(django_filters.rest_framework.FilterSet):
-    """"""
-    typetag = django_filters.CharFilter(method='filter_by_tag')
-
-    @staticmethod
-    def filter_by_tag(queryset, name, value):
-        return queryset.filter(
-
-        )
+class TemplateWorksInfoFilter(django_filters.rest_framework.FilterSet):
+    recordtype = django_filters.NumberFilter(field_name='recordType')
 
     class Meta:
         model = Works
         fields = ('id', 'recordType', )
+
+
+class FreedomWorksInfoFilter(django_filters.rest_framework.FilterSet):
+    recordtype = django_filters.NumberFilter(field_name='recordType')
+    title = django_filters.CharFilter(field_name='title', lookup_expr='icontains')
+
+    class Meta:
+        model = Works
+        fields = ('id', 'recordType', 'title')
+
+
+class CheckWorksInfoFilter(django_filters.rest_framework.FilterSet):
+
+    checkstatus = django_filters.CharFilter(field_name='checkStatus')
+
+
+    class Meta:
+        model = Works
+        fields = ('id', 'checkStatus')

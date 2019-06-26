@@ -11,7 +11,7 @@ from rest_framework.viewsets import GenericViewSet
 from serializers import serializer
 
 from manager import managerCommon
-from manager.filters import TemplateStoryFilter, WorksInfoFilter
+from manager.filters import TemplateStoryFilter, FreedomWorksInfoFilter, TemplateWorksInfoFilter, CheckWorksInfoFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
@@ -19,7 +19,8 @@ from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q
 
-from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer, WorksInfoSerializer
+from manager.serializers import TemplateStorySerializer, TemplateStoryDetailSerializer, TemplateWorksInfoSerializer, \
+    FreedomWorksInfoSerializer, CheckWorksInfoSerializer, TypeTagSerializer
 from utils.errors import ParamsException
 
 
@@ -444,9 +445,8 @@ def modify_child_tags(request):
 """
 模板管理
 """
-"""GET 显示所有模板列表"""
-
 class TemplateStoryView(ListAPIView):
+    """GET 显示所有模板列表"""
     queryset = TemplateStory.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
     serializer_class = TemplateStorySerializer
     filter_class = TemplateStoryFilter
@@ -514,7 +514,7 @@ def add_template(request):
         return http_return(400, '添加模板失败')
 
 
-""""修改模板"""
+
 def modify_template(request):
     """修改模板"""
     data = request_body(request, "POST")
@@ -537,9 +537,7 @@ def modify_template(request):
     if not templateStory:
         return http_return(400, '没有对象')
 
-
     myTitle = templateStory.title
-
     # 如果修改标题
     if myTitle != title:
         templateStory = TemplateStory.objects.filter(title=title).exclude(status='destroy').first()
@@ -562,9 +560,38 @@ def modify_template(request):
         logging.error(str(e))
         return http_return(400, '添加模板失败')
 
+# 改变模板状态
+def change_template_status(request):
+    """停用模板 恢复模板"""
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+
+    if not uuid:
+        return http_return(400, '参数有误')
+
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    if not templateStory:
+        return http_return(400, '没有对象')
 
 
-""""删除模板"""
+    templateStory = TemplateStory.objects.filter(uuid=uuid).exclude(status='destroy').first()
+    try:
+        with transaction.atomic():
+            # normal启用 forbid禁用 destroy删除
+            if templateStory.status == 'normal':
+                templateStory.status = 'forbid'
+            elif templateStory.status == 'forbid':
+                templateStory.status = 'normal'
+            templateStory.save()
+            return http_return(200, 'OK', {"status": templateStory.status})
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '改变模板状态失败')
+
+
+# """"删除模板"""
 def del_template(request):
     """删除模板"""
     data = request_body(request, "POST")
@@ -591,24 +618,24 @@ def del_template(request):
         return http_return(400, '删除模板失败')
 
 
-"""模板音频"""
-class WorksInfoView(ListAPIView):
-    queryset = Works.objects.filter(isDelete=False, worksType=1).defer('id')\
-        .select_related('bgmUuid', 'moduleUuid', 'userUuid')\
+# """模板音频"""
+class TemplateWorksInfoView(ListAPIView):
+    queryset = Works.objects.filter(isDelete=False, worksType=1)\
+        .select_related('bgmUuid', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
-    serializer_class = WorksInfoSerializer
-    filter_class = WorksInfoFilter
+    serializer_class = TemplateWorksInfoSerializer
+    filter_class = TemplateWorksInfoFilter
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
         endTime = self.request.query_params.get('endtime', '')
-        title = self.request.query_params.get('title', '')
-        id = self.request.query_params.get('id', '')                # 故事ID
+
+        # id = self.request.query_params.get('id', '')                # 故事ID
         username = self.request.query_params.get('username', '')    # 用户名
-        template = self.request.query_params.get('template', '')    # 模板名
+        title = self.request.query_params.get('title', '')    # 模板名
         tag = self.request.query_params.get('tag', '')      # 类型标签
-        recordtype = self.request.query_params.get('recordtype', '')      # 录制形式
+        # recordtype = self.request.query_params.get('recordtype', '')      # 录制形式
         if (startTime and not endTime) or  (not startTime and endTime):
             raise ParamsException({'code': 400, 'msg': '时间错误'})
         if startTime and endTime:
@@ -623,12 +650,173 @@ class WorksInfoView(ListAPIView):
             endTime = datetime.fromtimestamp(endTime)
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            self.queryset.filter(createTime__range=(starttime, endtime))
-        # if 。。。。
+            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+        if username:
+            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(username__icontains=username).all())
+        if title:
+            self.queryset = self.queryset.filter(
+                templateUuid__in=TemplateStory.objects.filter(title__icontains=title).all())
+        if tag:
+            self.queryset = self.queryset.filter(
+                tags=Tag.objects.filter(code='RECORDTYPE', tagName=tag).first())
+
+        return self.queryset
+
+
+# 获取类型标签下的所有字标签
+class TypeTagView(ListAPIView):
+    queryset = Tag.objects.filter(code='SEARCHSORT', parent__tagName='类型', isDelete=False).\
+        only('tagName', 'sortNum')
+    serializer_class = TypeTagSerializer
+
+
+"""批量下载"""
+def download_works(request):
+    pass
+
+
+
+
+"""添加音频"""
+def add_works(request):
+    pass
+
+
+"""自由音频"""
+class FreedomWorksInfoView(ListAPIView):
+    queryset = Works.objects.filter(isDelete=False, worksType=0)\
+        .select_related('bgmUuid', 'userUuid')\
+        .prefetch_related('tags').order_by('-createTime')
+
+    serializer_class = FreedomWorksInfoSerializer
+    filter_class = FreedomWorksInfoFilter
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+
+        # id = self.request.query_params.get('id', '')                # 故事ID
+        username = self.request.query_params.get('username', '')    # 用户名
+        # title = self.request.query_params.get('title', '')    # 模板名
+        tag = self.request.query_params.get('tag', '')      # 类型标签
+        # recordtype = self.request.query_params.get('recordtype', '')      # 录制形式
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime)/1000
+            endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+        if username:
+            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(username__icontains=username).all())
+
+        if tag:
+            self.queryset = self.queryset.filter(
+                tags=Tag.objects.filter(code='RECORDTYPE', tagName=tag).first())
+
         return self.queryset
 
 
 
+# 内容审核
+class CheckWorksInfoView(ListAPIView):
+    queryset = Works.objects.filter(isDelete=False )\
+        .select_related('bgmUuid', 'userUuid')\
+        .prefetch_related('tags').order_by('-createTime')
+
+    serializer_class = CheckWorksInfoSerializer
+    filter_class = CheckWorksInfoFilter
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+
+        # id = self.request.query_params.get('id', '')                # 故事ID
+        username = self.request.query_params.get('username', '')    # 用户名
+        title = self.request.query_params.get('title', '')          # 作品名
+
+        # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
+        # checkstatus = self.request.query_params.get('checkstatus', '')      # 类型标签
+
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime)/1000
+            endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+        if username:
+            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(username__icontains=username).all())
+
+        # title 要在自由作品和模板作品中选择
+        # worksType = models.BooleanField(default=True)  # 作品类型  是用的模板1 还是自由录制0
+        if title:
+            titleInTemplateQuerySet = self.queryset.filter(
+                templateUuid__in=TemplateStory.objects.filter(title__icontains=title).all())
+            titleInWorksQuerySet = self.queryset.filter(title__icontains=title).all()
+            self.queryset = titleInTemplateQuerySet|titleInWorksQuerySet
+        return self.queryset
+
+
+
+# 配置标签
+def config_tags(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    worksUuid = data.get('worksuuid', '')
+    if not worksUuid:
+        return http_return(400, '参数错误')
+    works = Works.objects.filter(uuid=worksUuid).first()
+    if not works:
+        return http_return(400, '找不到此音频')
+    if request.method == 'POST':
+        tagsUuidList = request.POST.getlist('tagsuuid')
+        if not tagsUuidList:
+            try:
+                with transaction.atomic():
+                    works.tags = None
+                    works.save()
+                    return http_return(200, 'OK')
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '配置标签失败')
+        else:
+            for tagUuid in tagsUuidList:
+                tag = Tag.objects.filter(uuid=tagUuid).first()
+                if not tag:
+                    return http_return(400, '错误标签')
+                try:
+                    with transaction.atomic():
+                        works.tags.append(tag)
+                        works.save()
+
+                except Exception as e:
+                    logging.error(str(e))
+                    return http_return(400, '配置标签失败')
+            return http_return(200, 'OK')
+
+
+
+
+
+# 停用
 
 
 

@@ -150,7 +150,7 @@ def save_search(data):
     :return:
     """
     # 存储搜索记录
-    keyWord = data.get('keyWord', '')
+    keyWord = data.get('keyword', '')
     uuid = data['_cache']['uuid']
     user = User.objects.filter(uuid=uuid).first()
     try:

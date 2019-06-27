@@ -156,7 +156,7 @@ class HotSearch(BaseModle, models.Model):
     isTop = models.BooleanField(default=False)  #  0:不置顶  1：置顶
     searchNum = models.IntegerField(null=True, default=0)
     isDelete = models.BooleanField(default=False)
-    isAdminAdd = models.BooleanField(default=False) # 关键词是否是后台添加的
+    isAdminAdd = models.BooleanField(default=False) # 关键词 1 后台添加  0 不是后台添加
 
     class Meta:
         db_table = 'tb_search'

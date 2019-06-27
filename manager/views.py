@@ -1099,9 +1099,78 @@ def del_bgm(request):
 
 # 热搜词
 class HotSearchView(ListAPIView):
-    queryset = HotSearch.objects.exclude(isDelete=True).only('id', '')
+    queryset = HotSearch.objects.exclude(isDelete=True).only('id')
     serializer_class = HotSearchSerializer
     filter_class = HotSearchFilter
+
+
+# 添加关键词
+def add_keyword(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    keyword = data.get('keyword', '')
+    if not keyword:
+        return http_return(400, "参数有误")
+
+    hotSearch = HotSearch.objects.filter(keyword=keyword).exclude(isDelete=False).first()
+    if hotSearch:
+        return http_return(400, "重复名字")
+    try:
+        uuid = get_uuid()
+        HotSearch.objects.create(
+            uuid = uuid,
+            keyword = keyword,
+            searchNum = 0,
+            isAdminAdd = True
+        )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+
+
+# 删除关键词
+def top_keyword(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, "参数有误")
+
+    hotSearch = HotSearch.objects.filter(uuid=uuid).exclude(isDelete=False).first()
+    if not hotSearch:
+        return http_return(400, "没有对象")
+    try:
+        hotSearch.isTop = True
+        hotSearch.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+
+
+# 删除关键词
+def del_keyword(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, "参数有误")
+
+    hotSearch = HotSearch.objects.filter(uuid=uuid).exclude(isDelete=False).first()
+    if not hotSearch:
+        return http_return(400, "没有对象")
+    try:
+        hotSearch.isDelete = True
+        hotSearch.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+
 
 
 

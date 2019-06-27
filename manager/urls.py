@@ -60,6 +60,11 @@ urlpatterns = [
     path('bgm/delbgm/', views.del_bgm, name='del_bgm'),
     path('bgm/changeorder/', views.change_order, name='change_order'),
 
+    # 搜索热词
+    path('hotsearch/addkeyword/', views.add_keyword, name='add_keyword'),
+    path('hotsearch/topkeyword/', views.top_keyword, name='top_keyword'),
+    path('hotsearch/delkeyword/', views.del_keyword, name='del_keyword'),
+
 ]
 
 # router = SimpleRouter()

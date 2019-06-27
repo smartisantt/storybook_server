@@ -20,7 +20,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer
 from storybook_sever.api import Api
 from datetime import datetime
-from django.db.models import Count, Q, Exists, Max
+from django.db.models import Count, Q, Exists, Max, Min
 
 from utils.errors import ParamsException
 
@@ -1006,36 +1006,46 @@ def modify_bgm(request):
         return http_return(400, '修改失败')
 
 
-# 改变音乐排序
 def change_order(request):
+    """改变音乐排序"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
-    uuid1 = data.get('uuid1', '')
-    uuid2 = data.get('uuid2', '')
+    uuid = data.get('uuid', '')
+    direct = data.get('direct', '')
 
-    if not all([uuid1, uuid2]):
+    if not all([uuid, direct in ["up", "down"]]):
         return http_return(400, "参数错误")
 
-    bgm1 = Bgm.objects.filter(uuid=uuid1).exclude(status="destory").first()
-    bgm2 = Bgm.objects.filter(uuid=uuid2).exclude(status="destory").first()
-    if not all([bgm1, bgm2]):
+    bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+    if not bgm:
         return http_return(400, "没有对象")
+    mySortNum = bgm.sortNum
+    # 向上
+    if direct == "up":
+        # 比当前sortNum小的最大值
+        swapSortNum = Bgm.objects.filter(sortNum__lt=mySortNum).exclude(status="destory").aggregate(Max('sortNum'))['sortNum__max']
+        if not swapSortNum:
+            return http_return(400, "已经到顶了")
+    elif direct == "down":
+        # 比当前sortNum大的最小值
+        swapSortNum = Bgm.objects.filter(sortNum__gt=mySortNum).exclude(status="destory").aggregate(Min('sortNum'))['sortNum__min']
+        if not swapSortNum:
+            return http_return(400, "已经到底了")
 
     try:
-
-        bgm1.save()
-        bgm2.save()
+        swapBgm = Bgm.objects.filter(sortNum=swapSortNum).exclude(status="destory").first()
+        bgm.sortNum, swapBgm.sortNum = swapSortNum, mySortNum
+        bgm.save()
+        swapBgm.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
 
 
-
-
-# 停用 恢复
 def forbid_bgm(request):
+    """停用/恢复背景音乐"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1062,8 +1072,8 @@ def forbid_bgm(request):
         return http_return(400, '修改失败')
 
 
-# 删除
 def del_bgm(request):
+    """删除背景音乐"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')

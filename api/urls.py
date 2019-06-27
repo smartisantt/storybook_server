@@ -16,12 +16,12 @@ urlpatterns = [
     path('recording/info', views.recording_stroy_detail, name='recording_stroy_detail'),  # 故事详情（录制页面）
     path('recording/bgmusic', views.recording_bgmusic_list, name='recording_bgmusic_list'),  # 背景音乐列表
     path('recording/send', views.recording_send, name='recording_send'),  # 故事发布
-    path('recording/tags', views.recording_tag_list, name='recording_tag_list'),  # 故事发布标签列表
+    path('recording/taglist', views.recording_tag_list, name='recording_tag_list'),  # 故事发布标签列表
 
     path('user/info', views.user_center, name='user_center'),  # 主播个人主页
     path('user/attation', views.become_fans, name='become_fans'),  # 关注用户
-    path('user/audiostories', views.user_audio_list, name='user_audio_list'),  # 用户作品列表
-    path('user/follow', views.user_fans, name='user_fans'),  # 用户粉丝或关注用户列表
+    path('user/audiostorylist', views.user_audio_list, name='user_audio_list'),  # 用户作品列表
+    path('user/friendlist', views.user_fans, name='user_fans'),  # 用户粉丝或关注用户列表
 
     path('audiostory/list', views.audio_list, name='audio_list'),  # 所有故事列表
     path('audiostory/play', views.audio_play, name='audio_play'),  # 播放故事

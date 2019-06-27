@@ -12,15 +12,15 @@ from serializers import serializer
 
 from manager import managerCommon
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter
+    UserSearchFilter, BgmFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
-    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer
+    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer
 from storybook_sever.api import Api
 from datetime import datetime
-from django.db.models import Count, Q, Exists
+from django.db.models import Count, Q, Exists, Max
 
 from utils.errors import ParamsException
 
@@ -707,21 +707,21 @@ def add_audio_story(request):
     if not data:
         return http_return(400, '参数错误')
     storyUuid = data.get('storyuuid', '')
-    nickName = data.get('nickname', '')
+    userUuid = data.get('useruuid', '')
     remarks = data.get('remarks', '')
     duration = data.get('duration', '')
     url = data.get('url', '')
     tagsUuidList = data.get('tagsuuidlist', '')
 
 
-    if not all([storyUuid, nickName, remarks, url, duration, tagsUuidList]):
-        return http_return(400, '参数错误')
+    if not all([storyUuid, userUuid, remarks, url, duration, tagsUuidList]):
+        return http_return(400, '参数不能为空')
 
     story = Story.objects.filter(uuid=storyUuid).first()
     if not story:
         return http_return(400, '模板错误')
 
-    user = User.objects.filter(nickName=nickName).first()
+    user = User.objects.filter(uuid=userUuid).first()
     if not user:
         return http_return(400, '找不到用户')
 
@@ -731,7 +731,10 @@ def add_audio_story(request):
         if not tag:
             return http_return(400, '无效标签')
         tags.append(tag)
-
+    # 相同用户，相同模板，相同音频，则是重复上传
+    audioStory = AudioStory.objects.filter(userUuid=user, storyUuid=story, voiceUrl=url).first()
+    if audioStory:
+        return http_return(400, '重复添加')
     try:
         uuid = get_uuid()
         AudioStory.objects.create(
@@ -744,7 +747,7 @@ def add_audio_story(request):
             storyUuid=story,
             remarks=remarks,
             duration=duration,
-            checkStatus="check"
+            checkStatus="exemption"
         ).tags.add(*tags)
     except Exception as e:
         logging.error(str(e))
@@ -817,7 +820,7 @@ class CheckAudioStoryInfoView(ListAPIView):
         nickName = self.request.query_params.get('nickName', '')    # 用户名
         name = self.request.query_params.get('name', '')          # 作品名
 
-        # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
+        # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 免检（后台上传的作品）
         # checkstatus = self.request.query_params.get('checkstatus', '')      # 类型标签
 
         if (startTime and not endTime) or  (not startTime and endTime):
@@ -851,45 +854,127 @@ class CheckAudioStoryInfoView(ListAPIView):
 
 # 配置标签
 def config_tags(request):
-    if request.method == 'POST':
-        audioStoryUuid = request.POST.get('audiostoryuuid', '')
-        tagsUuidList = request.POST.getlist('tagsuuidlist', '')
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    audioStoryUuid = data.get('audiostoryuuid', '')
+    tagsUuidList = data.get('tagsuuidlist', '')
 
-        if not audioStoryUuid:
-            return http_return(400, '参数错误')
-        audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
+    if not audioStoryUuid:
+        return http_return(400, '参数错误')
+    audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
 
-        if not audioStory:
-            return http_return(400, '找不到此音频')
+    if not audioStory:
+        return http_return(400, '找不到此音频')
 
-        # 一个标签都没有选
-        if not tagsUuidList:
-            try:
-                with transaction.atomic():
-                    audioStory.tags.clear()
-                    return http_return(200, 'OK')
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '配置标签失败')
-
-        tags = []
-        for tagUuid in tagsUuidList:
-            tag = Tag.objects.filter(uuid=tagUuid).first()
-            if not tag:
-                return http_return(400, '无效标签')
-            tags.append(tag)
-
+    # 一个标签都没有选
+    if not tagsUuidList:
         try:
             with transaction.atomic():
                 audioStory.tags.clear()
-                audioStory.tags.add(*tags)
                 return http_return(200, 'OK')
         except Exception as e:
             logging.error(str(e))
             return http_return(400, '配置标签失败')
 
+    tags = []
+    for tagUuid in tagsUuidList:
+        tag = Tag.objects.filter(uuid=tagUuid).first()
+        if not tag:
+            return http_return(400, '无效标签')
+        tags.append(tag)
+
+    try:
+        with transaction.atomic():
+            audioStory.tags.clear()
+            audioStory.tags.add(*tags)
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '配置标签失败')
 
 
+class BgmView(ListAPIView):
+    # 背景音乐管理
+    # 音乐名，时间搜索
+    # 展示BGM的ID 音乐名 上传时间
+    queryset = Bgm.objects.exclude(status='destroy').only('uuid').order_by('sortNum')
+    serializer_class = BgmSerializer
+    filter_class = BgmFilter
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime)/1000
+            endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            return self.queryset.filter(createTime__range=(starttime, endtime))
+        return self.queryset
+
+
+# 添加背景音乐
+def add_bgm(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    url = data.get('url', '')
+    name = data.get('name', '')
+    duration = data.get('duration', '')
+
+    if not all([url, name, duration]):
+        return http_return(400, '参数错误')
+    bgm = Bgm.objects.filter(url=url).first()
+    if bgm:
+        return http_return(400, '重复文件')
+    bgm = Bgm.objects.filter(name=name).first()
+    if bgm:
+        return http_return(400, '重复音乐名')
+
+    maxSortNum = Bgm.objects.aggregate(Max('sortNum'))['sortNum__max'] or 0
+
+    try:
+        uuid = get_uuid()
+        Bgm.objects.create(
+            uuid=uuid,
+            url=url,
+            name=name,
+            sortNum=maxSortNum+1,
+            duration=duration,
+        )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+
+
+
+
+    # 查询当前最大排序的序号
+
+
+
+# 编辑音乐（音乐名，音频文件）
+
+
+# 改变音乐排序
+
+
+# 停用
+
+
+# 删除
 
 
 

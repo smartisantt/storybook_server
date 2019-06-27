@@ -6,7 +6,7 @@ from rest_framework.routers import SimpleRouter
 
 from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
-    TypeTagView, StorySimpleView, UserSearchView
+    TypeTagView, StorySimpleView, UserSearchView, BgmView
 
 app_name = 'manager'
 
@@ -49,8 +49,12 @@ urlpatterns = [
 
     # 审核
     path('check/checkaudio/', CheckAudioStoryInfoView.as_view()),
-
     path('check/configtags/', views.config_tags, name='config_tags'),
+
+
+    # 背景音乐
+    path('bgm/bgmlist/', BgmView.as_view()),
+    path('bgm/addbgm/', views.add_bgm, name='add_bgm'),
 
 ]
 

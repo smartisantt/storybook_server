@@ -1,7 +1,7 @@
 
 import django_filters
 
-from manager.models import Tag, Story, AudioStory, User
+from manager.models import Tag, Story, AudioStory, User, Bgm
 
 
 class StoryFilter(django_filters.rest_framework.FilterSet):
@@ -56,11 +56,20 @@ class UserSearchFilter(django_filters.rest_framework.FilterSet):
 
 
 class CheckAudioStoryInfoFilter(django_filters.rest_framework.FilterSet):
-    # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
+    # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption(后台上传的免审核）
     checkstatus = django_filters.CharFilter(field_name='checkStatus')
 
     class Meta:
         model = AudioStory
         fields = ('id', 'checkStatus')
+
+
+class BgmFilter(django_filters.rest_framework.FilterSet):
+
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+
+    class Meta:
+        model = Bgm
+        fields = ('name', )
 
 

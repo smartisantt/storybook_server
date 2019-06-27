@@ -49,8 +49,9 @@ urlpatterns = [
 
     # 审核
     path('check/checkaudio/', CheckAudioStoryInfoView.as_view()),
-
     path('check/configtags/', views.config_tags, name='config_tags'),
+
+    # 背景音乐
 
 ]
 

@@ -28,6 +28,7 @@ urlpatterns = [
 
     path('index/banner', views.index_banner, name='index_banner'),  # 首页轮播图
     path('index/list', views.index_list, name='index_list'),  # 首页展示列表
+    path('index/class/show', views.index_class_show, name='index_class_show'),  # 分类展示
 
     path('search/all', views.search_all, name='search_all'),  # 搜索
     path('search/audiostory', views.search_audio, name='search_audio'),  # 搜索模板音频

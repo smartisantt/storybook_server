@@ -51,8 +51,10 @@ urlpatterns = [
     path('check/checkaudio/', CheckAudioStoryInfoView.as_view()),
     path('check/configtags/', views.config_tags, name='config_tags'),
 
+
     # 背景音乐
     path('bgm/bgmlist/', BgmView.as_view()),
+    path('bgm/addbgm/', views.add_bgm, name='add_bgm'),
 
 ]
 

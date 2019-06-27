@@ -15,7 +15,7 @@ from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudio
     UserSearchFilter, BgmFilter, HotSearchFilter
 from manager.models import *
 from manager.managerCommon import *
-from manager.paginations import TenPagination
+from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer
@@ -1099,10 +1099,10 @@ def del_bgm(request):
 
 # 热搜词
 class HotSearchView(ListAPIView):
-    queryset = HotSearch.objects.exclude(isDelete=True).only('id')
+    queryset = HotSearch.objects.filter(isDelete=False).only('id')
     serializer_class = HotSearchSerializer
     filter_class = HotSearchFilter
-
+    pagination_class = MyPagination
 
 # 添加关键词
 def add_keyword(request):
@@ -1113,7 +1113,7 @@ def add_keyword(request):
     if not keyword:
         return http_return(400, "参数有误")
 
-    hotSearch = HotSearch.objects.filter(keyword=keyword).exclude(isDelete=False).first()
+    hotSearch = HotSearch.objects.filter(keyword=keyword, isDelete=False).first()
     if hotSearch:
         return http_return(400, "重复名字")
     try:
@@ -1130,7 +1130,7 @@ def add_keyword(request):
         return http_return(400, '添加失败')
 
 
-# 删除关键词
+# 置顶 取消置顶
 def top_keyword(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1139,11 +1139,11 @@ def top_keyword(request):
     if not uuid:
         return http_return(400, "参数有误")
 
-    hotSearch = HotSearch.objects.filter(uuid=uuid).exclude(isDelete=False).first()
+    hotSearch = HotSearch.objects.filter(uuid=uuid, isDelete=False).first()
     if not hotSearch:
         return http_return(400, "没有对象")
     try:
-        hotSearch.isTop = True
+        hotSearch.isTop = not hotSearch.isTop
         hotSearch.save()
         return http_return(200, 'OK')
     except Exception as e:
@@ -1160,7 +1160,7 @@ def del_keyword(request):
     if not uuid:
         return http_return(400, "参数有误")
 
-    hotSearch = HotSearch.objects.filter(uuid=uuid).exclude(isDelete=False).first()
+    hotSearch = HotSearch.objects.filter(uuid=uuid, isDelete=False).first()
     if not hotSearch:
         return http_return(400, "没有对象")
     try:

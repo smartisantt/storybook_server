@@ -12,12 +12,12 @@ from serializers import serializer
 
 from manager import managerCommon
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter
+    UserSearchFilter, BgmFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
-    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer
+    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q, Exists
@@ -898,7 +898,30 @@ def config_tags(request):
 # 音乐名，时间搜索
 # 展示BGM的ID 音乐名 上传时间
 class BgmView(ListAPIView):
-    queryset = Bgm.objects.only('id', '')
+    queryset = Bgm.objects.exclude(status='destroy').only('uuid').order_by('id')
+    serializer_class = BgmSerializer
+    filter_class = BgmFilter
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime)/1000
+            endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+        return self.queryset
 
 # 添加音乐
 

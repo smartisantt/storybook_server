@@ -148,3 +148,9 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
         model = AudioStory
         exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
 
+
+class BgmSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Bgm
+        fields = "__all__"

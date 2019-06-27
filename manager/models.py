@@ -62,7 +62,7 @@ class Bgm(BaseModle, models.Model):
     name = models.CharField(max_length=32, null=True)
     url = models.CharField(max_length=255, null=True)
     duration = models.IntegerField(verbose_name='背景音乐时长', null=True)
-    status = models.CharField(max_length=64, verbose_name='状态', null=True)  # forbid 停用 normal正常 在用  destroy 删除
+    status = models.CharField(max_length=64, verbose_name='状态', default="normal")  # forbid 停用 normal正常 在用  destroy 删除
     sortNum = models.IntegerField(verbose_name='排序编号', null=True)
 
 

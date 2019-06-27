@@ -65,7 +65,6 @@ class Bgm(BaseModle, models.Model):
     status = models.CharField(max_length=64, verbose_name='状态', default="normal")  # forbid 停用 normal正常 在用  destroy 删除
     sortNum = models.IntegerField(verbose_name='排序编号', null=True)
 
-
     class Meta:
         db_table = 'tb_bgm'
 
@@ -114,28 +113,17 @@ class Module(BaseModle, models.Model):
         db_table = 'tb_module'
 
 
-class Rank(BaseModle, models.Model):
+class GameInfo(BaseModle, models.Model):
     """活动排名  用户和活动中间的关联表"""
-    userRank = models.IntegerField(null=True)
-    popularity = models.IntegerField(verbose_name='人气', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRankUuid', to_field='uuid')
-    activityUuid = models.ForeignKey(Activity, models.CASCADE, null=True, related_name='activityRankUuid',
+    activityUuid = models.ForeignKey('Activity', models.CASCADE, null=True, related_name='activityRankUuid',
                                      to_field='uuid')
-    audioUuid = models.OneToOneField('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid',
-                                     to_field='uuid')
+    audioUuid = models.ForeignKey('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid',
+                                  to_field='uuid')
+    status = models.IntegerField(default=0)  # 状态 0正常 1禁用 2删除
 
     class Meta:
-        db_table = 'tb_rank'
-
-
-class Sign(BaseModle, models.Model):
-    """活动报名表"""
-    activitUuid = models.ForeignKey(Activity, models.CASCADE, null=True, related_name='activitSignUuid',
-                                    to_field='uuid')
-    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userSignUuid', to_field='uuid')
-
-    class Meta:
-        db_table = 'tb_sign'
+        db_table = 'tb_gameinfo'
 
 
 class FriendShip(BaseModle, models.Model):
@@ -153,10 +141,10 @@ class HotSearch(BaseModle, models.Model):
     热搜词
     """
     keyword = models.CharField(max_length=32, null=True)  # 搜索关键词
-    isTop = models.IntegerField(default=0)  #  0:不置顶  1：置顶 后置顶的在前面加1
+    isTop = models.IntegerField(default=0)  # 0:不置顶  1：置顶 后置顶的在前面加1
     searchNum = models.IntegerField(null=True, default=0)
     isDelete = models.BooleanField(default=False)
-    isAdminAdd = models.BooleanField(default=False) # 关键词 1 后台添加  0 不是后台添加
+    isAdminAdd = models.BooleanField(default=False)  # 关键词 1 后台添加  0 不是后台添加
 
     class Meta:
         db_table = 'tb_search'

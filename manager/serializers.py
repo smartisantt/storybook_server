@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad
+from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module
 from utils.errors import ParamsException
 
 
@@ -168,6 +168,21 @@ class AdSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ad
         fields = "__all__"
+
+class ModuleSerializer(serializers.ModelSerializer):
+    audioStory = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_audioStory(module):
+        return AudioStoryInfoSerializer(module.audioUuid).data
+
+
+    class Meta:
+        model = Module
+        exclude = ('audioUuid', 'id')
+
+
+
 
 
 

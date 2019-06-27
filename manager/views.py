@@ -18,7 +18,7 @@ from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
-    HotSearchSerializer, AdSerializer
+    HotSearchSerializer, AdSerializer, ModuleSerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q, Exists, Max, Min
@@ -936,7 +936,7 @@ def add_bgm(request):
     if bgm:
         return http_return(400, '重复音乐名')
 
-    maxSortNum = Bgm.objects.aggregate(Max('sortNum'))['sortNum__max'] or 0
+    maxSortNum = Bgm.objects.exclude(status='destory').aggregate(Max('sortNum'))['sortNum__max'] or 0
 
     try:
         uuid = get_uuid()
@@ -1141,7 +1141,7 @@ def top_keyword(request):
         if hotSearch.isTop:
             hotSearch.isTop = 0
         else:
-            maxTop = HotSearch.objects.aggregate(Max('isTop'))['isTop__max']
+            maxTop = HotSearch.objects.filter(isDelete=False).aggregate(Max('isTop'))['isTop__max']
             hotSearch.isTop = maxTop + 1
         hotSearch.save()
         return http_return(200, 'OK')
@@ -1190,8 +1190,50 @@ class AdView(ListAPIView):
 
 
 # 模块配置
+class ModuleView(ListAPIView):
+    """显示模块类型 MOD1每日一读  MOD2抢先听  MOD3热门推荐"""
+    queryset = Module.objects.filter(isDelete=False).\
+        select_related('audioUuid').order_by('orderNum')
+    serializer_class = ModuleSerializer
 
-# 新增
+
+    def get_queryset(self):
+        module = self.request.query_params.get('module', '')
+        if module not in ['MOD1', 'MOD2', 'MOD3']:
+            raise ParamsException({'code': 400, 'msg': '参数错误'})
+        return self.queryset.filter(type=module)
+
+
+
+
+# 新增 TODO 待测
+def add_story_into_module(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    module = data.get('module', '')
+    uuid = data.get('uuid', '')
+    if not all([module in ['MOD1', 'MOD2', 'MOD3'], uuid]):
+        return http_return(400, '参数错误')
+
+    audioStory = AudioStory.objects.filter(uuid=uuid, isDelete=False).first()
+    if not audioStory:
+        return http_return(400, '没有对象')
+
+    maxSortNum = Module.objects.filter(isDelete=False).aggregate(Max('sortNum'))['sortNum__max'] or 0
+    try:
+        uuid = get_uuid()
+        Module.objects.create(
+            uuid=uuid,
+            type=module,
+            orderNum=maxSortNum+1,
+            audioUUid=audioStory,
+        )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+
 
 # 替换
 

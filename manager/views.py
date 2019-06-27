@@ -17,7 +17,8 @@ from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
-    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer
+    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
+    HotSearchSerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q, Exists, Max, Min
@@ -1094,6 +1095,12 @@ def del_bgm(request):
         logging.error(str(e))
         return http_return(400, '修改失败')
 
+
+
+# 热搜词
+class HotSearchView(ListAPIView):
+    queryset = HotSearch.objects.exclude(isDelete=True).only('id')
+    serializer_class = HotSearchSerializer
 
 
 

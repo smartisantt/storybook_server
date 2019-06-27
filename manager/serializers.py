@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import Tag, User, Bgm, AudioStory, Story
+from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch
 from utils.errors import ParamsException
 
 
@@ -154,3 +154,14 @@ class BgmSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bgm
         fields = "__all__"
+
+
+class HotSearchSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = HotSearch
+        fields = "__all__"
+
+
+
+

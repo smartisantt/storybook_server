@@ -70,6 +70,6 @@ class BgmFilter(django_filters.rest_framework.FilterSet):
 
     class Meta:
         model = Bgm
-        fields = ('name', )
+        fields = ('name', 'status')
 
 

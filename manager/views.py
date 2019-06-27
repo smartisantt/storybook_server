@@ -18,7 +18,7 @@ from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
-    HotSearchSerializer
+    HotSearchSerializer, AdSerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q, Exists, Max, Min
@@ -488,6 +488,7 @@ class StoryView(ListAPIView):
 
 
 class StorySimpleView(ListAPIView):
+    """"""
     queryset = Story.objects.filter(status="normal")
     serializer_class = StorySimpleSerializer
     pagination_class = None
@@ -627,7 +628,6 @@ def del_story(request):
     if not story:
         return http_return(400, '没有对象')
 
-
     story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
@@ -647,6 +647,7 @@ class AudioStoryInfoView(ListAPIView):
 
     serializer_class = AudioStoryInfoSerializer
     filter_class = AudioStoryInfoFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -678,19 +679,11 @@ class AudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(
                 storyUuid__in=Story.objects.filter(name__icontains=name).all())
         if tag:
-            # Todo
+            # Todo 通过标签选择符合要求的作品
             self.queryset = self.queryset.filter(
                 tags=Tag.objects.filter(name=tag).first())
 
         return self.queryset
-
-
-
-
-"""批量下载"""
-def download_works(request):
-    pass
-
 
 
 # 用户名模糊搜索
@@ -713,7 +706,6 @@ def add_audio_story(request):
     duration = data.get('duration', '')
     url = data.get('url', '')
     tagsUuidList = data.get('tagsuuidlist', '')
-
 
     if not all([storyUuid, userUuid, remarks, url, duration, tagsUuidList]):
         return http_return(400, '参数不能为空')
@@ -757,16 +749,15 @@ def add_audio_story(request):
 
 
 
-
-
-"""自由音频"""
 class FreedomAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0)\
-        .select_related('bgm', 'userUuid')\
+    """自由音频"""
+    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0) \
+        .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
 
     serializer_class = FreedomAudioStoryInfoSerializer
     filter_class = FreedomAudioStoryInfoFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -812,6 +803,7 @@ class CheckAudioStoryInfoView(ListAPIView):
 
     serializer_class = CheckAudioStoryInfoSerializer
     filter_class = CheckAudioStoryInfoFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -902,6 +894,7 @@ class BgmView(ListAPIView):
     queryset = Bgm.objects.exclude(status='destroy').only('uuid').order_by('sortNum')
     serializer_class = BgmSerializer
     filter_class = BgmFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -1099,10 +1092,12 @@ def del_bgm(request):
 
 # 热搜词
 class HotSearchView(ListAPIView):
-    queryset = HotSearch.objects.filter(isDelete=False).only('id')
+    queryset = HotSearch.objects.filter(isDelete=False).only('id', 'keyword')
     serializer_class = HotSearchSerializer
     filter_class = HotSearchFilter
     pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-isTop', '-searchNum')
 
 # 添加关键词
 def add_keyword(request):
@@ -1143,12 +1138,16 @@ def top_keyword(request):
     if not hotSearch:
         return http_return(400, "没有对象")
     try:
-        hotSearch.isTop = not hotSearch.isTop
+        if hotSearch.isTop:
+            hotSearch.isTop = 0
+        else:
+            maxTop = HotSearch.objects.aggregate(Max('isTop'))['isTop__max']
+            hotSearch.isTop = maxTop + 1
         hotSearch.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '删除失败')
+        return http_return(400, '置顶失败')
 
 
 # 删除关键词
@@ -1172,6 +1171,33 @@ def del_keyword(request):
         return http_return(400, '删除失败')
 
 
+
+class AdView(ListAPIView):
+    queryset = Ad.objects.filter(isDelete=False).only('id')
+    serializer_class = AdSerializer
+
+
+
+# 添加
+
+
+# 编辑
+
+
+
+# 删除
+
+
+
+# 模块配置
+
+# 新增
+
+# 替换
+
+# 删除
+
+# 排序
 
 
 

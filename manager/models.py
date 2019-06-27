@@ -106,7 +106,7 @@ class Module(BaseModle, models.Model):
     """
 
     orderNum = models.IntegerField(verbose_name='排序编号', null=True)
-    type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2强先听  MOD3热门推荐
+    type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2抢先听  MOD3热门推荐
     audioUuid = models.ForeignKey('AudioStory', on_delete=models.CASCADE, related_name='moduleAudioUuid',
                                   to_field='uuid', null=True)
 

@@ -91,7 +91,7 @@ def recording_index_list(request):
             "uuid": st.uuid,
             "name": st.name,
             "icon": st.listIcon,
-            "number": st.recordNum,
+            "count": st.recordNum,
         })
     return http_return(200, '成功', {"total": total, "storyList": storyList})
 
@@ -288,10 +288,10 @@ def user_center(request):
         "name": user.nickName,
         "avatar": user.avatar,
         "id": user.id,
-        "isFollow": isFollow,
+        "isFollower": isFollow,
         "intro": user.intro,
-        "followers": len(fans),
-        "follows": len(focus)
+        "followersCount": len(fans),
+        "followsCount": len(focus)
     }
     return http_return(200, '成功', {"userInfo": userDict})
 
@@ -491,14 +491,12 @@ def audio_play(request):
         "audioVolume": audio.userVolume,
         "bgmUrl": audio.bgm.url if audio.bgm else None,
         "bgmVolume": audio.bgmVolume if audio.bgm else None,
-        "createTIme": datetime_to_string(audio.createTime),
-        "playTimes": audio.playTimes,
-    }
-    userInfo = {
-        "uuid": audio.userUuid.uuid if audio.userUuid else None,
-        "nickName": audio.userUuid.nickName if audio.userUuid else None,
+        "createTime": datetime_to_string(audio.createTime),
+        "playCount": audio.playTimes,
+        "userUuid": audio.userUuid.uuid if audio.userUuid else None,
+        "nickname": audio.userUuid.nickName if audio.userUuid else None,
         "avatar": audio.userUuid.avatar if audio.userUuid else None,
-        "createTime": datetime_to_string(audio.userUuid.createTime) if audio.userUuid else None,
+        "userCreateTime": datetime_to_string(audio.userUuid.createTime) if audio.userUuid else None,
     }
     otheraudio = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(userUuid__uuid=audio.userUuid.uuid)
     otheraudios = otheraudio.order_by("-createTime").all()
@@ -526,8 +524,7 @@ def audio_play(request):
     return http_return(200, '成功',
                        {"total": total,
                         "audioStoryList": audioList,
-                        "audioStoryInfo": audioDict,
-                        "userInfo": userInfo})
+                        "audioStoryInfo": audioDict,})
 
 
 @check_identify
@@ -671,7 +668,7 @@ def search_all(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    keyWord = data.get('keyWord')
+    keyWord = data.get('keyword')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
@@ -704,9 +701,9 @@ def search_all(request):
         userList.append({
             "uuid": u.uuid,
             "avatar": u.avatar,
-            "nickName": u.nickName,
+            "nickname": u.nickName,
             "audioCount": audioCount,
-            "followers": followers,
+            "followersCount": followers,
         })
     return http_return(200, '成功', {"audioStoryList": audioList, "userList": userList})
 
@@ -721,7 +718,7 @@ def search_audio(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    keyWord = data.get('keyWord')
+    keyWord = data.get('keyword')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
@@ -763,7 +760,7 @@ def search_user(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    keyWord = data.get('keyWord')
+    keyWord = data.get('keyword')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
@@ -784,9 +781,9 @@ def search_user(request):
         userList.append({
             "uuid": u.uuid,
             "avatar": u.avatar,
-            "nickName": u.nickName,
+            "nickname": u.nickName,
             "audioStoryCount": audioCount,
-            "followers": followers,
+            "followersCount": followers,
         })
     return http_return(200, '成功', {"total": total, "userList": userList})
 
@@ -802,11 +799,8 @@ def search_hot(request):
     if not data:
         return http_return(400, '参数错误')
     hots = HotSearch.objects.filter(isDelete=False).order_by("-orderNum", "-searchNum").all()[:10]
-    total = len(hots)
     hotSearchList = []
     for hot in hots:
-        hotSearchList.append({
-            "uuid": hot.uuid,
-            "name": hot.keyword,
-        })
-    return http_return(200, "成功", {"total": total, "hotSearchList": hotSearchList})
+        hotSearchList.append(hot.keyword)
+    hotSearch = ','.join(hotSearchList)
+    return http_return(200, "成功", {"hotSearch": hotSearch})

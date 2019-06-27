@@ -598,61 +598,65 @@ def index_list(request):
     # 每日一读
     everList = []
     ever = Module.objects.filter(type='MOD1').order_by("orderNum").first()
-    name = ever.audiosUuid.name
-    intro = None
-    bgIcon = ever.audiosUuid.bgIcon
-    if ever.audiosUuid.audiosType:
-        name = ever.audiosUuid.audioUuid.name
-        intro = ever.audiosUuid.audioUuid.intro
-        bgIcon = ever.audiosUuid.audioUuid.listIcon
-    everList.append({
-        "uuid": ever.audiosUuid.uuid,
-        "name": name,
-        "intro": intro,
-        "icon": bgIcon,
-    })
+    if ever:
+        name = ever.audioUuid.name
+        intro = None
+        bgIcon = ever.audioUuid.bgIcon
+        if ever.audioUuid.audioStoryType:
+            name = ever.audioUuid.audioUuid.name
+            intro = ever.audioUuid.audioUuid.intro
+            bgIcon = ever.audioUuid.audioUuid.listIcon
+        everList.append({
+            "uuid": ever.audioUuid.uuid,
+            "name": name,
+            "intro": intro,
+            "icon": bgIcon,
+        })
     # 抢先听
     firstList = []
     firsts = Module.objects.filter(type='MOD2').order_by("orderNum").all()[:4]
-    for first in firsts:
-        name = first.audiosUuid.name
-        bgIcon = ever.audiosUuid.bgIcon
-        if ever.audiosUuid.audiosType:
-            name = first.audiosUuid.audioUuid.name
-            bgIcon = first.audiosUuid.audioUuid.listIcon
-        firstList.append({
-            "uuid": first.audiosUuid.uuid,
-            "name": name,
-            "icon": bgIcon,
-        })
+    if firsts:
+        for first in firsts:
+            name = first.audioUuid.name
+            bgIcon = first.audioUuid.bgIcon
+            if first.audioUuid.audioStoryType:
+                name = first.audioUuid.storyUuid.name
+                bgIcon = first.audioUuid.storyUuid.listIcon
+            firstList.append({
+                "uuid": first.audioUuid.uuid,
+                "name": name,
+                "icon": bgIcon,
+            })
     # 热门推荐
     hotList = []
     hots = Module.objects.filter(type='MOD3').order_by("orderNum").all()[:4]
-    for hot in hots:
-        name = hot.audiosUuid.name
-        bgIcon = hot.audiosUuid.bgIcon
-        if ever.audiosUuid.audiosType:
-            name = hot.audiosUuid.audioUuid.name
-            bgIcon = hot.audiosUuid.audioUuid.listIcon
-        hotList.append({
-            "uuid": hot.audiosUuid.uuid,
-            "name": name,
-            "icon": bgIcon,
-        })
+    if hots:
+        for hot in hots:
+            name = hot.audioUuid.name
+            bgIcon = hot.audioUuid.bgIcon
+            if hot.audioUuid.audioStoryType:
+                name = hot.audioUuid.storyUuid.name
+                bgIcon = hot.audioUuid.storyUuid.listIcon
+            hotList.append({
+                "uuid": hot.audioUuid.uuid,
+                "name": name,
+                "icon": bgIcon,
+            })
     # 猜你喜欢
     likeList = []
     audios = AudioStory.objects.filter(isDelete=False, checkStatus="check").order_by("-playTimes").all()[:6]
-    for audio in audios:
-        name = audio.name
-        bgIcon = audio.bgIcon
-        if audio.audiosType:
-            name = audio.audioUuid.name
-            bgIcon = audio.audioUuid.listIcon
-        likeList.append({
-            "uuid": audio.uuid,
-            "name": name,
-            "icon": bgIcon
-        })
+    if audios:
+        for audio in audios:
+            name = audio.name
+            bgIcon = audio.bgIcon
+            if audio.audioStoryType:
+                name = audio.storyUuid.name
+                bgIcon = audio.storyUuid.listIcon
+            likeList.append({
+                "uuid": audio.uuid,
+                "name": name,
+                "icon": bgIcon
+            })
     return http_return(200, '成功',
                        {"daliyReadList": everList, "listenFirstList": firstList, "hotRecommdList": hotList, "mayLikeList": likeList})
 

@@ -12,7 +12,7 @@ from serializers import serializer
 
 from manager import managerCommon
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter, BgmFilter
+    UserSearchFilter, BgmFilter, HotSearchFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import TenPagination
@@ -1099,8 +1099,12 @@ def del_bgm(request):
 
 # 热搜词
 class HotSearchView(ListAPIView):
-    queryset = HotSearch.objects.exclude(isDelete=True).only('id')
+    queryset = HotSearch.objects.exclude(isDelete=True).only('id', '')
     serializer_class = HotSearchSerializer
+    filter_class = HotSearchFilter
+
+
+
 
 
 

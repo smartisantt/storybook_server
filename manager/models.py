@@ -153,7 +153,7 @@ class HotSearch(BaseModle, models.Model):
     热搜词
     """
     keyword = models.CharField(max_length=32, null=True)  # 搜索关键词
-    orderNum = models.IntegerField(null=True, default=0)  # 排列序号 0:不置顶  1：置顶
+    isTop = models.BooleanField(default=False)  #  0:不置顶  1：置顶
     searchNum = models.IntegerField(null=True, default=0)
     isDelete = models.BooleanField(default=False)
     isAdminAdd = models.BooleanField(default=False) # 关键词是否是后台添加的

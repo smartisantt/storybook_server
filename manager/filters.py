@@ -1,7 +1,7 @@
 
 import django_filters
 
-from manager.models import Tag, Story, AudioStory, User, Bgm
+from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch
 
 
 class StoryFilter(django_filters.rest_framework.FilterSet):
@@ -71,5 +71,17 @@ class BgmFilter(django_filters.rest_framework.FilterSet):
     class Meta:
         model = Bgm
         fields = ('name', 'status')
+
+
+class HotSearchFilter(django_filters.rest_framework.FilterSet):
+
+    keyword = django_filters.CharFilter(field_name='keyword', lookup_expr='icontains')
+
+    class Meta:
+        model = HotSearch
+        fields = ('keyword',)
+
+
+
 
 

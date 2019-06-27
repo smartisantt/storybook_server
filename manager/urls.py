@@ -55,6 +55,10 @@ urlpatterns = [
     # 背景音乐
     path('bgm/bgmlist/', BgmView.as_view()),
     path('bgm/addbgm/', views.add_bgm, name='add_bgm'),
+    path('bgm/modifybgm/', views.modify_bgm, name='modify_bgm'),
+    path('bgm/forbidbgm/', views.forbid_bgm, name='forbid_bgm'),
+    path('bgm/delbgm/', views.del_bgm, name='del_bgm'),
+    path('bgm/changeorder/', views.change_order, name='change_order'),
 
 ]
 

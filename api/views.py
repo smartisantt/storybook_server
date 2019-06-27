@@ -481,22 +481,29 @@ def audio_play(request):
         content = audio.storyUuid.content
         name = audio.storyUuid.name
         bgIcon = audio.storyUuid.faceIcon
-    audioDict = {
-        "uuid": audio.uuid,
-        "name": name,
-        "content": content,
-        "icon": bgIcon,
-        "duration": audio.duration,
-        "audioUrl": audio.voiceUrl,
-        "audioVolume": audio.userVolume,
-        "bgmUrl": audio.bgm.url if audio.bgm else None,
-        "bgmVolume": audio.bgmVolume if audio.bgm else None,
-        "createTime": datetime_to_string(audio.createTime),
-        "playCount": audio.playTimes,
-        "userUuid": audio.userUuid.uuid if audio.userUuid else None,
-        "nickname": audio.userUuid.nickName if audio.userUuid else None,
-        "avatar": audio.userUuid.avatar if audio.userUuid else None,
-        "userCreateTime": datetime_to_string(audio.userUuid.createTime) if audio.userUuid else None,
+    playDict = {
+        "audio": {
+            "uuid": audio.uuid,
+            "name": name,
+            "content": content,
+            "icon": bgIcon,
+            "duration": audio.duration,
+            "audioUrl": audio.voiceUrl,
+            "audioVolume": audio.userVolume,
+            "createTime": datetime_to_string(audio.createTime),
+            "playCount": audio.playTimes,
+        },
+        "bgm": {
+            "uuid": audio.bgm.uuid if audio.bgm else None,
+            "bgmUrl": audio.bgm.url if audio.bgm else None,
+            "bgmVolume": audio.bgmVolume if audio.bgm else None,
+        },
+        "publisher": {
+            "uuid": audio.userUuid.uuid if audio.userUuid else None,
+            "nickname": audio.userUuid.nickName if audio.userUuid else None,
+            "avatar": audio.userUuid.avatar if audio.userUuid else None,
+            "createTime": datetime_to_string(audio.userUuid.createTime) if audio.userUuid else None,
+        }
     }
     otheraudio = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(userUuid__uuid=audio.userUuid.uuid)
     otheraudios = otheraudio.order_by("-createTime").all()
@@ -524,7 +531,7 @@ def audio_play(request):
     return http_return(200, '成功',
                        {"total": total,
                         "audioStoryList": audioList,
-                        "audioStoryInfo": audioDict,})
+                        "playInfo": playDict, })
 
 
 @check_identify
@@ -655,7 +662,8 @@ def index_list(request):
                 "icon": bgIcon
             })
     return http_return(200, '成功',
-                       {"daliyReadList": everList, "listenFirstList": firstList, "hotRecommdList": hotList, "mayLikeList": likeList})
+                       {"daliyReadList": everList, "listenFirstList": firstList, "hotRecommdList": hotList,
+                        "mayLikeList": likeList})
 
 
 @check_identify
@@ -804,3 +812,49 @@ def search_hot(request):
         hotSearchList.append(hot.keyword)
     hotSearch = ','.join(hotSearchList)
     return http_return(200, "成功", {"hotSearch": hotSearch})
+
+
+@check_identify
+def index_class_show(request):
+    """
+    首页绘本
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    className = data.get('className', None)
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    if not className:
+        return http_return(400, '参数错误')
+    audio = AudioStory.objects.filter(isDelete=False, checkStatus="check")
+    audios = audio.filter(tags__name=className).all()
+    total, audios = page_index(audios, page, pageCount)
+    audioStoryList = []
+    for audio in audios:
+        icon = audio.bgIcon
+        name = audio.name
+        content = None
+        if audio.audioStoryType:
+            icon = audio.storyUuid.listIcon if audio.storyUuid else None
+            name = audio.storyUuid.name if audio.storyUuid else None
+            content = audio.storyUuid.content if audio.storyUuid else None
+        tagList = []
+        for tag in audio.tags.all():
+            tagList.append({
+                'uuid': tag.uuid,
+                'name': tag.name
+            })
+        audioStoryList.append({
+            "uuid": audio.uuid,
+            "duration": audio.duration,
+            "icon": icon,
+            "name": name,
+            "content": content,
+            "palyCount": audio.playTimes,
+            "createTime": datetime_to_string(audio.createTime),
+            "tagList": tagList
+        })
+    return http_return(200, '成功', {"total": total, "audioStoryList": audioStoryList})

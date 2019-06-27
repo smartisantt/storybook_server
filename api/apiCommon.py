@@ -68,8 +68,8 @@ def get_default_name(tel):
     if tel == '':
         result = ''
     else:
-        start = tel[:2]
-        end = tel[6:]
+        start = tel[:3]
+        end = tel[-4:]
         result = start + "****" + end
     return result
 

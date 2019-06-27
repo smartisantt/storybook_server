@@ -535,34 +535,6 @@ def audio_play(request):
 
 
 @check_identify
-def audio_like(request):
-    """
-    点赞
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    uuid = data.get('uuid', None)
-    if not uuid:
-        return http_return(400, '参数错误')
-    audio = AudioStory.objects.filter(uuid=uuid).first()
-    selfUuid = data['_cache']['uuid']
-    user = User.objects.filter(uuid=selfUuid).first()
-    try:
-        Behavior.objects.create(
-            userUuid=user,
-            audioUuid=audio,
-
-        )
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '点赞失败')
-    return http_return(200, '点赞成功')
-
-
-@check_identify
 def index_banner(request):
     """
     首页轮播图
@@ -1081,3 +1053,116 @@ def index_categroy_user(request):
             "followersCount": followers,
         })
     return http_return(200, '成功', {"total": total, "userList": userList})
+
+
+@check_identify
+def audiostory_praise(request):
+    """
+    点赞模板音频
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    audio = AudioStory.objects.filter(uuid=uuid, isDelete=False, checkStatus="check").first()
+    if not audio:
+        return http_return(400, '信息不存在')
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    selfUuid = data['_cache']['uuid']
+    user = User.objects.filter(uuid=selfUuid).first()
+    if not user:
+        return http_return(400, '未获取到用户信息')
+    behav = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=1).first()
+    if behav:
+        return http_return(400, '已点赞')
+    try:
+        with transaction.atomic():
+            Behavior.objects.create(
+                uuid=get_uuid(),
+                userUuid=user,
+                audioUuid=audio,
+                type=1,
+            )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '点赞失败')
+    return http_return(200, '点赞成功')
+
+
+@check_identify
+def audiostory_cancel_praise(request):
+    """
+    点赞模板音频
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    audio = AudioStory.objects.filter(uuid=uuid, isDelete=False, checkStatus="check").first()
+    if not audio:
+        return http_return(400, '信息不存在')
+    selfUuid = data['_cache']['uuid']
+    behav = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=1).first()
+    if behav:
+        try:
+            with transaction.atomic():
+                behav.delete()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '取消点赞失败')
+    return http_return(200, '取消点赞成功')
+
+
+@check_identify
+def activity_detail(request):
+    """
+    活动详情
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    act = Activity.objects.filter(uuid=uuid).first()
+    if not act:
+        return http_return(400, '活动信息不存在')
+    selfUuid = data['_cache']['uuid']
+    user = User.objects.filter(uuid=selfUuid).first()
+    activityInfo = {
+        "uuid": act.uuid,
+        "name": act.name,
+        "intro": act.intro,
+        "icon": act.icon,
+        "startTime": datetime_to_string(act.startTime),
+        "endTime": datetime_to_string(act.endTime),
+    }
+    # 返回参赛状态，如果参赛再返回排名
+    status = False
+    remarks = None
+    game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
+    if game:
+        status = True
+        games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
+        games = sorted(games,
+                       key=lambda x: 0.75 * x.audioUuid.bauUuid.filter(type=1).count() + 0.25 * x.audioUuid.playTimes,
+                       reverse=True)
+        remarks = games.index(game)+1
+    userInfo = {
+        "uuid": user.uuid,
+        "avatar": user.avatar,
+        "nickname": user.nickName,
+        "status": status,
+        "remarks": remarks,
+    }
+    return http_return(200,'成功',{"activityInfo":activityInfo,"userInfo":userInfo})

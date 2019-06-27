@@ -40,4 +40,9 @@ urlpatterns = [
     path('audiostory/categroy/audiostory', views.index_categroy_audiostory, name='index_categroy_audiostory'),  # 筛选结果
     path('audiostory/categroy/user', views.index_categroy_user, name='index_categroy_user'),  # 筛选结果
 
+    path('audiostory/praise', views.audiostory_praise, name='audiostory_praise'),  # 点赞作品
+    path('audiostory/cancelpraise', views.audiostory_cancel_praise, name='audiostory_cancel_praise'),  # 取消点赞
+
+    path('activity/detail', views.activity_detail, name='activity_detail'),  # 活动详情
+
 ]

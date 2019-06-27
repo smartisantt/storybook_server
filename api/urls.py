@@ -28,11 +28,16 @@ urlpatterns = [
 
     path('index/banner', views.index_banner, name='index_banner'),  # 首页轮播图
     path('index/list', views.index_list, name='index_list'),  # 首页展示列表
-    path('index/class/show', views.index_class_show, name='index_class_show'),  # 分类展示
 
     path('search/all', views.search_all, name='search_all'),  # 搜索
     path('search/audiostory', views.search_audio, name='search_audio'),  # 搜索模板音频
     path('search/user', views.search_user, name='search_user'),  # 搜索主播
     path('search/hotkeyword', views.search_hot, name='search_hot'),  # 热搜词
+
+    path('audiostory/categroy/detail', views.audiostory_categroy_detail, name='audiostory_categroy_detail'),  # 分类展示
+    path('audiostory/categroy/list', views.index_categroy_list, name='index_categroy_list'),  # 分类标签展示
+    path('audiostory/categroy/result', views.index_categroy_result, name='index_categroy_result'),  # 筛选结果
+    path('audiostory/categroy/audiostory', views.index_categroy_audiostory, name='index_categroy_audiostory'),  # 筛选结果
+    path('audiostory/categroy/user', views.index_categroy_user, name='index_categroy_user'),  # 筛选结果
 
 ]

@@ -153,9 +153,10 @@ class HotSearch(BaseModle, models.Model):
     热搜词
     """
     keyword = models.CharField(max_length=32, null=True)  # 搜索关键词
-    orderNum = models.IntegerField(null=True, default=0)  # 排列序号 0:不置顶  1：置顶
+    isTop = models.IntegerField(default=0)  #  0:不置顶  1：置顶 后置顶的在前面加1
     searchNum = models.IntegerField(null=True, default=0)
     isDelete = models.BooleanField(default=False)
+    isAdminAdd = models.BooleanField(default=False) # 关键词 1 后台添加  0 不是后台添加
 
     class Meta:
         db_table = 'tb_search'

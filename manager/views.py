@@ -12,15 +12,16 @@ from serializers import serializer
 
 from manager import managerCommon
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter, BgmFilter
+    UserSearchFilter, BgmFilter, HotSearchFilter
 from manager.models import *
 from manager.managerCommon import *
-from manager.paginations import TenPagination
+from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
-    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer
+    AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
+    HotSearchSerializer
 from storybook_sever.api import Api
 from datetime import datetime
-from django.db.models import Count, Q, Exists, Max
+from django.db.models import Count, Q, Exists, Max, Min
 
 from utils.errors import ParamsException
 
@@ -1006,36 +1007,46 @@ def modify_bgm(request):
         return http_return(400, '修改失败')
 
 
-# 改变音乐排序
 def change_order(request):
+    """改变音乐排序"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
-    uuid1 = data.get('uuid1', '')
-    uuid2 = data.get('uuid2', '')
+    uuid = data.get('uuid', '')
+    direct = data.get('direct', '')
 
-    if not all([uuid1, uuid2]):
+    if not all([uuid, direct in ["up", "down"]]):
         return http_return(400, "参数错误")
 
-    bgm1 = Bgm.objects.filter(uuid=uuid1).exclude(status="destory").first()
-    bgm2 = Bgm.objects.filter(uuid=uuid2).exclude(status="destory").first()
-    if not all([bgm1, bgm2]):
+    bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+    if not bgm:
         return http_return(400, "没有对象")
+    mySortNum = bgm.sortNum
+    # 向上
+    if direct == "up":
+        # 比当前sortNum小的最大值
+        swapSortNum = Bgm.objects.filter(sortNum__lt=mySortNum).exclude(status="destory").aggregate(Max('sortNum'))['sortNum__max']
+        if not swapSortNum:
+            return http_return(400, "已经到顶了")
+    elif direct == "down":
+        # 比当前sortNum大的最小值
+        swapSortNum = Bgm.objects.filter(sortNum__gt=mySortNum).exclude(status="destory").aggregate(Min('sortNum'))['sortNum__min']
+        if not swapSortNum:
+            return http_return(400, "已经到底了")
 
     try:
-
-        bgm1.save()
-        bgm2.save()
+        swapBgm = Bgm.objects.filter(sortNum=swapSortNum).exclude(status="destory").first()
+        bgm.sortNum, swapBgm.sortNum = swapSortNum, mySortNum
+        bgm.save()
+        swapBgm.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
 
 
-
-
-# 停用 恢复
 def forbid_bgm(request):
+    """停用/恢复背景音乐"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1062,8 +1073,8 @@ def forbid_bgm(request):
         return http_return(400, '修改失败')
 
 
-# 删除
 def del_bgm(request):
+    """删除背景音乐"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1083,6 +1094,85 @@ def del_bgm(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
+
+
+
+# 热搜词
+class HotSearchView(ListAPIView):
+    queryset = HotSearch.objects.filter(isDelete=False).only('id')
+    serializer_class = HotSearchSerializer
+    filter_class = HotSearchFilter
+    pagination_class = MyPagination
+
+# 添加关键词
+def add_keyword(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    keyword = data.get('keyword', '')
+    if not keyword:
+        return http_return(400, "参数有误")
+
+    hotSearch = HotSearch.objects.filter(keyword=keyword, isDelete=False).first()
+    if hotSearch:
+        return http_return(400, "重复名字")
+    try:
+        uuid = get_uuid()
+        HotSearch.objects.create(
+            uuid = uuid,
+            keyword = keyword,
+            searchNum = 0,
+            isAdminAdd = True
+        )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+
+
+# 置顶 取消置顶
+def top_keyword(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, "参数有误")
+
+    hotSearch = HotSearch.objects.filter(uuid=uuid, isDelete=False).first()
+    if not hotSearch:
+        return http_return(400, "没有对象")
+    try:
+        hotSearch.isTop = not hotSearch.isTop
+        hotSearch.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+
+
+# 删除关键词
+def del_keyword(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, "参数有误")
+
+    hotSearch = HotSearch.objects.filter(uuid=uuid, isDelete=False).first()
+    if not hotSearch:
+        return http_return(400, "没有对象")
+    try:
+        hotSearch.isDelete = True
+        hotSearch.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+
+
+
 
 
 

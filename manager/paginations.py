@@ -1,9 +1,11 @@
 from rest_framework.pagination import PageNumberPagination
 
 
-class TenPagination(PageNumberPagination):
+class MyPagination(PageNumberPagination):
     page_size = 2
+    page_query_param = 'page'
     page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 # 可以在子类中定义的属性：

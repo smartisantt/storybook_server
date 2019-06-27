@@ -935,10 +935,10 @@ def add_bgm(request):
 
     if not all([url, name, duration]):
         return http_return(400, '参数错误')
-    bgm = Bgm.objects.filter(url=url).first()
+    bgm = Bgm.objects.filter(url=url).exclude(status="destory").first()
     if bgm:
         return http_return(400, '重复文件')
-    bgm = Bgm.objects.filter(name=name).first()
+    bgm = Bgm.objects.filter(name=name).exclude(status="destory").first()
     if bgm:
         return http_return(400, '重复音乐名')
 
@@ -961,20 +961,128 @@ def add_bgm(request):
 
 
 
-    # 查询当前最大排序的序号
-
-
-
 # 编辑音乐（音乐名，音频文件）
+def modify_bgm(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    url = data.get('url', '')
+    name = data.get('name', '')
+    duration = data.get('duration', '')
+
+    if not all([uuid, url, name, duration]):
+        return http_return(400, '参数错误')
+
+    bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+    if not bgm:
+        return http_return(400, '找不到对象')
+    myUrl = bgm.url
+    myName = bgm.name
+    sortNum = bgm.sortNum or 1
+
+
+    if myUrl != url:
+        bgm = Bgm.objects.filter(url=url).exclude(status="destory").first()
+        if bgm:
+            return http_return(400, '重复文件')
+    if myName != name:
+        bgm = Bgm.objects.filter(name=name).exclude(status="destory").first()
+        if bgm:
+            return http_return(400, '重复音乐名')
+
+
+    try:
+        bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+        bgm.url=url
+        bgm.name=name
+        bgm.sortNum=sortNum
+        bgm.duration=duration
+        bgm.save()
+
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
 
 
 # 改变音乐排序
+def change_order(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid1 = data.get('uuid1', '')
+    uuid2 = data.get('uuid2', '')
+
+    if not all([uuid1, uuid2]):
+        return http_return(400, "参数错误")
+
+    bgm1 = Bgm.objects.filter(uuid=uuid1).exclude(status="destory").first()
+    bgm2 = Bgm.objects.filter(uuid=uuid2).exclude(status="destory").first()
+    if not all([bgm1, bgm2]):
+        return http_return(400, "没有对象")
+
+    try:
+
+        bgm1.save()
+        bgm2.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
 
 
-# 停用
+
+
+# 停用 恢复
+def forbid_bgm(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    status = data.get('status', '')
+    if not all([uuid, status in ['normal', 'forbid']]):
+        return http_return(400, '参数错误')
+
+    bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+    if not bgm:
+        return http_return(400, '找不到对象')
+    try:
+        # forbid 停用 normal正常 在用  destroy 删除
+        if status=="normal":
+            bgm.status = "normal"
+        elif status=="forbid":
+            bgm.status = "forbid"
+        else:
+            return http_return(400, '参数错误')
+        bgm.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
 
 
 # 删除
+def del_bgm(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+
+    bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+    if not bgm:
+        return http_return(400, '找不到对象')
+    try:
+        # forbid 停用 normal正常 在用  destroy 删除
+        bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+        bgm.status = "destroy"
+        bgm.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
 
 
 

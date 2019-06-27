@@ -160,7 +160,7 @@ def recording_bgmusic_list(request):
         return http_return(400, '参数错误')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
-    bgm = Bgm.objects.filter(isUsing=True).order_by('sortNum')
+    bgm = Bgm.objects.filter(status='normal').order_by('sortNum')
     bgms = bgm.all()
     total, bgms = page_index(bgms, page, pageCount)
     bgmList = []

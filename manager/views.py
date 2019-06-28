@@ -1540,20 +1540,24 @@ def forbidden_user(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
-    audioStoryUuid = data.get('audiostoryuuid', '')
-    checkStatus = data.get('checkstatus', '')
+    uuid = data.get('uuid', '')
+    type = data.get('type', '')
+    starttime = data.get('starttime', '')
+    endtime = data.get('endtime', '')
 
-    if not all([audioStoryUuid, checkStatus in ["check", "checkFail"]]):
+    # destroy  forbbiden_login  forbbiden_say
+    if not all([uuid, type in ["forbbiden_login", "forbbiden_say"]]):
         return http_return(400, '参数错误')
 
-    audioStory =  AudioStory.filter(uuid=audioStoryUuid, checkStatus='unCheck', isDelete=False).first()
-    if not audioStory:
-        return http_return(400, '对象错误')
+    user = User.objects.filter(uuid=uuid, status='normal').first()
+    if not user:
+        return http_return(400, '没有对象')
 
+    # TODO:添加时间范围
     try:
         with transaction.atomic():
-            audioStory.checkStatus = checkStatus
-            audioStory.save()
+            user.tatus = type
+            user.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))

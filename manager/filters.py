@@ -82,6 +82,22 @@ class HotSearchFilter(django_filters.FilterSet):
         fields = ('keyword',)
 
 
+class UserFilter(django_filters.FilterSet):
+
+    nickname = django_filters.CharFilter(field_name='nickName', lookup_expr='icontains')
+    tel = django_filters.CharFilter(lookup_expr='contains')
+    # status = django_filters.CharFilter(method='filter_by_status')
+    #
+    # @staticmethod
+    # def filter_by_status(queryset, name, value):
+    #     return queryset.filter(status=value)
+
+
+    class Meta:
+        model = User
+        fields = ('id', 'nickName', 'tel', 'status')
+
+
 
 
 

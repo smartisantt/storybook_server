@@ -6,7 +6,7 @@ from rest_framework.routers import SimpleRouter
 
 from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
-    TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView
+    TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView
 
 app_name = 'manager'
 
@@ -66,12 +66,15 @@ urlpatterns = [
     path('hotsearch/topkeyword/', views.top_keyword, name='top_keyword'),
     path('hotsearch/delkeyword/', views.del_keyword, name='del_keyword'),
 
-
+    # 信息配置
     path('module/modulelist/', ModuleView.as_view()),
     path('module/addstoryintomodule/', views.add_story_into_module, name='add_story_into_module'),
     path('module/changestoryinmodule/', views.change_story_in_module, name='change_story_in_module'),
     path('module/delstoryinmodule/', views.del_story_in_module, name='del_story_in_module'),
+    path('module/changemoduleorder/', views.change_module_order, name='change_module_order'),
 
+    # 用户管理
+    path('user/userlist/', UserView.as_view()),
 ]
 
 # router = SimpleRouter()

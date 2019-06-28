@@ -12,13 +12,13 @@ from serializers import serializer
 
 from manager import managerCommon
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter, BgmFilter, HotSearchFilter
+    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
-    HotSearchSerializer, AdSerializer, ModuleSerializer
+    HotSearchSerializer, AdSerializer, ModuleSerializer, UserSerializer, UserDetailSerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q, Exists, Max, Min
@@ -1205,7 +1205,7 @@ class ModuleView(ListAPIView):
     queryset = Module.objects.filter(isDelete=False).\
         select_related('audioUuid').order_by('orderNum')
     serializer_class = ModuleSerializer
-
+    pagination_class = MyPagination
 
     def get_queryset(self):
         type = self.request.query_params.get('type', '')
@@ -1214,10 +1214,8 @@ class ModuleView(ListAPIView):
         return self.queryset.filter(type=type)
 
 
-
-
-# 新增
 def add_story_into_module(request):
+    """新增"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1227,7 +1225,7 @@ def add_story_into_module(request):
         return http_return(400, '参数错误')
 
     audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),
-                                         Q(checkStatus='check')|Q(checkStatus='exemption')).first()
+                                           Q(checkStatus='check')|Q(checkStatus='exemption')).first()
     if not audioStory:
         return http_return(400, '没有对象')
 
@@ -1314,7 +1312,7 @@ def del_story_in_module(request):
 
 
 
-def change_module_sort(request):
+def change_module_order(request):
     """模块排序"""
     data = request_body(request, 'POST')
     if not data:
@@ -1329,21 +1327,22 @@ def change_module_sort(request):
     if not module:
         return http_return(400, "没有对象")
     myOrderNum = module.orderNum
+    type = module.type
     # 向上
     if direct == "up":
         # 比当前sortNum小的最大值
-        swapOrderNum = Module.objects.filter(orderNum__lt=myOrderNum, isDelete=False).aggregate(Max('orderNum'))['orderNum__max']
+        swapOrderNum = Module.objects.filter(orderNum__lt=myOrderNum, isDelete=False, type=type).aggregate(Max('orderNum'))['orderNum__max']
         if not swapOrderNum:
             return http_return(400, "已经到顶了")
     elif direct == "down":
         # 比当前sortNum大的最小值
-        swapOrderNum = Module.objects.filter(orderNum__gt=myOrderNum, isDelete=False).aggregate(Min('orderNum'))['orderNum__min']
+        swapOrderNum = Module.objects.filter(orderNum__gt=myOrderNum, isDelete=False, type=type).aggregate(Min('orderNum'))['orderNum__min']
         if not swapOrderNum:
             return http_return(400, "已经到底了")
 
     try:
         with transaction.atomic():
-            swapModule = Module.objects.filter(orderNum=swapOrderNum, isDelete=False).first()
+            swapModule = Module.objects.filter(orderNum=swapOrderNum, isDelete=False, type=type).first()
             module.orderNum, swapModule.orderNum = swapOrderNum, myOrderNum
             module.save()
             swapModule.save()
@@ -1352,6 +1351,38 @@ def change_module_sort(request):
         logging.error(str(e))
         return http_return(400, '修改失败')
 
+
+class UserView(ListAPIView):
+    queryset = User.objects.exclude(status='destory')
+    serializer_class = UserDetailSerializer
+    filter_class = UserFilter
+    pagination_class = MyPagination
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+
+        # id = self.request.query_params.get('id', '')                # 用户ID
+        # nickName = self.request.query_params.get('nickname', '')  # 用户名
+        # tel = self.request.query_params.get('tel', '')  # 模板名
+
+        if (startTime and not endTime) or (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime) / 1000
+            endTime = int(endTime) / 1000
+            if endTime < startTime:
+                raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+
+        return self.queryset
 
 
 

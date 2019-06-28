@@ -18,24 +18,13 @@ class StorySerializer(serializers.ModelSerializer):
         exclude = ('tags', )
 
 
+
 class StorySimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Story
-        fields = ('uuid', 'name')
+        fields = ('uuid', 'name', 'faceIcon', 'listIcon')
 
-
-
-
-class TemplateStory(object):
-    pass
-
-
-class TemplateStoryDetailSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = TemplateStory
-        exclude = ('tags', 'uuid', 'id')
 
 
 class TagsSimpleSerialzer(serializers.ModelSerializer):
@@ -56,6 +45,13 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('nickName', 'avatar', 'roles', 'uuid')
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = "__all__"
 
 
 class UserSearchSerializer(serializers.ModelSerializer):
@@ -122,6 +118,18 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
 
 
 
+class AudioStorySimpleSerializer(serializers.ModelSerializer):
+    storyInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_storyInfo(audioinfo):
+        return StorySimpleSerializer(audioinfo.storyUuid).data
+
+    class Meta:
+        model = AudioStory
+        fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'name')
+
+
 class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
     tagsInfo = serializers.SerializerMethodField()
     bgmInfo = serializers.SerializerMethodField()
@@ -169,13 +177,15 @@ class AdSerializer(serializers.ModelSerializer):
         model = Ad
         fields = "__all__"
 
+
+
 class ModuleSerializer(serializers.ModelSerializer):
     audioStory = serializers.SerializerMethodField()
 
+
     @staticmethod
     def get_audioStory(module):
-        return AudioStoryInfoSerializer(module.audioUuid).data
-
+        return AudioStorySimpleSerializer(module.audioUuid).data
 
     class Meta:
         model = Module

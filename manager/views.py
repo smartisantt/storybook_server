@@ -18,7 +18,7 @@ from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
-    HotSearchSerializer
+    HotSearchSerializer, AdSerializer, ModuleSerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q, Exists, Max, Min
@@ -488,6 +488,7 @@ class StoryView(ListAPIView):
 
 
 class StorySimpleView(ListAPIView):
+    """"""
     queryset = Story.objects.filter(status="normal")
     serializer_class = StorySimpleSerializer
     pagination_class = None
@@ -627,7 +628,6 @@ def del_story(request):
     if not story:
         return http_return(400, '没有对象')
 
-
     story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
@@ -641,12 +641,14 @@ def del_story(request):
 
 # """模板音频"""
 class AudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=1)\
+    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),
+                                         Q(checkStatus='check')|Q(checkStatus='exemption'))\
         .select_related('bgm', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
     serializer_class = AudioStoryInfoSerializer
     filter_class = AudioStoryInfoFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -678,19 +680,12 @@ class AudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(
                 storyUuid__in=Story.objects.filter(name__icontains=name).all())
         if tag:
-            # Todo
-            self.queryset = self.queryset.filter(
-                tags=Tag.objects.filter(name=tag).first())
+            # Todo 通过标签选择符合要求的作品
+            # self.queryset = self.queryset.filter(
+            #     tags=Tag.objects.filter(name=tag).first())
+            self.queryset = self.queryset.filter()
 
         return self.queryset
-
-
-
-
-"""批量下载"""
-def download_works(request):
-    pass
-
 
 
 # 用户名模糊搜索
@@ -713,7 +708,6 @@ def add_audio_story(request):
     duration = data.get('duration', '')
     url = data.get('url', '')
     tagsUuidList = data.get('tagsuuidlist', '')
-
 
     if not all([storyUuid, userUuid, remarks, url, duration, tagsUuidList]):
         return http_return(400, '参数不能为空')
@@ -757,16 +751,16 @@ def add_audio_story(request):
 
 
 
-
-
-"""自由音频"""
 class FreedomAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0)\
-        .select_related('bgm', 'userUuid')\
+    """自由音频"""
+    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0),
+                                         Q(checkStatus='check')|Q(checkStatus='exemption')) \
+        .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
 
     serializer_class = FreedomAudioStoryInfoSerializer
     filter_class = FreedomAudioStoryInfoFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -812,6 +806,7 @@ class CheckAudioStoryInfoView(ListAPIView):
 
     serializer_class = CheckAudioStoryInfoSerializer
     filter_class = CheckAudioStoryInfoFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -902,6 +897,7 @@ class BgmView(ListAPIView):
     queryset = Bgm.objects.exclude(status='destroy').only('uuid').order_by('sortNum')
     serializer_class = BgmSerializer
     filter_class = BgmFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -943,17 +939,18 @@ def add_bgm(request):
     if bgm:
         return http_return(400, '重复音乐名')
 
-    maxSortNum = Bgm.objects.aggregate(Max('sortNum'))['sortNum__max'] or 0
+    maxSortNum = Bgm.objects.exclude(status='destory').aggregate(Max('sortNum'))['sortNum__max'] or 0
 
     try:
-        uuid = get_uuid()
-        Bgm.objects.create(
-            uuid=uuid,
-            url=url,
-            name=name,
-            sortNum=maxSortNum+1,
-            duration=duration,
-        )
+        with transaction.atomic():
+            uuid = get_uuid()
+            Bgm.objects.create(
+                uuid=uuid,
+                url=url,
+                name=name,
+                sortNum=maxSortNum+1,
+                duration=duration,
+            )
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -994,12 +991,13 @@ def modify_bgm(request):
 
 
     try:
-        bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
-        bgm.url=url
-        bgm.name=name
-        bgm.sortNum=sortNum
-        bgm.duration=duration
-        bgm.save()
+        with transaction.atomic():
+            bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+            bgm.url=url
+            bgm.name=name
+            bgm.sortNum=sortNum
+            bgm.duration=duration
+            bgm.save()
 
         return http_return(200, 'OK')
     except Exception as e:
@@ -1035,10 +1033,11 @@ def change_order(request):
             return http_return(400, "已经到底了")
 
     try:
-        swapBgm = Bgm.objects.filter(sortNum=swapSortNum).exclude(status="destory").first()
-        bgm.sortNum, swapBgm.sortNum = swapSortNum, mySortNum
-        bgm.save()
-        swapBgm.save()
+        with transaction.atomic():
+            swapBgm = Bgm.objects.filter(sortNum=swapSortNum).exclude(status="destory").first()
+            bgm.sortNum, swapBgm.sortNum = swapSortNum, mySortNum
+            bgm.save()
+            swapBgm.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1060,13 +1059,14 @@ def forbid_bgm(request):
         return http_return(400, '找不到对象')
     try:
         # forbid 停用 normal正常 在用  destroy 删除
-        if status=="normal":
-            bgm.status = "normal"
-        elif status=="forbid":
-            bgm.status = "forbid"
-        else:
-            return http_return(400, '参数错误')
-        bgm.save()
+        with transaction.atomic():
+            if status=="normal":
+                bgm.status = "normal"
+            elif status=="forbid":
+                bgm.status = "forbid"
+            else:
+                return http_return(400, '参数错误')
+            bgm.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1088,8 +1088,9 @@ def del_bgm(request):
     try:
         # forbid 停用 normal正常 在用  destroy 删除
         bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
-        bgm.status = "destroy"
-        bgm.save()
+        with transaction.atomic():
+            bgm.status = "destroy"
+            bgm.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1099,10 +1100,12 @@ def del_bgm(request):
 
 # 热搜词
 class HotSearchView(ListAPIView):
-    queryset = HotSearch.objects.filter(isDelete=False).only('id')
+    queryset = HotSearch.objects.filter(isDelete=False).only('id', 'keyword')
     serializer_class = HotSearchSerializer
     filter_class = HotSearchFilter
     pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-isTop', '-searchNum')
 
 # 添加关键词
 def add_keyword(request):
@@ -1143,12 +1146,17 @@ def top_keyword(request):
     if not hotSearch:
         return http_return(400, "没有对象")
     try:
-        hotSearch.isTop = not hotSearch.isTop
-        hotSearch.save()
+        with transaction.atomic():
+            if hotSearch.isTop:
+                hotSearch.isTop = 0
+            else:
+                maxTop = HotSearch.objects.filter(isDelete=False).aggregate(Max('isTop'))['isTop__max']
+                hotSearch.isTop = maxTop + 1
+            hotSearch.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '删除失败')
+        return http_return(400, '置顶失败')
 
 
 # 删除关键词
@@ -1164,14 +1172,185 @@ def del_keyword(request):
     if not hotSearch:
         return http_return(400, "没有对象")
     try:
-        hotSearch.isDelete = True
-        hotSearch.save()
+        with transaction.atomic():
+            hotSearch.isDelete = True
+            hotSearch.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
 
 
+
+class AdView(ListAPIView):
+    queryset = Ad.objects.filter(isDelete=False).only('id')
+    serializer_class = AdSerializer
+
+
+
+# 添加
+
+
+# 编辑
+
+
+
+# 删除
+
+
+
+# 模块配置
+class ModuleView(ListAPIView):
+    """显示模块类型 MOD1每日一读  MOD2抢先听  MOD3热门推荐"""
+    queryset = Module.objects.filter(isDelete=False).\
+        select_related('audioUuid').order_by('orderNum')
+    serializer_class = ModuleSerializer
+
+
+    def get_queryset(self):
+        type = self.request.query_params.get('type', '')
+        if type not in ['MOD1', 'MOD2', 'MOD3']:
+            raise ParamsException({'code': 400, 'msg': '参数错误'})
+        return self.queryset.filter(type=type)
+
+
+
+
+# 新增
+def add_story_into_module(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    type = data.get('type', '')
+    audioUuid = data.get('audiouuid', '')
+    if not all([type in ['MOD1', 'MOD2', 'MOD3'], audioUuid]):
+        return http_return(400, '参数错误')
+
+    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),
+                                         Q(checkStatus='check')|Q(checkStatus='exemption')).first()
+    if not audioStory:
+        return http_return(400, '没有对象')
+
+    module = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type).first()
+    if module:
+        return http_return(400, '已经添加')
+
+    maxOrderNum = Module.objects.filter(isDelete=False, type=type).aggregate(Max('orderNum'))['orderNum__max'] or 0
+    try:
+        with transaction.atomic():
+            uuid = get_uuid()
+            Module.objects.create(
+                uuid=uuid,
+                type=type,
+                orderNum=maxOrderNum+1,
+                audioUuid=audioStory,
+            )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+
+
+# 替换
+def change_story_in_module(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    moduleUuid = data.get('moduleuuid', '')              # 要替换哪条uuid
+    audioUuid = data.get('audiouuid', '')                # 替换成哪个音频
+
+    if not all([moduleUuid, audioUuid]):
+        return http_return(400, '参数错误')
+
+    module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
+    if not module:
+        return http_return(400, '没有对象')
+
+    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),
+                                         Q(checkStatus='check')|Q(checkStatus='exemption')).first()
+    if not audioStory:
+        return http_return(400, '没有对象')
+
+    # 替换的对象在这个模块中是否存在
+    type = module.type
+    module = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type).first()
+    if module:
+        return http_return(400, '已经添加')
+
+    try:
+        with transaction.atomic():
+            module.audioUuid = audioStory
+            module.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '替换失败')
+
+
+
+# 删除
+def del_story_in_module(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    moduleUuid = data.get('moduleuuid', '')              # 要删除哪条uuid
+
+    if not moduleUuid:
+        return http_return(400, '参数错误')
+
+    module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
+    if not module:
+        return http_return(400, '没有对象')
+
+
+    try:
+        with transaction.atomic():
+            module.isDelete = True
+            module.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+
+
+
+def change_module_sort(request):
+    """模块排序"""
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    moduleUuid = data.get('moduleuuid', '')
+    direct = data.get('direct', '')
+
+    if not all([moduleUuid, direct in ["up", "down"]]):
+        return http_return(400, "参数错误")
+
+    module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
+    if not module:
+        return http_return(400, "没有对象")
+    myOrderNum = module.orderNum
+    # 向上
+    if direct == "up":
+        # 比当前sortNum小的最大值
+        swapOrderNum = Module.objects.filter(orderNum__lt=myOrderNum, isDelete=False).aggregate(Max('orderNum'))['orderNum__max']
+        if not swapOrderNum:
+            return http_return(400, "已经到顶了")
+    elif direct == "down":
+        # 比当前sortNum大的最小值
+        swapOrderNum = Module.objects.filter(orderNum__gt=myOrderNum, isDelete=False).aggregate(Min('orderNum'))['orderNum__min']
+        if not swapOrderNum:
+            return http_return(400, "已经到底了")
+
+    try:
+        with transaction.atomic():
+            swapModule = Module.objects.filter(orderNum=swapOrderNum, isDelete=False).first()
+            module.orderNum, swapModule.orderNum = swapOrderNum, myOrderNum
+            module.save()
+            swapModule.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
 
 
 

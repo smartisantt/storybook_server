@@ -65,7 +65,6 @@ class Bgm(BaseModle, models.Model):
     status = models.CharField(max_length=64, verbose_name='状态', default="normal")  # forbid 停用 normal正常 在用  destroy 删除
     sortNum = models.IntegerField(verbose_name='排序编号', null=True)
 
-
     class Meta:
         db_table = 'tb_bgm'
 
@@ -106,36 +105,25 @@ class Module(BaseModle, models.Model):
     """
 
     orderNum = models.IntegerField(verbose_name='排序编号', null=True)
-    type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2强先听  MOD3热门推荐
+    type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2抢先听  MOD3热门推荐
     audioUuid = models.ForeignKey('AudioStory', on_delete=models.CASCADE, related_name='moduleAudioUuid',
                                   to_field='uuid', null=True)
-
+    isDelete = models.BooleanField(default=False)
     class Meta:
         db_table = 'tb_module'
 
 
-class Rank(BaseModle, models.Model):
+class GameInfo(BaseModle, models.Model):
     """活动排名  用户和活动中间的关联表"""
-    userRank = models.IntegerField(null=True)
-    popularity = models.IntegerField(verbose_name='人气', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userRankUuid', to_field='uuid')
-    activityUuid = models.ForeignKey(Activity, models.CASCADE, null=True, related_name='activityRankUuid',
+    activityUuid = models.ForeignKey('Activity', models.CASCADE, null=True, related_name='activityRankUuid',
                                      to_field='uuid')
-    audioUuid = models.OneToOneField('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid',
-                                     to_field='uuid')
+    audioUuid = models.ForeignKey('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid',
+                                  to_field='uuid')
+    status = models.IntegerField(default=0)  # 状态 0正常 1禁用 2删除
 
     class Meta:
-        db_table = 'tb_rank'
-
-
-class Sign(BaseModle, models.Model):
-    """活动报名表"""
-    activitUuid = models.ForeignKey(Activity, models.CASCADE, null=True, related_name='activitSignUuid',
-                                    to_field='uuid')
-    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userSignUuid', to_field='uuid')
-
-    class Meta:
-        db_table = 'tb_sign'
+        db_table = 'tb_gameinfo'
 
 
 class FriendShip(BaseModle, models.Model):
@@ -153,10 +141,10 @@ class HotSearch(BaseModle, models.Model):
     热搜词
     """
     keyword = models.CharField(max_length=32, null=True)  # 搜索关键词
-    isTop = models.IntegerField(default=0)  #  0:不置顶  1：置顶 后置顶的在前面加1
+    isTop = models.IntegerField(default=0)  # 0:不置顶  1：置顶 后置顶的在前面加1
     searchNum = models.IntegerField(null=True, default=0)
     isDelete = models.BooleanField(default=False)
-    isAdminAdd = models.BooleanField(default=False) # 关键词 1 后台添加  0 不是后台添加
+    isAdminAdd = models.BooleanField(default=False)  # 关键词 1 后台添加  0 不是后台添加
 
     class Meta:
         db_table = 'tb_search'
@@ -299,7 +287,7 @@ class CycleBanner(BaseModle, models.Model):
     icon = models.CharField(max_length=255, null=True)  # 轮播图片
     startTime = models.DateTimeField(null=True)  # 有效起始时间
     endTime = models.DateTimeField(null=True)
-    type = models.CharField(max_length=64, null=True)  # 跳转类型 1专辑 2作品 3故事 4外部链接
+    type = models.CharField(max_length=64, null=True)  # 跳转类型 0活动 1专辑 2作品 3故事 4外部链接
     target = models.CharField(max_length=128, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
     location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图
@@ -345,7 +333,7 @@ class AudioStory(BaseModle, models.Model):
                                   null=True)  # 专辑
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='useAudioUuid', to_field='uuid',
                                  null=True)  # 用户
-    checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
+    checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 后台上传免审核
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
     isDelete = models.BooleanField(default=False)  # 软删除
 

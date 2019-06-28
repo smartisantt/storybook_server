@@ -46,5 +46,7 @@ urlpatterns = [
 
     path('activity/detail', views.activity_detail, name='activity_detail'),  # 活动详情
     path('activity/ranklist', views.activity_rank, name='activity_rank'),  # 活动排行
+    path('activity/audiostorylist', views.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
+    path('activity/join', views.activity_join, name='activity_join'),  # 参与比赛
 
 ]

@@ -6,7 +6,7 @@ from rest_framework.routers import SimpleRouter
 
 from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
-    TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView
+    TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView
 
 app_name = 'manager'
 
@@ -48,9 +48,10 @@ urlpatterns = [
     path('story/freedomaudio/', FreedomAudioStoryInfoView.as_view()),
 
     # 审核
-    path('check/checkaudio/', CheckAudioStoryInfoView.as_view()),
+    path('check/audiolist/', CheckAudioStoryInfoView.as_view()),
     path('check/configtags/', views.config_tags, name='config_tags'),
-
+    path('check/checkaudio/', views.check_audio, name='check_audio'),
+    path('audio/audiostorylist/', AllAudioSimpleView.as_view()),
 
     # 背景音乐
     path('bgm/bgmlist/', BgmView.as_view()),
@@ -75,6 +76,8 @@ urlpatterns = [
 
     # 用户管理
     path('user/userlist/', UserView.as_view()),
+    path('user/adduser/', views.add_user, name='add_user'),
+    path('user/deluser/', views.del_user, name='del_user'),
 ]
 
 # router = SimpleRouter()

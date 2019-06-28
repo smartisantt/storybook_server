@@ -333,7 +333,7 @@ class AudioStory(BaseModle, models.Model):
                                   null=True)  # 专辑
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='useAudioUuid', to_field='uuid',
                                  null=True)  # 用户
-    checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过
+    checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 后台上传免审核
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
     isDelete = models.BooleanField(default=False)  # 软删除
 

@@ -179,7 +179,7 @@ class ModuleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Module
-        exclude = ('audioUuid', 'id')
+        exclude = ('audioUuid', 'id', 'createTime', 'updateTime', 'isDelete')
 
 
 

@@ -66,7 +66,11 @@ urlpatterns = [
     path('hotsearch/topkeyword/', views.top_keyword, name='top_keyword'),
     path('hotsearch/delkeyword/', views.del_keyword, name='del_keyword'),
 
-    path('module/setmodule/', ModuleView.as_view()),
+
+    path('module/modulelist/', ModuleView.as_view()),
+    path('module/addstoryintomodule/', views.add_story_into_module, name='add_story_into_module'),
+    path('module/changestoryinmodule/', views.change_story_in_module, name='change_story_in_module'),
+    path('module/delstoryinmodule/', views.del_story_in_module, name='del_story_in_module'),
 
 ]
 

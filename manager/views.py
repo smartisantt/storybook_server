@@ -641,7 +641,8 @@ def del_story(request):
 
 # """模板音频"""
 class AudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=1)\
+    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),
+                                         Q(checkStatus='check')|Q(checkStatus='exemption'))\
         .select_related('bgm', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
@@ -680,8 +681,9 @@ class AudioStoryInfoView(ListAPIView):
                 storyUuid__in=Story.objects.filter(name__icontains=name).all())
         if tag:
             # Todo 通过标签选择符合要求的作品
-            self.queryset = self.queryset.filter(
-                tags=Tag.objects.filter(name=tag).first())
+            # self.queryset = self.queryset.filter(
+            #     tags=Tag.objects.filter(name=tag).first())
+            self.queryset = self.queryset.filter()
 
         return self.queryset
 
@@ -751,7 +753,8 @@ def add_audio_story(request):
 
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
-    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0) \
+    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0),
+                                         Q(checkStatus='check')|Q(checkStatus='exemption')) \
         .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
 
@@ -939,14 +942,15 @@ def add_bgm(request):
     maxSortNum = Bgm.objects.exclude(status='destory').aggregate(Max('sortNum'))['sortNum__max'] or 0
 
     try:
-        uuid = get_uuid()
-        Bgm.objects.create(
-            uuid=uuid,
-            url=url,
-            name=name,
-            sortNum=maxSortNum+1,
-            duration=duration,
-        )
+        with transaction.atomic():
+            uuid = get_uuid()
+            Bgm.objects.create(
+                uuid=uuid,
+                url=url,
+                name=name,
+                sortNum=maxSortNum+1,
+                duration=duration,
+            )
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -987,12 +991,13 @@ def modify_bgm(request):
 
 
     try:
-        bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
-        bgm.url=url
-        bgm.name=name
-        bgm.sortNum=sortNum
-        bgm.duration=duration
-        bgm.save()
+        with transaction.atomic():
+            bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
+            bgm.url=url
+            bgm.name=name
+            bgm.sortNum=sortNum
+            bgm.duration=duration
+            bgm.save()
 
         return http_return(200, 'OK')
     except Exception as e:
@@ -1028,10 +1033,11 @@ def change_order(request):
             return http_return(400, "已经到底了")
 
     try:
-        swapBgm = Bgm.objects.filter(sortNum=swapSortNum).exclude(status="destory").first()
-        bgm.sortNum, swapBgm.sortNum = swapSortNum, mySortNum
-        bgm.save()
-        swapBgm.save()
+        with transaction.atomic():
+            swapBgm = Bgm.objects.filter(sortNum=swapSortNum).exclude(status="destory").first()
+            bgm.sortNum, swapBgm.sortNum = swapSortNum, mySortNum
+            bgm.save()
+            swapBgm.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1053,13 +1059,14 @@ def forbid_bgm(request):
         return http_return(400, '找不到对象')
     try:
         # forbid 停用 normal正常 在用  destroy 删除
-        if status=="normal":
-            bgm.status = "normal"
-        elif status=="forbid":
-            bgm.status = "forbid"
-        else:
-            return http_return(400, '参数错误')
-        bgm.save()
+        with transaction.atomic():
+            if status=="normal":
+                bgm.status = "normal"
+            elif status=="forbid":
+                bgm.status = "forbid"
+            else:
+                return http_return(400, '参数错误')
+            bgm.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1081,8 +1088,9 @@ def del_bgm(request):
     try:
         # forbid 停用 normal正常 在用  destroy 删除
         bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destory").first()
-        bgm.status = "destroy"
-        bgm.save()
+        with transaction.atomic():
+            bgm.status = "destroy"
+            bgm.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1138,12 +1146,13 @@ def top_keyword(request):
     if not hotSearch:
         return http_return(400, "没有对象")
     try:
-        if hotSearch.isTop:
-            hotSearch.isTop = 0
-        else:
-            maxTop = HotSearch.objects.filter(isDelete=False).aggregate(Max('isTop'))['isTop__max']
-            hotSearch.isTop = maxTop + 1
-        hotSearch.save()
+        with transaction.atomic():
+            if hotSearch.isTop:
+                hotSearch.isTop = 0
+            else:
+                maxTop = HotSearch.objects.filter(isDelete=False).aggregate(Max('isTop'))['isTop__max']
+                hotSearch.isTop = maxTop + 1
+            hotSearch.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1163,8 +1172,9 @@ def del_keyword(request):
     if not hotSearch:
         return http_return(400, "没有对象")
     try:
-        hotSearch.isDelete = True
-        hotSearch.save()
+        with transaction.atomic():
+            hotSearch.isDelete = True
+            hotSearch.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1198,37 +1208,43 @@ class ModuleView(ListAPIView):
 
 
     def get_queryset(self):
-        module = self.request.query_params.get('module', '')
-        if module not in ['MOD1', 'MOD2', 'MOD3']:
+        type = self.request.query_params.get('type', '')
+        if type not in ['MOD1', 'MOD2', 'MOD3']:
             raise ParamsException({'code': 400, 'msg': '参数错误'})
-        return self.queryset.filter(type=module)
+        return self.queryset.filter(type=type)
 
 
 
 
-# 新增 TODO 待测
+# 新增
 def add_story_into_module(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
-    module = data.get('module', '')
-    uuid = data.get('uuid', '')
-    if not all([module in ['MOD1', 'MOD2', 'MOD3'], uuid]):
+    type = data.get('type', '')
+    audioUuid = data.get('audiouuid', '')
+    if not all([type in ['MOD1', 'MOD2', 'MOD3'], audioUuid]):
         return http_return(400, '参数错误')
 
-    audioStory = AudioStory.objects.filter(uuid=uuid, isDelete=False).first()
+    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),
+                                         Q(checkStatus='check')|Q(checkStatus='exemption')).first()
     if not audioStory:
         return http_return(400, '没有对象')
 
-    maxSortNum = Module.objects.filter(isDelete=False).aggregate(Max('sortNum'))['sortNum__max'] or 0
+    module = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type).first()
+    if module:
+        return http_return(400, '已经添加')
+
+    maxOrderNum = Module.objects.filter(isDelete=False, type=type).aggregate(Max('orderNum'))['orderNum__max'] or 0
     try:
-        uuid = get_uuid()
-        Module.objects.create(
-            uuid=uuid,
-            type=module,
-            orderNum=maxSortNum+1,
-            audioUUid=audioStory,
-        )
+        with transaction.atomic():
+            uuid = get_uuid()
+            Module.objects.create(
+                uuid=uuid,
+                type=type,
+                orderNum=maxOrderNum+1,
+                audioUuid=audioStory,
+            )
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -1236,10 +1252,105 @@ def add_story_into_module(request):
 
 
 # 替换
+def change_story_in_module(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    moduleUuid = data.get('moduleuuid', '')              # 要替换哪条uuid
+    audioUuid = data.get('audiouuid', '')                # 替换成哪个音频
+
+    if not all([moduleUuid, audioUuid]):
+        return http_return(400, '参数错误')
+
+    module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
+    if not module:
+        return http_return(400, '没有对象')
+
+    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),
+                                         Q(checkStatus='check')|Q(checkStatus='exemption')).first()
+    if not audioStory:
+        return http_return(400, '没有对象')
+
+    # 替换的对象在这个模块中是否存在
+    type = module.type
+    module = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type).first()
+    if module:
+        return http_return(400, '已经添加')
+
+    try:
+        with transaction.atomic():
+            module.audioUuid = audioStory
+            module.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '替换失败')
+
+
 
 # 删除
+def del_story_in_module(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    moduleUuid = data.get('moduleuuid', '')              # 要删除哪条uuid
 
-# 排序
+    if not moduleUuid:
+        return http_return(400, '参数错误')
+
+    module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
+    if not module:
+        return http_return(400, '没有对象')
+
+
+    try:
+        with transaction.atomic():
+            module.isDelete = True
+            module.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+
+
+
+def change_module_sort(request):
+    """模块排序"""
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    moduleUuid = data.get('moduleuuid', '')
+    direct = data.get('direct', '')
+
+    if not all([moduleUuid, direct in ["up", "down"]]):
+        return http_return(400, "参数错误")
+
+    module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
+    if not module:
+        return http_return(400, "没有对象")
+    myOrderNum = module.orderNum
+    # 向上
+    if direct == "up":
+        # 比当前sortNum小的最大值
+        swapOrderNum = Module.objects.filter(orderNum__lt=myOrderNum, isDelete=False).aggregate(Max('orderNum'))['orderNum__max']
+        if not swapOrderNum:
+            return http_return(400, "已经到顶了")
+    elif direct == "down":
+        # 比当前sortNum大的最小值
+        swapOrderNum = Module.objects.filter(orderNum__gt=myOrderNum, isDelete=False).aggregate(Min('orderNum'))['orderNum__min']
+        if not swapOrderNum:
+            return http_return(400, "已经到底了")
+
+    try:
+        with transaction.atomic():
+            swapModule = Module.objects.filter(orderNum=swapOrderNum, isDelete=False).first()
+            module.orderNum, swapModule.orderNum = swapOrderNum, myOrderNum
+            module.save()
+            swapModule.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
 
 
 

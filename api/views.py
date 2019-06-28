@@ -577,7 +577,7 @@ def index_list(request):
         return http_return(400, '参数错误')
     # 每日一读
     everList = []
-    ever = Module.objects.filter(type='MOD1',isDelete=False).order_by("orderNum").first()
+    ever = Module.objects.filter(type='MOD1', isDelete=False).order_by("orderNum").first()
     if ever:
         name = ever.audioUuid.name
         intro = None
@@ -596,7 +596,7 @@ def index_list(request):
         })
     # 抢先听
     firstList = []
-    firsts = Module.objects.filter(type='MOD2',isDelete=False).order_by("orderNum").all()[:4]
+    firsts = Module.objects.filter(type='MOD2', isDelete=False).order_by("orderNum").all()[:4]
     if firsts:
         for first in firsts:
             name = first.audioUuid.name
@@ -616,7 +616,7 @@ def index_list(request):
             })
     # 热门推荐
     hotList = []
-    hots = Module.objects.filter(type='MOD3',isDelete=False).order_by("orderNum").all()[:4]
+    hots = Module.objects.filter(type='MOD3', isDelete=False).order_by("orderNum").all()[:4]
     if hots:
         for hot in hots:
             name = hot.audioUuid.name
@@ -675,7 +675,7 @@ def index_more(request):
     # MOD1每日一读  MOD2抢先听  MOD3热门推荐 MOD4猜你喜欢
     if type in ['MOD1', 'MOD2', 'MOD3']:
         audioStoryList = []
-        modules = Module.objects.filter(type=type,isDelete=False).order_by("orderNum").all()
+        modules = Module.objects.filter(type=type, isDelete=False).order_by("orderNum").all()
         total, modules = page_index(modules, page, pageCount)
         if modules:
             for module in modules:
@@ -1295,3 +1295,92 @@ def activity_rank(request):
             "score": 0.75 * game.audioUuid.bauUuid.filter(type=1).count() + 0.25 * game.audioUuid.playTimes,
         })
     return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
+
+
+@check_identify
+def activity_audiostory_list(request):
+    """
+    用户可参赛作品列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    activityUuidList = []
+    games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
+    for game in games:
+        activityUuidList.append(game.audioUuid.uuid)
+    audio = AudioStory.objects.filter(userUuid__uuid=data['_cache']['uuid'], isDelete=False, checkStatus="check")
+    audios = audio.exclude(uuid__in=activityUuidList).order_by("-updateTime").all()
+    total, audios = page_index(audios, page, pageCount)
+    audioStoryList = []
+    for audio in audios:
+        icon = audio.bgIcon
+        name = audio.name
+        if audio.audioStoryType:
+            icon = audio.storyUuid.listIcon if audio.storyUuid else None
+            name = audio.storyUuid.name if audio.storyUuid else None
+        tagList = []
+        for tag in audio.tags.all():
+            tagList.append({
+                'uuid': tag.uuid,
+                'name': tag.name,
+                "icon": tag.icon,
+            })
+        audioStoryList.append({
+            "uuid": audio.uuid,
+            "duration": audio.duration,
+            "icon": icon,
+            "name": name,
+            "palyCount": audio.playTimes,
+            "createTime": datetime_to_string(audio.createTime),
+            "tagList": tagList
+        })
+    return http_return(200, '成功', {"audioStoryList": audioStoryList, "total": total})
+
+
+@check_identify
+def activity_join(request):
+    """
+    参与活动
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    activityUuid = data.get('activityUuid', '')
+    audioStoryUuid = data.get('audioStoryUuid', '')
+    if not all([audioStoryUuid, activityUuid]):
+        return http_return(400, '参数错误')
+    activity = Activity.objects.filter(uuid=activityUuid).first()
+    if not activity:
+        return http_return(400, '活动信息不存在')
+    # 校验作品是否可以参加比赛
+    checkGame = GameInfo.objects.filter(audioUuid__uuid=audioStoryUuid).first()
+    if checkGame:
+        return http_return(400, '作品已参与过活动')
+    audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
+    if not audioStory:
+        return http_return(400, '作品信息不存在')
+    selfUuid = data['_cache']['uuid']
+    user = User.objects.filter(uuid=selfUuid).first()
+    if not user:
+        return http_return(400, '未获取到用户信息')
+    try:
+        GameInfo.objects.create(
+            uuid=get_uuid(),
+            userUuid=user,
+            activityUuid=activity,
+            audioUuid=audioStory,
+        )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '参赛失败')
+    return http_return(200, '参赛成功')

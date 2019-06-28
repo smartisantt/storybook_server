@@ -18,7 +18,7 @@ from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
-    HotSearchSerializer, AdSerializer, ModuleSerializer, UserSerializer
+    HotSearchSerializer, AdSerializer, ModuleSerializer, UserSerializer, UserDetailSerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q, Exists, Max, Min
@@ -1354,8 +1354,9 @@ def change_module_order(request):
 
 class UserView(ListAPIView):
     queryset = User.objects.exclude(status='destory')
-    serializer_class = UserSerializer
+    serializer_class = UserDetailSerializer
     filter_class = UserFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
         startTime = self.request.query_params.get('starttime', '')
@@ -1364,9 +1365,7 @@ class UserView(ListAPIView):
         # id = self.request.query_params.get('id', '')                # 用户ID
         # nickName = self.request.query_params.get('nickname', '')  # 用户名
         # tel = self.request.query_params.get('tel', '')  # 模板名
-        status = self.request.query_params.get('status', '')
-        if status not in ['normal', 'forbbiden_login', 'forbbiden_say']:
-            raise ParamsException({'code': 400, 'msg': '参数错误'})
+
         if (startTime and not endTime) or (not startTime and endTime):
             raise ParamsException({'code': 400, 'msg': '时间错误'})
         if startTime and endTime:

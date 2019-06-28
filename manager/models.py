@@ -214,6 +214,7 @@ class User(BaseModle, models.Model):
     gender = models.IntegerField(null=True)  # 性别 0未知  1男  2女
     status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
     roles = models.CharField(max_length=1024, null=True)  # 角色 normalUser adminUser
+    province = models.CharField(max_length=255, null=True)
 
     versionUuid = models.ForeignKey('Version', models.CASCADE, null=True, related_name='versionUserUuid',
                                     to_field='uuid')

@@ -457,7 +457,7 @@ class TypeTagView(ListAPIView):
     queryset = Tag.objects.filter(code='SEARCHSORT', parent__name='类型', isDelete=False).\
         only('id', 'name', 'sortNum', 'uuid').all()
     serializer_class = TagsSimpleSerialzer
-    pagination_class = None
+    pagination_class = MyPagination
 
 
 
@@ -1743,7 +1743,7 @@ def create_activity(request):
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '修改失败')
+        return http_return(400, '创建失败')
 
 
 

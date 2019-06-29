@@ -2,15 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # Create your views here.
-from django_filters.rest_framework import DjangoFilterBackend
-from requests import Response
-from rest_framework import viewsets, mixins, status
-from rest_framework.filters import OrderingFilter
-from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView, CreateAPIView, UpdateAPIView
-from rest_framework.viewsets import GenericViewSet
-from serializers import serializer
 
-from manager import managerCommon
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
+from rest_framework.generics import ListAPIView
+
+
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter
 from manager.models import *
@@ -18,12 +15,11 @@ from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
-    HotSearchSerializer, AdSerializer, ModuleSerializer, UserSerializer, UserDetailSerializer, \
+    HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer
 from storybook_sever.api import Api
-from datetime import datetime
 from django.db.models import Count, Q, Max, Min, F
-
+from datetime import datetime
 from utils.errors import ParamsException
 
 
@@ -461,7 +457,7 @@ class TypeTagView(ListAPIView):
     queryset = Tag.objects.filter(code='SEARCHSORT', parent__name='类型', isDelete=False).\
         only('id', 'name', 'sortNum', 'uuid').all()
     serializer_class = TagsSimpleSerialzer
-    pagination_class = None
+    pagination_class = MyPagination
 
 
 
@@ -501,6 +497,7 @@ class StorySimpleView(ListAPIView):
     """"""
     queryset = Story.objects.filter(status="normal")
     serializer_class = StorySimpleSerializer
+    filter_class = StoryFilter
     pagination_class = None
 
 
@@ -1686,6 +1683,73 @@ class ActivityView(ListAPIView):
     serializer_class = ActivitySerializer
     filter_class = ActivityFilter
     pagination_class = MyPagination
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+
+        if (startTime and not endTime) or (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime) / 1000
+            endTime = int(endTime) / 1000
+            if endTime < startTime:
+                raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            # starttime = datetime(startTime.year, startTime.month, startTime.day)
+            # endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
+        return self.queryset
+
+
+# 创建活动
+def create_activity(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    name = data.get('name', '')
+    intro = data.get('intro', '')
+    icon = data.get('icon', '')
+    startTime = data.get('starttime', '')
+    endTime = data.get('endtime', '')
+    if not all([name, intro, icon, startTime, endTime]):
+        return http_return(400, '参数错误')
+    if Activity.objects.filter(name=name).exists():
+        return http_return(400, '重复活动名')
+
+    if startTime > endTime:
+        return http_return(400, '时间错误')
+
+    if not all([isinstance(startTime, int), isinstance(endTime, int)]):
+        return http_return(400, '时间错误')
+
+    startTime = int(startTime) / 1000
+    endTime = int(endTime) / 1000
+    startTime = datetime.fromtimestamp(startTime)
+    endTime = datetime.fromtimestamp(endTime)
+
+    try:
+        with transaction.atomic():
+            uuid = get_uuid()
+            Activity.objects.create(
+                uuid = uuid,
+                name = name,
+                startTime = startTime,
+                endTime = endTime,
+                icon = icon,
+                intro = intro,
+                status = "normal"
+            )
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '创建失败')
+
+
 
 
 

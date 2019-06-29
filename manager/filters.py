@@ -1,3 +1,4 @@
+from datetime import datetime
 
 import django_filters
 
@@ -109,6 +110,20 @@ class GameInfoFilter(django_filters.FilterSet):
 class ActivityFilter(django_filters.FilterSet):
 
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
+    status = django_filters.CharFilter(method='filter_by_status')
+
+    @staticmethod
+    def filter_by_status(queryset, name, value):
+        currentTime = datetime.now()
+
+        if value == "past":
+            return queryset.filter(endTime__lt=currentTime)
+        elif value == "now":
+            return queryset.filter(startTime__lt=currentTime, endTime__gt=currentTime)
+        elif value == "future":
+            return queryset.filter(startTime__gt=currentTime)
+
+
 
     class Meta:
         model = Activity

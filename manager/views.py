@@ -149,7 +149,7 @@ def total_data(request):
         return http_return(400, '参数有误')
     # 小于2019-05-30 00:00:00的时间不合法
     if endTimestamp < startTimestamp or endTimestamp <= 1559145600 or startTimestamp <= 1559145600:
-        return http_return(400, '时间有误')
+        return http_return(400, '无效时间')
     if startTimestamp and endTimestamp:
         # 给定时间查询
         startTime = datetime.fromtimestamp(startTimestamp)
@@ -1433,6 +1433,11 @@ class UserView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
+        # 修改禁用禁言用户的状态
+
+        currentTime = datetime.now()
+        user = User.objects.filter(endTime__lt=currentTime).exclude(status="destroy").all()
+        user.status = "normal"
         startTime = self.request.query_params.get('starttime', '')
         endTime = self.request.query_params.get('endtime', '')
 
@@ -1479,9 +1484,9 @@ def add_user(request):
     if user:
         return http_return(400, '重复注册')
 
-    user = User.objects.filter(nickName=nickName).exclude(status='destroy').first()
-    if user:
-        return http_return(400, '重复用户名')
+    # user = User.objects.filter(nickName=nickName).exclude(status='destroy').first()
+    # if user:
+    #     return http_return(400, '重复用户名')
 
     try:
         uuid = get_uuid()
@@ -1542,21 +1547,37 @@ def forbidden_user(request):
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
     type = data.get('type', '')
-    starttime = data.get('starttime', '')
-    endtime = data.get('endtime', '')
+    # 前端传入毫秒为单位的时间戳
+    startTimestamp = data.get('starttime', '')
+    endTimestamp = data.get('endtime', '')
+
 
     # destroy  forbbiden_login  forbbiden_say
-    if not all([uuid, type in ["forbbiden_login", "forbbiden_say"]]):
+    if not all([startTimestamp, endTimestamp, uuid, type in ["forbbiden_login", "forbbiden_say"]]):
         return http_return(400, '参数错误')
+
+    if not all([isinstance(startTimestamp, int), isinstance(endTimestamp, int)]):
+        return http_return(400, '时间格式错误')
+
+
+    # 小于2019-05-30 00:00:00的时间不合法
+    if endTimestamp < startTimestamp or endTimestamp <= 1559145600 or startTimestamp <= 1559145600:
+        return http_return(400, '无效时间')
+
+    startTimestamp = startTimestamp/1000
+    endTimestamp = endTimestamp/1000
+    startTime = datetime.fromtimestamp(startTimestamp)
+    endTime = datetime.fromtimestamp(endTimestamp)
 
     user = User.objects.filter(uuid=uuid, status='normal').first()
     if not user:
         return http_return(400, '没有对象')
 
-    # TODO:添加时间范围
     try:
         with transaction.atomic():
-            user.tatus = type
+            user.startTime = startTime
+            user.endTime = endTime
+            user.status = type
             user.save()
         return http_return(200, 'OK')
     except Exception as e:

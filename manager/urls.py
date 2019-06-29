@@ -78,6 +78,7 @@ urlpatterns = [
     path('user/userlist/', UserView.as_view()),
     path('user/adduser/', views.add_user, name='add_user'),
     path('user/deluser/', views.del_user, name='del_user'),
+    path('user/forbiddenuser/', views.forbidden_user, name='forbidden_user'),
 ]
 
 # router = SimpleRouter()

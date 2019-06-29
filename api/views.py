@@ -89,10 +89,10 @@ def recording_index_list(request):
     for st in stories:
         storyList.append({
             "uuid": st.uuid,
-            "name": st.name,
-            "intro": st.intro,
-            "icon": st.faceIcon,
-            "content": st.content,
+            "name": st.name if st.name else '',
+            "intro": st.intro if st.intro else '',
+            "icon": st.faceIcon if st.faceIcon else '',
+            "content": st.content if st.content else '',
             "count": st.recordNum,
         })
     return http_return(200, '成功', {"total": total, "storyList": storyList})
@@ -116,10 +116,10 @@ def recording_banner(request):
     banList = []
     for banner in banners:
         banList.append({
-            'name': banner.name,
-            'icon': banner.icon,
+            'name': banner.name if banner.name else '',
+            'icon': banner.icon if banner.name else '',
             'type': banner.type,
-            'target': banner.target,
+            'target': banner.target if banner.target else '',
         })
     total = len(banners)
     return http_return(200, '成功', {"total": total, "bannerList": banList})
@@ -143,9 +143,9 @@ def recording_stroy_detail(request):
         return http_return(400, '模板故事不存在')
     d = {
         "uuid": story.uuid,
-        "name": story.name if story.name else None,
-        "content": story.content if story.content else None,
-        "icon": story.faceIcon if story.faceIcon else None
+        "name": story.name if story.name else '',
+        "content": story.content if story.content else '',
+        "icon": story.faceIcon if story.faceIcon else ''
     }
     return http_return(200, '成功', d)
 
@@ -169,9 +169,9 @@ def recording_bgmusic_list(request):
     for bg in bgms:
         bgmList.append({
             "uuid": bg.uuid,
-            "name": bg.name,
+            "name": bg.name if bg.name else '',
             "duration": bg.duration,
-            "url": bg.url,
+            "url": bg.url if bg.url else '',
         })
     return http_return(200, '成功', {"total": total, "bgmList": bgmList})
 
@@ -197,18 +197,20 @@ def recording_send(request):
     audioDuration = data.get('audioDuration', '')
     name = None
     icon = None
+    story = None
     audioStoryType = True
-    if not storyUuid:
+    if storyUuid:
+        story = Story.objects.filter(uuid=storyUuid).first()
+    else:
         name = data.get('name', '')
+        if not name:
+            return http_return(400, '请输入用户名')
         icon = data.get('icon', '')
         if not icon:
             return http_return(400, '请上传背景图片')
         audioStoryType = False
     if bgmUuid:
         bgm = Bgm.objects.filter(uuid=bgmUuid).first()
-    story = None
-    if storyUuid:
-        story = Story.objects.filter(uuid=storyUuid).first()
     if not all([audioUrl, audioVolume, type, storyTagUuidList, audioDuration]):
         return http_return(400, '参数错误')
     tags = []
@@ -260,8 +262,8 @@ def recording_tag_list(request):
     for tag in tags:
         tagList.append({
             "uuid": tag.uuid,
-            "name": tag.name,
-            "icon": tag.icon,
+            "name": tag.name if tag.name else '',
+            "icon": tag.icon if tag.icon else '',
         })
     return http_return(200, '成功', tagList)
 
@@ -290,11 +292,11 @@ def user_center(request):
             break
     userDict = {
         "uuid": user.uuid,
-        "name": user.nickName,
-        "avatar": user.avatar,
+        "name": user.nickName if user.nickName else '',
+        "avatar": user.avatar if user.avater else '',
         "id": user.id,
         "isFollower": isFollow,
-        "intro": user.intro,
+        "intro": user.intro if user.intro else '',
         "followersCount": len(fans),
         "followsCount": len(focus)
     }
@@ -348,14 +350,14 @@ def user_audio_list(request):
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                "icon": tag.icon
+                'name': tag.name if tag.name else '',
+                "icon": tag.icon if tag.icon else ''
             })
         audioList.append({
             "uuid": audio.uuid,
             "duration": audio.duration,
-            "icon": icon,
-            "name": name,
+            "icon": icon if icon else '',
+            "name": name if name else '',
             "createTime": datetime_to_unix(audio.createTime),
             "tagList": tagList
         })
@@ -392,8 +394,8 @@ def user_fans(request):
     for u in users:
         userList.append({
             "uuid": u.uuid,
-            "avatar": u.avatar,
-            "name": u.nickName
+            "avatar": u.avatar if u.avatar else '',
+            "name": u.nickName if u.nickName else ''
         })
     return http_return(200, '成功', {"total": total, "userList": userList})
 
@@ -427,14 +429,14 @@ def audio_list(request):
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                'icon': tag.icon
+                'name': tag.name if tag.name else '',
+                'icon': tag.icon if tag.icon else ''
             })
         audioList.append({
             "uuid": audio.uuid,
             "duration": audio.duration,
-            "icon": bgIcon,
-            "name": name,
+            "icon": bgIcon if bgIcon else '',
+            "name": name if name else '',
             "createTime": datetime_to_unix(audio.createTime),
             "tagList": tagList
         })
@@ -493,9 +495,9 @@ def audio_play(request):
     playDict = {
         "audio": {
             "uuid": audio.uuid,
-            "name": name,
-            "content": content,
-            "icon": bgIcon,
+            "name": name if name else '',
+            "content": content if content else '',
+            "icon": bgIcon if bgIcon else '',
             "duration": audio.duration,
             "audioUrl": audio.voiceUrl,
             "audioVolume": audio.userVolume,
@@ -503,22 +505,22 @@ def audio_play(request):
             "playCount": audio.playTimes,
         },
         "bgm": {
-            "uuid": audio.bgm.uuid if audio.bgm else None,
-            "bgmUrl": audio.bgm.url if audio.bgm else None,
-            "bgmVolume": audio.bgmVolume if audio.bgm else None,
+            "uuid": audio.bgm.uuid if audio.bgm else '',
+            "bgmUrl": audio.bgm.url if audio.bgm else '',
+            "bgmVolume": audio.bgmVolume if audio.bgm else '',
         },
         "publisher": {
-            "uuid": audio.userUuid.uuid if audio.userUuid else None,
-            "nickname": audio.userUuid.nickName if audio.userUuid else None,
-            "avatar": audio.userUuid.avatar if audio.userUuid else None,
-            "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else None,
+            "uuid": audio.userUuid.uuid if audio.userUuid else '',
+            "nickname": audio.userUuid.nickName if audio.userUuid else '',
+            "avatar": audio.userUuid.avatar if audio.userUuid else '',
+            "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else '',
         },
         "communication": {
             "isPraise": True if checkPraise else False,
             "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
             "isLike": True if checkLike else False,
             "likeCount": audio.bauUuid.filter(type=3, status=0).count(),
-            "commentsCount": None,
+            "commentsCount": '',
         }
     }
     otheraudio = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(userUuid__uuid=audio.userUuid.uuid)
@@ -533,14 +535,14 @@ def audio_play(request):
         for tag in otheraudio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                'icon': tag.icon,
+                'name': tag.name if tag.name else '',
+                'icon': tag.icon if tag.icon else '',
             })
         audioList.append({
             "uuid": otheraudio.uuid,
             "duration": otheraudio.duration,
-            "icon": otheraudio.bgIcon,
-            "name": name,
+            "icon": otheraudio.bgIcon if otheraudio.bgIcon else '',
+            "name": name if name else '',
             "createTime": datetime_to_unix(otheraudio.createTime),
             "tagList": tagList
         })
@@ -569,10 +571,11 @@ def index_banner(request):
     banList = []
     for banner in banners:
         banList.append({
-            'name': banner.name,
-            'icon': banner.icon,
+            "uuid": banner.uuid,
+            'name': banner.name if banner.name else '',
+            'icon': banner.icon if banner.icon else '',
             'type': banner.type,
-            'target': banner.target,
+            'target': banner.target if banner.target else '',
         })
     total = len(banners)
     return http_return(200, '成功', {"total": total, "bannerList": banList})
@@ -598,11 +601,11 @@ def index_list(request):
         bgIcon = ever.audioUuid.storyUuid.faceIcon
         everList.append({
             "uuid": ever.audioUuid.uuid,
-            "name": name,
-            "intro": intro,
-            "icon": bgIcon,
-            "type": None,
-            "target": None,
+            "name": name if name else '',
+            "intro": intro if intro else '',
+            "icon": bgIcon if bgIcon else '',
+            "type": '',
+            "target": '',
         })
     # 抢先听
     firstList = []
@@ -618,11 +621,11 @@ def index_list(request):
                 bgIcon = first.audioUuid.storyUuid.faceIcon
             firstList.append({
                 "uuid": first.audioUuid.uuid,
-                "name": name,
-                "icon": bgIcon,
-                "intro": intro,
-                "type": None,
-                "target": None,
+                "name": name if name else '',
+                "icon": bgIcon if bgIcon else '',
+                "intro": intro if intro else '',
+                "type": '',
+                "target": '',
             })
     # 热门推荐
     hotList = []
@@ -638,11 +641,11 @@ def index_list(request):
                 intro = hot.audioUuid.storyUuid.intro
             hotList.append({
                 "uuid": hot.audioUuid.uuid,
-                "name": name,
-                "icon": bgIcon,
-                "intro": intro,
-                "type": None,
-                "target": None,
+                "name": name if name else '',
+                "icon": bgIcon if bgIcon else '',
+                "intro": intro if intro else '',
+                "type": '',
+                "target": '',
             })
     # 猜你喜欢
     likeList = []
@@ -659,11 +662,11 @@ def index_list(request):
                 intro = audio.storyUuid.intro
             likeList.append({
                 "uuid": audio.uuid,
-                "name": name,
-                "icon": bgIcon,
-                "intro": intro,
-                "type": None,
-                "target": None
+                "name": name if name else '',
+                "icon": bgIcon if bgIcon else '',
+                "intro": intro if intro else '',
+                "type": '',
+                "target": ''
             })
     return http_return(200, '成功',
                        {"dailyReadList": everList, "listenFirstList": firstList, "hotRecommdList": hotList,
@@ -704,14 +707,14 @@ def index_more(request):
                 for tag in module.audioUuid.tags.all():
                     tagList.append({
                         'uuid': tag.uuid,
-                        'name': tag.name,
-                        'icon': tag.icon,
+                        'name': tag.name if tag.name else '',
+                        'icon': tag.icon if tag.icon else '',
                     })
                 audioStoryList.append({
                     "uuid": module.audioUuid.uuid,
-                    "name": name,
-                    "icon": bgIcon,
-                    "intro": intro,
+                    "name": name if name else '',
+                    "icon": bgIcon if bgIcon else '',
+                    "intro": intro if intro else '',
                     "playCount": module.audioUuid.playTimes,
                     "createTime": datetime_to_unix(module.audioUuid.createTime),
                     "tagList": tagList,
@@ -734,14 +737,14 @@ def index_more(request):
                 for tag in audio.tags.all():
                     tagList.append({
                         'uuid': tag.uuid,
-                        'name': tag.name,
-                        'icon': tag.icon,
+                        'name': tag.name if tag.name else '',
+                        'icon': tag.icon if tag.icon else '',
                     })
                 audioStoryList.append({
                     "uuid": audio.uuid,
-                    "name": name,
-                    "icon": bgIcon,
-                    "intro": intro,
+                    "name": name if name else '',
+                    "icon": bgIcon if bgIcon else '',
+                    "intro": intro if intro else '',
                     "playCount": audio.playTimes,
                     "createTime": datetime_to_unix(audio.createTime),
                     "tagList": tagList,
@@ -784,8 +787,8 @@ def search_all(request):
             name = au.storyUuid.name
         audioList.append({
             "uuid": au.uuid,
-            "icon": icon,
-            "name": name,
+            "icon": icon if icon else '',
+            "name": name if name else '',
         })
     userList = []
     for u in user.all()[:6]:
@@ -793,8 +796,8 @@ def search_all(request):
         followers = len(u.get_followers())
         userList.append({
             "uuid": u.uuid,
-            "avatar": u.avatar,
-            "nickname": u.nickName,
+            "avatar": u.avatar if u.avatar else '',
+            "nickname": u.nickName if u.nickName else '',
             "audioCount": audioCount,
             "followersCount": followers,
         })
@@ -835,9 +838,9 @@ def search_audio(request):
             name = au.storyUuid.name
         audioList.append({
             "uuid": au.uuid,
-            "icon": icon,
-            "name": name,
-            "publisher": au.userUuid.nickName,
+            "icon": icon if icon else '',
+            "name": name if name else '',
+            "publisher": au.userUuid.nickName if au.userUuid.nickName else '',
             "duration": au.duration,
         })
     return http_return(200, '成功', {"audioStoryList": audioList, "total": total})
@@ -873,8 +876,8 @@ def search_user(request):
         followers = len(u.get_followers())
         userList.append({
             "uuid": u.uuid,
-            "avatar": u.avatar,
-            "nickname": u.nickName,
+            "avatar": u.avatar if u.avatar else '',
+            "nickname": u.nickName if u.nickName else '',
             "audioStoryCount": audioCount,
             "followersCount": followers,
         })
@@ -930,15 +933,15 @@ def audiostory_category_detail(request):
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                "icon": tag.icon,
+                'name': tag.name if tag.name else '',
+                "icon": tag.icon if tag.icon else '',
             })
         audioStoryList.append({
             "uuid": audio.uuid,
             "duration": audio.duration,
-            "icon": icon,
-            "name": name,
-            "content": content,
+            "icon": icon if icon else '',
+            "name": name if name else '',
+            "content": content if content else '',
             "palyCount": audio.playTimes,
             "createTime": datetime_to_unix(audio.createTime),
             "tagList": tagList
@@ -965,13 +968,13 @@ def index_category_list(request):
         for child in childTags:
             childrenList.append({
                 "uuid": child.uuid,
-                "name": child.name,
-                "icon": child.icon,
+                "name": child.name if child.name else '',
+                "icon": child.icon if child.icon else '',
             })
         tagList.append({
             "uuid": tag.uuid,
-            "name": tag.name,
-            "icon": tag.icon,
+            "name": tag.name if tag.name else '',
+            "icon": tag.icon if tag.icon else '',
             "tagList": childrenList,
         })
     return http_return(200, '成功', {"categroyList": tagList})
@@ -1017,22 +1020,22 @@ def index_category_result(request):
         name = audio.name
         content = None
         if audio.audioStoryType:
-            icon = audio.storyUuid.faceIcon if audio.storyUuid else None
-            name = audio.storyUuid.name if audio.storyUuid else None
-            content = audio.storyUuid.content if audio.storyUuid else None
+            icon = audio.storyUuid.faceIcon if audio.storyUuid else ''
+            name = audio.storyUuid.name if audio.storyUuid else ''
+            content = audio.storyUuid.content if audio.storyUuid else ''
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                "icon": tag.icon,
+                'name': tag.name if tag.name else '',
+                "icon": tag.icon if tag.icon else '',
             })
         audioStoryList.append({
             "uuid": audio.uuid,
             "duration": audio.duration,
-            "icon": icon,
-            "name": name,
-            "content": content,
+            "icon": icon if icon else '',
+            "name": name if icon else '',
+            "content": content if content else '',
             "palyCount": audio.playTimes,
             "createTime": datetime_to_unix(audio.createTime),
             "tagList": tagList
@@ -1088,22 +1091,22 @@ def index_category_audiostory(request):
         name = audio.name
         content = None
         if audio.audioStoryType:
-            icon = audio.storyUuid.faceIcon if audio.storyUuid else None
-            name = audio.storyUuid.name if audio.storyUuid else None
-            content = audio.storyUuid.content if audio.storyUuid else None
+            icon = audio.storyUuid.faceIcon if audio.storyUuid else ''
+            name = audio.storyUuid.name if audio.storyUuid else ''
+            content = audio.storyUuid.content if audio.storyUuid else ''
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                'icon': tag.icon
+                'name': tag.name if tag.name else '',
+                'icon': tag.icon if tag.icon else ''
             })
         audioStoryList.append({
             "uuid": audio.uuid,
             "duration": audio.duration,
-            "icon": icon,
-            "name": name,
-            "content": content,
+            "icon": icon if icon else '',
+            "name": name if name else '',
+            "content": content if content else '',
             "palyCount": audio.playTimes,
             "createTime": datetime_to_unix(audio.createTime),
             "tagList": tagList
@@ -1148,8 +1151,8 @@ def index_category_user(request):
         followers = len(u.get_followers())
         userList.append({
             "uuid": u.uuid,
-            "avatar": u.avatar,
-            "nickname": u.nickName,
+            "avatar": u.avatar if u.avatar else '',
+            "nickname": u.nickName if u.nickName else '',
             "audioStoryCount": audioCount,
             "followersCount": followers,
         })
@@ -1281,10 +1284,10 @@ def activity_detail(request):
         remarks = games.index(game) + 1
     userInfo = {
         "uuid": user.uuid,
-        "avatar": user.avatar,
-        "nickname": user.nickName,
+        "avatar": user.avatar if user.avatar else '',
+        "nickname": user.nickName if user.nickName else '',
         "status": status,
-        "remarks": remarks,
+        "remarks": remarks if remarks else '',
     }
     return http_return(200, '成功', {"activityInfo": activityInfo, "userInfo": userInfo})
 
@@ -1319,13 +1322,13 @@ def activity_rank(request):
             name = game.audioUuid.storyUuid.name
         activityRankList.append({
             "publisher": {
-                "uuid": game.userUuid.uuid,
-                "nickname": game.userUuid.nickName,
-                "avatar": game.userUuid.avatar,
+                "uuid": game.userUuid.uuid if game.userUuid else '',
+                "nickname": game.userUuid.nickName if game.userUuid else '',
+                "avatar": game.userUuid.avatar if game.userUuid else '',
             },
             "audio": {
-                "uuid": game.audioUuid.uuid,
-                "name": name,
+                "uuid": game.audioUuid.uuid if game.audioUuid else '',
+                "name": name if name else '',
             },
             "score": 0.75 * game.audioUuid.bauUuid.filter(type=1).count() + 0.25 * game.audioUuid.playTimes,
         })
@@ -1365,20 +1368,20 @@ def activity_audiostory_list(request):
         icon = audio.bgIcon
         name = audio.name
         if audio.audioStoryType:
-            icon = audio.storyUuid.faceIcon if audio.storyUuid else None
-            name = audio.storyUuid.name if audio.storyUuid else None
+            icon = audio.storyUuid.faceIcon if audio.storyUuid else ''
+            name = audio.storyUuid.name if audio.storyUuid else ''
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                "icon": tag.icon,
+                'name': tag.name if tag.name else '',
+                "icon": tag.icon if tag.icon else '',
             })
         audioStoryList.append({
             "uuid": audio.uuid,
             "duration": audio.duration,
-            "icon": icon,
-            "name": name,
+            "icon": icon if icon else '',
+            "name": name if name else '',
             "palyCount": audio.playTimes,
             "createTime": datetime_to_unix(audio.createTime),
             "tagList": tagList
@@ -1443,9 +1446,9 @@ def personal_index(request):
     user = User.objects.filter(uuid=selfUuid).first()
     userInfo = {
         "uuid": user.uuid,
-        "nickname": user.nickName,
-        "city": user.city,
-        "avatar": user.avatar,
+        "nickname": user.nickName if user.nickName else '',
+        "city": user.city if user.city else '',
+        "avatar": user.avatar if user.avatar else '',
         "createTime": datetime_to_unix(user.createTime),
         "intro": user.intro,
     }
@@ -1473,20 +1476,20 @@ def personal_audiostory(request):
         icon = audio.bgIcon
         name = audio.name
         if audio.audioStoryType:
-            icon = audio.storyUuid.faceIcon if audio.storyUuid else None
-            name = audio.storyUuid.name if audio.storyUuid else None
+            icon = audio.storyUuid.faceIcon if audio.storyUuid else ''
+            name = audio.storyUuid.name if audio.storyUuid else ''
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                "icon": tag.icon,
+                'name': tag.name if tag.name else '',
+                "icon": tag.icon if tag.icon else '',
             })
         audioStoryList.append({
             "uuid": audio.uuid,
             "duration": audio.duration,
-            "icon": icon,
-            "name": name,
+            "icon": icon if icon else '',
+            "name": name if name else '',
             "palyCount": audio.playTimes,
             "createTime": datetime_to_unix(audio.createTime),
             "tagList": tagList
@@ -1515,19 +1518,19 @@ def personal_history_list(request):
         icon = behav.audioUuid.bgIcon
         name = behav.audioUuid.name
         if behav.audioUuid.audioStoryType:
-            icon = behav.audioUuid.storyUuid.faceIcon if behav.audioUuid.storyUuid else None
-            name = behav.audioUuid.storyUuid.name if behav.audioUuid.storyUuid else None
+            icon = behav.audioUuid.storyUuid.faceIcon if behav.audioUuid.storyUuid else ''
+            name = behav.audioUuid.storyUuid.name if behav.audioUuid.storyUuid else ''
         tagList = []
         for tag in behav.audioUuid.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
-                'name': tag.name,
-                "icon": tag.icon,
+                'name': tag.name if tag.name else '',
+                "icon": tag.icon if tag.icon else '',
             })
         audio = {
             "uuid": behav.audioUuid.uuid,
-            "icon": icon,
-            "name": name,
+            "icon": icon if icon else '',
+            "name": name if name else '',
             "tagList": tagList
         }
         palyHistoryList.append({

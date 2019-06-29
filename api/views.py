@@ -91,7 +91,7 @@ def recording_index_list(request):
             "uuid": st.uuid,
             "name": st.name,
             "intro": st.intro,
-            "icon": st.facdIcon,
+            "icon": st.faceIcon,
             "avatar": st.listIcon,
             "content": st.content,
             "count": st.recordNum,

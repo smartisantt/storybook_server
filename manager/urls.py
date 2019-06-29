@@ -84,8 +84,10 @@ urlpatterns = [
     path('user/cancelforbid/', views.cancel_forbid, name='cancel_forbid'),
     path('user/modifyuser/', views.modify_user, name='modify_user'),
 
+
     # 活动管理
     path('activity/activitylist/', ActivityView.as_view()),
+    path('activity/createactivity/', views.create_activity, name='create_activity'),
 ]
 
 # router = SimpleRouter()

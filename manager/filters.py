@@ -1,7 +1,7 @@
 
 import django_filters
 
-from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch
+from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity
 
 
 class StoryFilter(django_filters.FilterSet):
@@ -96,6 +96,23 @@ class UserFilter(django_filters.FilterSet):
     class Meta:
         model = User
         fields = ('id', 'nickName', 'tel', 'status', 'city')
+
+
+
+class GameInfoFilter(django_filters.FilterSet):
+
+    class Meta:
+        model = GameInfo
+        fields = "__all__"
+
+
+class ActivityFilter(django_filters.FilterSet):
+
+    name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+    class Meta:
+        model = Activity
+        fields = "__all__"
 
 
 

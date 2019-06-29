@@ -42,11 +42,17 @@ urlpatterns = [
     path('audiostory/category/user', views.index_category_user, name='index_category_user'),  # 筛选结果
 
     path('audiostory/praise', views.audiostory_praise, name='audiostory_praise'),  # 点赞作品
-    path('audiostory/cancelpraise', views.audiostory_cancel_praise, name='audiostory_cancel_praise'),  # 取消点赞
+    path('audiostory/like', views.audiostory_like, name='audiostory_cancel_like'),  # 喜欢作品
 
     path('activity/detail', views.activity_detail, name='activity_detail'),  # 活动详情
     path('activity/ranklist', views.activity_rank, name='activity_rank'),  # 活动排行
     path('activity/audiostorylist', views.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
     path('activity/join', views.activity_join, name='activity_join'),  # 参与比赛
+
+    path('personal/index', views.personal_index, name='personal_index'),  # 个人主页
+    path('personal/audiostorylist', views.personal_audiostory, name='personal_audiostory'),  # 个人作品
+    path('personal/history/list', views.personal_history_list, name='personal_history_list'),  # 播放记录
+    path('personal/history/del', views.personal_history_del, name='personal_history_del'),  # 清空播放记录
+    path('personal/change', views.personal_change, name='personal_change'),  # 修改个人资料
 
 ]

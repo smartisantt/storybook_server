@@ -84,7 +84,7 @@ class HotSearchFilter(django_filters.FilterSet):
 
 class UserFilter(django_filters.FilterSet):
 
-    nickname = django_filters.CharFilter(field_name='nickName', lookup_expr='icontains')
+    nickName = django_filters.CharFilter(field_name='nickName', lookup_expr='icontains')
     tel = django_filters.CharFilter(lookup_expr='contains')
     # status = django_filters.CharFilter(method='filter_by_status')
     #
@@ -95,7 +95,7 @@ class UserFilter(django_filters.FilterSet):
 
     class Meta:
         model = User
-        fields = ('id', 'nickName', 'tel', 'status')
+        fields = ('id', 'nickName', 'tel', 'status', 'city')
 
 
 

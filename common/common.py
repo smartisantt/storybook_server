@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import time
 import uuid
 
 from django.core.cache import cache, caches
@@ -152,3 +153,14 @@ def hour_to_seconds(data):
     return h + m + s
 
 
+def datetime_to_unix(_time):
+    """
+    unix时间戳转datetime
+    :param _str:
+    :param rule:
+    :return:
+    """
+    if isinstance(_time, datetime.datetime):
+        return time.mktime(_time.timetuple())*1000
+    else:
+        return _time

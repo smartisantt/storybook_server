@@ -51,7 +51,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = "__all__"
+        exclude = ('versionUuid', 'userID')
 
 
 class UserSearchSerializer(serializers.ModelSerializer):
@@ -120,14 +120,19 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
 
 class AudioStorySimpleSerializer(serializers.ModelSerializer):
     storyInfo = serializers.SerializerMethodField()
+    nickName = serializers.SerializerMethodField()
 
     @staticmethod
     def get_storyInfo(audioinfo):
         return StorySimpleSerializer(audioinfo.storyUuid).data
 
+    @staticmethod
+    def get_nickName(audioinfo):
+        return audioinfo.userUuid.nickName
+
     class Meta:
         model = AudioStory
-        fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'name')
+        fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'nickName', 'createTime')
 
 
 class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):

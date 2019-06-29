@@ -1350,6 +1350,11 @@ def activity_audiostory_list(request):
         activityUuidList.append(game.audioUuid.uuid)
     audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
         userUuid__uuid=data['_cache']['uuid'], isDelete=False)
+    # 只能使用活动时间内录制的作品参赛
+    activity = Activity.objects.filter(uuid=uuid).first()
+    startTime = activity.startTime
+    endTime = activity.endTime
+    audio = audio.filter(createTime__gte=startTime, createTime__lte=endTime)
     audios = audio.exclude(uuid__in=activityUuidList).order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = []
@@ -1402,6 +1407,8 @@ def activity_join(request):
     audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
     if not audioStory:
         return http_return(400, '作品信息不存在')
+    if audioStory.createTime <= activity.startTime or audioStory.createTime >= activity.endTime:
+        return http_return(400, '参赛作品录制时间不在比赛时间内')
     selfUuid = data['_cache']['uuid']
     user = User.objects.filter(uuid=selfUuid).first()
     if not user:
@@ -1581,9 +1588,36 @@ def personal_change(request):
 
 
 @check_identify
-def feedback_send(request):
+def feedback_add(request):
     """
     反馈信息
     :param request:
     :return:
     """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    type = data.get('type', '')
+    content = data.get('content', '')
+    iconList = data.get('iconList', '')
+    tel = data.get('tel', '')
+    if not all([type, content]):
+        return http_return(400, '参数错误')
+    selfUuid = data['_cache']['uuid']
+    user = User.objects.filter(uuid=selfUuid).first()
+    if not user:
+        return http_return(400, '登录已过期')
+    try:
+        feedback = Feedback(
+            uuid=get_uuid(),
+            type=type,
+            content=content,
+            icon=','.join(iconList),
+            tel=tel,
+            userUuid=user
+        )
+        feedback.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '反馈失败')
+    return http_return(200, '反馈成功')

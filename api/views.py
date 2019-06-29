@@ -260,7 +260,6 @@ def recording_tag_list(request):
             "name": tag.name,
             "icon": tag.icon,
         })
-    total = len(tagList)
     return http_return(200, '成功', tagList)
 
 

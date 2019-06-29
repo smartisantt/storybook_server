@@ -15,7 +15,7 @@ urlpatterns = [
     path('recording/banner', views.recording_banner, name='recording_banner'),  # 用户首页轮播图
     path('recording/info', views.recording_stroy_detail, name='recording_stroy_detail'),  # 故事详情（录制页面）
     path('recording/bgmusic', views.recording_bgmusic_list, name='recording_bgmusic_list'),  # 背景音乐列表
-    path('recording/send', views.recording_send, name='recording_send'),  # 故事发布
+    path('recording/add', views.recording_send, name='recording_send'),  # 故事发布
     path('recording/taglist', views.recording_tag_list, name='recording_tag_list'),  # 故事发布标签列表
 
     path('user/info', views.user_center, name='user_center'),  # 主播个人主页
@@ -54,5 +54,7 @@ urlpatterns = [
     path('personal/history/list', views.personal_history_list, name='personal_history_list'),  # 播放记录
     path('personal/history/del', views.personal_history_del, name='personal_history_del'),  # 清空播放记录
     path('personal/change', views.personal_change, name='personal_change'),  # 修改个人资料
+    path('personal/feedback/add', views.feedback_add, name='feedback_add'),  # 添加反馈信息
+
 
 ]

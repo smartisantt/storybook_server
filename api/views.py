@@ -262,7 +262,7 @@ def recording_tag_list(request):
             "icon": tag.icon,
         })
     total = len(tagList)
-    return http_return(200, '成功', {"total": total, "tagList": tagList})
+    return http_return(200, '成功', tagList)
 
 
 @check_identify
@@ -645,7 +645,8 @@ def index_list(request):
             })
     # 猜你喜欢
     likeList = []
-    audios = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False).order_by("-playTimes").all()[:6]
+    audios = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
+        isDelete=False).order_by("-playTimes").all()[:6]
     if audios:
         for audio in audios:
             name = audio.name
@@ -716,7 +717,8 @@ def index_more(request):
                 })
     elif type == 'MOD4':
         audioStoryList = []
-        audios = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False).order_by("-playTimes").all()
+        audios = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
+            isDelete=False).order_by("-playTimes").all()
         total, audios = page_index(audios, page, pageCount)
         if audios:
             for audio in audios:
@@ -1348,7 +1350,8 @@ def activity_audiostory_list(request):
     games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
     for game in games:
         activityUuidList.append(game.audioUuid.uuid)
-    audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(userUuid__uuid=data['_cache']['uuid'], isDelete=False)
+    audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
+        userUuid__uuid=data['_cache']['uuid'], isDelete=False)
     audios = audio.exclude(uuid__in=activityUuidList).order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = []

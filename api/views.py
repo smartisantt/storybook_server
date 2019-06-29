@@ -592,9 +592,9 @@ def index_list(request):
     ever = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True).order_by(
         "orderNum").first()
     if ever:
-        name = ever.audioUuid.audioUuid.name
-        intro = ever.audioUuid.audioUuid.intro
-        bgIcon = ever.audioUuid.audioUuid.listIcon
+        name = ever.audioUuid.storyUuid.name
+        intro = ever.audioUuid.storyUuid.intro
+        bgIcon = ever.audioUuid.storyUuid.listIcon
         everList.append({
             "uuid": ever.audioUuid.uuid,
             "name": name,

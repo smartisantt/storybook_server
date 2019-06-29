@@ -1436,7 +1436,7 @@ class UserView(ListAPIView):
         # 修改禁用禁言用户的状态
 
         currentTime = datetime.now()
-        user = User.objects.filter(endTime__lt=currentTime).exclude(status="destroy").\
+        User.objects.filter(endTime__lt=currentTime).exclude(status="destroy").\
             update(status="nromal", updateTime=currentTime)
         startTime = self.request.query_params.get('starttime', '')
         endTime = self.request.query_params.get('endtime', '')

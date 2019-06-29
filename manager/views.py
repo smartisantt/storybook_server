@@ -1727,6 +1727,10 @@ def create_activity(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
+    startTime = int(startTime) / 1000
+    endTime = int(endTime) / 1000
+    startTime = datetime.fromtimestamp(startTime)
+    endTime = datetime.fromtimestamp(endTime)
 
     try:
         with transaction.atomic():
@@ -1744,6 +1748,7 @@ def create_activity(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '创建失败')
+
 
 
 

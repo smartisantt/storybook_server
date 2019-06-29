@@ -1676,6 +1676,12 @@ class GameInfoView(ListAPIView):
     filter_class = GameInfoFilter
     pagination_class = MyPagination
 
+    def get_queryset(self):
+        activityuuid = self.request.query_params.get('activityuuid', '')
+        if not activityuuid:
+            raise ParamsException({'code': 400, 'msg': '参数错误'})
+
+
 
 
 class ActivityView(ListAPIView):
@@ -1751,7 +1757,54 @@ def create_activity(request):
 
 
 
+# 修改活动
+def modify_activity(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    name = data.get('name', '')
+    intro = data.get('intro', '')
+    icon = data.get('icon', '')
+    startTime = data.get('starttime', '')
+    endTime = data.get('endtime', '')
+    if not all([uuid, name, intro, icon, startTime, endTime]):
+        return http_return(400, '参数错误')
+    activity = Activity.objects.filter(uuid=uuid).first()
+    if not activity:
+        return http_return(400, '没有对象')
+    myName = activity.name
+    if myName != name:
+        if Activity.objects.filter(name=name).exists():
+            return http_return(400, '重复活动名')
 
+    if startTime > endTime:
+        return http_return(400, '时间错误')
+
+    if not all([isinstance(startTime, int), isinstance(endTime, int)]):
+        return http_return(400, '时间错误')
+
+    startTime = int(startTime) / 1000
+    endTime = int(endTime) / 1000
+    startTime = datetime.fromtimestamp(startTime)
+    endTime = datetime.fromtimestamp(endTime)
+
+    activity = Activity.objects.filter(uuid=uuid).first()
+    try:
+        with transaction.atomic():
+            activity.name = name
+            activity.startTime = startTime
+            activity.endTime = endTime
+            activity.icon = icon
+            activity.intro = intro
+            activity.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
+
+
+# 查看音频
 
 
 

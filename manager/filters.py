@@ -3,6 +3,7 @@ from datetime import datetime
 import django_filters
 
 from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity
+from utils.errors import ParamsException
 
 
 class StoryFilter(django_filters.FilterSet):
@@ -101,6 +102,15 @@ class UserFilter(django_filters.FilterSet):
 
 
 class GameInfoFilter(django_filters.FilterSet):
+
+    activityuuid = django_filters.CharFilter(method='filter_by_uuid')
+
+    @staticmethod
+    def filter_by_uuid(queryset, name, value):
+        activity = Activity.objects.filter(uuid=value).first()
+        if not activity:
+            raise ParamsException({'code': 400, 'msg': '参数错误'})
+        return queryset.filter(activityUuid=activity)
 
     class Meta:
         model = GameInfo

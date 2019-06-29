@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module
+from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo
 from utils.errors import ParamsException
 
 
@@ -195,6 +195,26 @@ class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         exclude = ('audioUuid', 'id', 'createTime', 'updateTime', 'isDelete')
+
+
+class GameInfoSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = GameInfo
+        fields = "__all__"
+
+
+class ActivitySerializer(serializers.ModelSerializer):
+
+    count = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_count(activity):
+        return activity.activityRankUuid.count()
+
+    class Meta:
+        model = Activity
+        fields = ("name", "startTime", "endTime", "count")
 
 
 

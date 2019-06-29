@@ -12,14 +12,14 @@ from serializers import serializer
 
 from manager import managerCommon
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter
+    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer
+    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer
 from storybook_sever.api import Api
 from datetime import datetime
 from django.db.models import Count, Q, Max, Min, F
@@ -871,7 +871,7 @@ def check_audio(request):
     if not all([audioStoryUuid, checkStatus in ["check", "checkFail"]]):
         return http_return(400, '参数错误')
 
-    audioStory =  AudioStory.filter(uuid=audioStoryUuid, checkStatus='unCheck', isDelete=False).first()
+    audioStory = AudioStory.objects.filter(uuid=audioStoryUuid, checkStatus='unCheck', isDelete=False).first()
     if not audioStory:
         return http_return(400, '对象错误')
 
@@ -1109,6 +1109,28 @@ def forbid_bgm(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
+
+
+def del_audioStory(request):
+    """删除模板音频 或者 自由音频"""
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+
+    audioStory = AudioStory.objects.filter(uuid=uuid, isDelete=False).first()
+    if not audioStory:
+        return http_return(400, '找不到对象')
+    try:
+        with transaction.atomic():
+            audioStory.isDelete = True
+            audioStory.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
 
 
 def del_bgm(request):
@@ -1415,6 +1437,7 @@ def change_module_order(request):
     myOrderNum = module.orderNum
     type = module.type
     # 向上
+    swapOrderNum = 0
     if direct == "up":
         # 比当前sortNum小的最大值
         swapOrderNum = Module.objects.filter(orderNum__lt=myOrderNum, isDelete=False, type=type).aggregate(Max('orderNum'))['orderNum__max']
@@ -1647,6 +1670,22 @@ def cancel_forbid(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '恢复失败')
+
+
+# 活动
+class GameInfoView(ListAPIView):
+    queryset = GameInfo.objects.all().prefetch_related().order_by('-createTime')
+    serializer_class = GameInfoSerializer
+    filter_class = GameInfoFilter
+    pagination_class = MyPagination
+
+
+
+class ActivityView(ListAPIView):
+    queryset = Activity.objects.all().prefetch_related('activityRankUuid').order_by('-createTime')
+    serializer_class = ActivitySerializer
+    filter_class = ActivityFilter
+    pagination_class = MyPagination
 
 
 

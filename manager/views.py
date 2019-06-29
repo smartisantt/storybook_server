@@ -1544,10 +1544,14 @@ def modify_user(request):
     try:
         with transaction.atomic():
             user.roles = roles
+            user.city = city
+            user.nickName = nickName
+            user.save()
+            return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
-    return http_return(200, '修改成功')
+
 
 
 

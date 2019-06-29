@@ -79,6 +79,7 @@ urlpatterns = [
     path('user/adduser/', views.add_user, name='add_user'),
     path('user/deluser/', views.del_user, name='del_user'),
     path('user/forbiddenuser/', views.forbidden_user, name='forbidden_user'),
+    path('user/cancelforbid/', views.cancel_forbid, name='cancel_forbid'),
 ]
 
 # router = SimpleRouter()

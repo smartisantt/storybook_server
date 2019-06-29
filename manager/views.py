@@ -22,7 +22,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStorySimpleSerializer
 from storybook_sever.api import Api
 from datetime import datetime
-from django.db.models import Count, Q, Max, Min
+from django.db.models import Count, Q, Max, Min, F
 
 from utils.errors import ParamsException
 
@@ -48,8 +48,12 @@ def login(request):
         try:
             # 登录前更新用户状态
             currentTime = datetime.now()
+            # 到了生效时间
+            User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal"). \
+                update(status=F("settingStatus"), updateTime=currentTime)
+            # 过了结束时间
             User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
-                update(status="nromal", updateTime=currentTime, startTime=None, endTime=None)
+                update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
 
             # 获取缓存用户信息
             user_data = caches['default'].get(token)
@@ -1444,11 +1448,11 @@ class UserView(ListAPIView):
         # 首先更新用户禁言禁止登录状态
         currentTime = datetime.now()
         # 到了生效时间
-        User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
-            update(status="nromal", updateTime=currentTime, startTime=None, endTime=None)
+        User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal").\
+            update(status=F("settingStatus"), updateTime=currentTime)
         # 过了结束时间
         User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]).\
-            update(status="nromal", updateTime=currentTime, startTime=None, endTime=None)
+            update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
         startTime = self.request.query_params.get('starttime', '')
         endTime = self.request.query_params.get('endtime', '')
 
@@ -1524,6 +1528,26 @@ def add_user(request):
 
 
 # 编辑
+def modify_user(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    nickName = data.get('nickName', '')
+    city = data.get('city', '')
+    roles = data.get('roles', '')
+    if not all([uuid, nickName, city, roles]):
+        return http_return(400, '参数错误')
+    user = User.objects.filter(uuid=uuid).first()
+    if not user:
+        return http_return(400, '没有用户')
+    try:
+        with transaction.atomic():
+            user.roles = roles
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
+    return http_return(200, '修改成功')
 
 
 
@@ -1588,12 +1612,37 @@ def forbidden_user(request):
         with transaction.atomic():
             user.startTime = startTime
             user.endTime = endTime
-            user.status = type
+            user.settingStatus = type
             user.save()
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
+
+
+
+# 恢复
+def cancel_forbid(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+
+    user = User.objects.filter(uuid=uuid).exclude(status="destroy") .first()
+    if not user:
+        return http_return(400, '没有对象')
+
+    try:
+        with transaction.atomic():
+            user.startTime = None
+            user.endTime = None
+            user.settingStatus = None
+            user.status = "normal"
+            user.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '恢复失败')
 
 
 

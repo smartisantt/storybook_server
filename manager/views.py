@@ -22,7 +22,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStorySimpleSerializer
 from storybook_sever.api import Api
 from datetime import datetime
-from django.db.models import Count, Q, Exists, Max, Min
+from django.db.models import Count, Q, Max, Min
 
 from utils.errors import ParamsException
 
@@ -46,18 +46,23 @@ def login(request):
     # 缓存有数据,则在缓存中拿数据，登录日志添加新数据
     if user_data:
         try:
+            # 登录前更新用户状态
+            currentTime = datetime.now()
+            User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
+                update(status="nromal", updateTime=currentTime, startTime=None, endTime=None)
+
             # 获取缓存用户信息
             user_data = caches['default'].get(token)
-            user = User.objects.filter(userID=user_data.get('userID', '')).only('userID').first()
+            user = User.objects.filter(userID=user_data.get('userID', '')).\
+                exclude(status="destroy").only('userID').first()
             role = user.roles
             status = user.status
             if status == 'forbbiden_login':
                 return http_return(400, '此用户被禁止登录')
-                # 获取登录ip
+
+            # 获取登录ip
             loginIp = get_ip_address(request)
-
             # 登录成功生成登录日志，缓存存入信息
-
             loginLog = LoginLog(
                 uuid = get_uuid(),
                 ipAddr = loginIp,
@@ -681,10 +686,11 @@ class AudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(
                 storyUuid__in=Story.objects.filter(name__icontains=name).all())
         if tag:
-            # Todo 通过标签选择符合要求的作品
-            # self.queryset = self.queryset.filter(
-            #     tags=Tag.objects.filter(name=tag).first())
-            self.queryset = self.queryset.filter()
+            tag_info = Tag.objects.filter(name=tag).first()
+            if tag_info:
+                self.queryset = self.queryset.filter(tags__id=tag_info.id)
+            else:
+                self.queryset = self.queryset.filter(tags__id=0)
 
         return self.queryset
 
@@ -791,9 +797,11 @@ class FreedomAudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
         if tag:
-            # Todo
-            self.queryset = self.queryset.filter(
-                tags=Tag.objects.filter(name=tag).first())
+            tag_info = Tag.objects.filter(name=tag).first()
+            if tag_info:
+                self.queryset = self.queryset.filter(tags__id=tag_info.id)
+            else:
+                self.queryset = self.queryset.filter(tags__id=0)
 
         return self.queryset
 
@@ -1433,11 +1441,14 @@ class UserView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        # 修改禁用禁言用户的状态
-
+        # 首先更新用户禁言禁止登录状态
         currentTime = datetime.now()
-        User.objects.filter(endTime__lt=currentTime).exclude(status="destroy").\
-            update(status="nromal", updateTime=currentTime)
+        # 到了生效时间
+        User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
+            update(status="nromal", updateTime=currentTime, startTime=None, endTime=None)
+        # 过了结束时间
+        User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]).\
+            update(status="nromal", updateTime=currentTime, startTime=None, endTime=None)
         startTime = self.request.query_params.get('starttime', '')
         endTime = self.request.query_params.get('endtime', '')
 
@@ -1560,8 +1571,8 @@ def forbidden_user(request):
         return http_return(400, '时间格式错误')
 
 
-    # 小于2019-05-30 00:00:00的时间不合法
-    if endTimestamp < startTimestamp or endTimestamp <= 1559145600 or startTimestamp <= 1559145600:
+    # if endTimestamp < startTimestamp or endTimestamp <= int(time.time()*1000) or startTimestamp <= int(time.time()*1000):
+    if endTimestamp < startTimestamp or endTimestamp:
         return http_return(400, '无效时间')
 
     startTimestamp = startTimestamp/1000
@@ -1569,7 +1580,7 @@ def forbidden_user(request):
     startTime = datetime.fromtimestamp(startTimestamp)
     endTime = datetime.fromtimestamp(endTimestamp)
 
-    user = User.objects.filter(uuid=uuid, status='normal').first()
+    user = User.objects.filter(uuid=uuid).exclude(status="destroy") .first()
     if not user:
         return http_return(400, '没有对象')
 

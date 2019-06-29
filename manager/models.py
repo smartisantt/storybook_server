@@ -213,6 +213,7 @@ class User(BaseModle, models.Model):
     avatar = models.CharField(max_length=255, null=True)  # 用户头像
     gender = models.IntegerField(null=True)  # 性别 0未知  1男  2女
     status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
+    settingStatus = models.CharField(max_length=64, null=True) # 设置的禁止方式 forbbiden_login  forbbiden_say
     roles = models.CharField(max_length=1024, null=True)  # 角色 normalUser adminUser
     city = models.CharField(max_length=255, null=True)
 

@@ -73,15 +73,13 @@ class Feedback(BaseModle, models.Model):
     """
     用户反馈表
     """
-    questiontype = models.CharField(max_length=26,
-                                    null=True)
+    type = models.IntegerField(max_length=26, null=True)#反馈问题类型 1产品建议 2功能异常 3其他问题
     content = models.CharField(max_length=1024, null=True)
-    url1 = models.CharField(max_length=64, null=True)
-    url2 = models.CharField(max_length=64, null=True)
-    url3 = models.CharField(max_length=64, null=True)
-    url4 = models.CharField(max_length=64, null=True)
+    icon = models.CharField(max_length=1024, null=True)
     tel = models.CharField(max_length=20, null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userFeedbackUuid', to_field='uuid')
+    status = models.IntegerField(default=0)  # 处理状态 0未处理 1已处理
+    replyInfo = models.CharField(max_length=1024, null=True)  # 回复信息
 
     class Meta:
         db_table = 'tb_feedback'
@@ -109,6 +107,7 @@ class Module(BaseModle, models.Model):
     audioUuid = models.ForeignKey('AudioStory', on_delete=models.CASCADE, related_name='moduleAudioUuid',
                                   to_field='uuid', null=True)
     isDelete = models.BooleanField(default=False)
+
     class Meta:
         db_table = 'tb_module'
 
@@ -213,6 +212,7 @@ class User(BaseModle, models.Model):
     avatar = models.CharField(max_length=255, null=True)  # 用户头像
     gender = models.IntegerField(null=True)  # 性别 0未知  1男  2女
     status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
+    settingStatus = models.CharField(max_length=64, null=True) # 设置的禁止方式 forbbiden_login  forbbiden_say
     roles = models.CharField(max_length=1024, null=True)  # 角色 normalUser adminUser
     city = models.CharField(max_length=255, null=True)
 
@@ -334,7 +334,8 @@ class AudioStory(BaseModle, models.Model):
                                   null=True)  # 专辑
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='useAudioUuid', to_field='uuid',
                                  null=True)  # 用户
-    checkStatus = models.CharField(max_length=64, null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 后台上传免审核
+    checkStatus = models.CharField(max_length=64,
+                                   null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 后台上传免审核
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
     isDelete = models.BooleanField(default=False)  # 软删除
 

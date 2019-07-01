@@ -1702,3 +1702,26 @@ def feedback_reply_info(request):
         "updateTime": datetime_to_unix(feed.updateTime),
     }
     return http_return(200, '成功', replyInfo)
+
+
+def advertising_list(request):
+    """
+    进入弹屏
+    :param request:
+    :return:
+    """
+    if request.method == "POST":
+        return http_return(400, '请求方式错误')
+    nowDatetime = datetime.datetime.now()
+    adv = Ad.objects.filter(endTime__gte=nowDatetime, startTime__lte=nowDatetime, isDelete=False)
+    advs = adv.order_by("orderNum", "-createTime").all()
+    advList = []
+    for ad in advs:
+        advList.append({
+            "uuid": ad.uuid,
+            "name": ad.name,
+            "icon": ad.icon,
+            "type": ad.type,
+            "target": ad.target,
+        })
+    return http_return(200, '成功', advList)

@@ -204,7 +204,7 @@ def recording_send(request):
     else:
         name = data.get('name', '')
         if not name:
-            return http_return(400, '请输入用户名')
+            return http_return(400, '请输入作品名称')
         icon = data.get('icon', '')
         if not icon:
             return http_return(400, '请上传背景图片')
@@ -565,7 +565,8 @@ def index_banner(request):
     if not data:
         return http_return(400, '参数错误')
     nowDatetime = datetime.datetime.now()
-    banner = CycleBanner.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
+    banner = CycleBanner.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True,
+                                        isDelete=False)
     # 按显示序号排序
     banner = banner.filter(location=0).order_by('orderNum')
     banners = banner.all()

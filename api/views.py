@@ -993,7 +993,7 @@ def index_category_list(request):
             "icon": tag.icon if tag.icon else '',
             "tagList": childrenList,
         })
-    return http_return(200, '成功', {"categroyList": tagList})
+    return http_return(200, '成功', {"categoryList": tagList})
 
 
 @check_identify
@@ -1714,14 +1714,12 @@ def advertising_list(request):
         return http_return(400, '请求方式错误')
     nowDatetime = datetime.datetime.now()
     adv = Ad.objects.filter(endTime__gte=nowDatetime, startTime__lte=nowDatetime, isDelete=False)
-    advs = adv.order_by("orderNum", "-createTime").all()
-    advList = []
-    for ad in advs:
-        advList.append({
-            "uuid": ad.uuid,
-            "name": ad.name,
-            "icon": ad.icon,
-            "type": ad.type,
-            "target": ad.target,
-        })
-    return http_return(200, '成功', advList)
+    adv = adv.order_by("orderNum", "-createTime").first()
+    advobj = {
+        "uuid": adv.uuid,
+        "name": adv.name,
+        "icon": adv.icon,
+        "type": adv.type,
+        "target": adv.target,
+    }
+    return http_return(200, '成功', advobj)

@@ -685,15 +685,16 @@ def index_more(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    type = data.get('type', '')
+    type = int(data.get('type', ''))
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # rank:最热 latest:最新
     # MOD1每日一读  MOD2抢先听  MOD3热门推荐 MOD4猜你喜欢
-    if type in ['MOD1', 'MOD2', 'MOD3']:
+    if type in [1, 2, 3]:
+        typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
         audioStoryList = []
-        module = Module.objects.filter(type=type, isDelete=False)
-        if type == 'MOD1':
+        module = Module.objects.filter(type=typeDict[type], isDelete=False)
+        if type == '1':
             module = module.filter(audioUuid__audioStoryType=True)
         if sort == "latest":
             module = module.order_by("orderNum", '-createTime')
@@ -728,7 +729,7 @@ def index_more(request):
                     "createTime": datetime_to_unix(module.audioUuid.createTime),
                     "tagList": tagList,
                 })
-    elif type == 'MOD4':
+    elif type == 4:
         audioStoryList = []
         audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
             isDelete=False)

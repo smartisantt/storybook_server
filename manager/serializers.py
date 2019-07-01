@@ -207,8 +207,9 @@ class GameInfoSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_audioInfo(gameInfo):
-        return AudioStoryInfoSerializer(gameInfo.audioUuid).data
+        # return AudioStoryInfoSerializer(gameInfo.audioUuid).data
         # return AudioStorySimpleSerializer(gameInfo.audioUuid).data
+        pass
 
     class Meta:
         model = GameInfo

@@ -7,7 +7,7 @@ from rest_framework.routers import SimpleRouter
 from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
-    ActivityView
+    ActivityView, CycleBannerView
 
 app_name = 'manager'
 
@@ -75,6 +75,8 @@ urlpatterns = [
     path('module/changestoryinmodule/', views.change_story_in_module, name='change_story_in_module'),
     path('module/delstoryinmodule/', views.del_story_in_module, name='del_story_in_module'),
     path('module/changemoduleorder/', views.change_module_order, name='change_module_order'),
+
+    path('banner/bannerlist/', CycleBannerView.as_view()),
 
     # 用户管理
     path('user/userlist/', UserView.as_view()),

@@ -9,14 +9,14 @@ from rest_framework.generics import ListAPIView
 
 
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter
+    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer
+    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer, CycleBannerSerializer
 from storybook_sever.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime
@@ -1860,8 +1860,34 @@ def modify_activity(request):
         return http_return(400, '修改失败')
 
 
-# 查看音频
+# 配置轮播图
+
+class CycleBannerView(ListAPIView):
+
+    queryset = CycleBanner.objects.all()
+    serializer_class = CycleBannerSerializer
+    filter_class = CycleBannerFilter
+    pagination_class = None
 
 
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
 
+        if (startTime and not endTime) or (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime) / 1000
+            endTime = int(endTime) / 1000
+            if endTime < startTime:
+                raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            # starttime = datetime(startTime.year, startTime.month, startTime.day)
+            # endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
+        return self.queryset
 

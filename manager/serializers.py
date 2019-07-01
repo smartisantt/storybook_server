@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo
+from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner
 from utils.errors import ParamsException
 
 
@@ -265,6 +265,16 @@ class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
         fields = ("name", "startTime", "endTime", "count", "uuid", "id")
+
+
+
+
+class CycleBannerSerializer(serializers.ModelSerializer):
+
+
+    class Meta:
+        model = CycleBanner
+        exclude = ("location", "isUsing")
 
 
 

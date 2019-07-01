@@ -274,7 +274,7 @@ class CycleBannerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CycleBanner
-        exclude = ("location", "isUsing")
+        exclude = ("location", "isDelete")
 
 
 

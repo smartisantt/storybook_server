@@ -1864,7 +1864,7 @@ def modify_activity(request):
 
 class CycleBannerView(ListAPIView):
 
-    queryset = CycleBanner.objects.all()
+    queryset = CycleBanner.objects.filter(isDelete=False)
     serializer_class = CycleBannerSerializer
     filter_class = CycleBannerFilter
     pagination_class = MyPagination
@@ -1897,3 +1897,30 @@ class CycleBannerView(ListAPIView):
 
 
 # 停用/恢复/删除
+def change_cycle_banner_status(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    type = data.get('type', '')
+
+    if not all([uuid, type in ["stop", "recover", "delete"]]):
+        return http_return(400, '参数错误')
+
+    cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False).first()
+    if not cycleBanner:
+        return http_return(400, '没有对象')
+
+    try:
+        with transaction.atomic():
+            if type == "stop":
+                cycleBanner.isUsing = False
+            elif type == "recover":
+                cycleBanner.isUsing = True
+            elif type == "delete":
+                cycleBanner.isDelete = True
+            cycleBanner.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')

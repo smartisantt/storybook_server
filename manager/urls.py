@@ -76,7 +76,9 @@ urlpatterns = [
     path('module/delstoryinmodule/', views.del_story_in_module, name='del_story_in_module'),
     path('module/changemoduleorder/', views.change_module_order, name='change_module_order'),
 
+
     path('banner/bannerlist/', CycleBannerView.as_view()),
+    path('banner/changecbstatus/', views.change_cycle_banner_status, name='change_cycle_banner_status'),
 
     # 用户管理
     path('user/userlist/', UserView.as_view()),

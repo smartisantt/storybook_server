@@ -993,7 +993,7 @@ def index_category_list(request):
             "icon": tag.icon if tag.icon else '',
             "tagList": childrenList,
         })
-    return http_return(200, '成功', {"categroyList": tagList})
+    return http_return(200, '成功', {"categoryList": tagList})
 
 
 @check_identify
@@ -1702,3 +1702,24 @@ def feedback_reply_info(request):
         "updateTime": datetime_to_unix(feed.updateTime),
     }
     return http_return(200, '成功', replyInfo)
+
+
+def advertising_list(request):
+    """
+    进入弹屏
+    :param request:
+    :return:
+    """
+    if request.method == "POST":
+        return http_return(400, '请求方式错误')
+    nowDatetime = datetime.datetime.now()
+    adv = Ad.objects.filter(endTime__gte=nowDatetime, startTime__lte=nowDatetime, isDelete=False)
+    adv = adv.order_by("orderNum", "-createTime").first()
+    advobj = {
+        "uuid": adv.uuid,
+        "name": adv.name,
+        "icon": adv.icon,
+        "type": adv.type,
+        "target": adv.target,
+    }
+    return http_return(200, '成功', advobj)

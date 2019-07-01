@@ -583,8 +583,7 @@ def index_banner(request):
             'type': banner.type,
             'target': banner.target if banner.target else '',
         })
-    total = len(banners)
-    return http_return(200, '成功', {"total": total, "bannerList": banList})
+    return http_return(200, '成功', banList)
 
 
 @check_identify

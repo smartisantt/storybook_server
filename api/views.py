@@ -204,7 +204,7 @@ def recording_send(request):
     else:
         name = data.get('name', '')
         if not name:
-            return http_return(400, '请输入用户名')
+            return http_return(400, '请输入作品名称')
         icon = data.get('icon', '')
         if not icon:
             return http_return(400, '请上传背景图片')

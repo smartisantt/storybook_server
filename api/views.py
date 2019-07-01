@@ -209,6 +209,7 @@ def recording_send(request):
         if not icon:
             return http_return(400, '请上传背景图片')
         audioStoryType = False
+    bgm = None
     if bgmUuid:
         bgm = Bgm.objects.filter(uuid=bgmUuid).first()
     if not all([audioUrl, audioVolume, type, storyTagUuidList, audioDuration]):
@@ -228,7 +229,7 @@ def recording_send(request):
             isUpload=1,
             voiceUrl=audioUrl,
             userVolume=audioVolume,
-            bgm=bgm if bgm else None,
+            bgm=bgm,
             bgmVolume=bgmVolume if bgmVolume else None,
             type=type,
             playTimes=0,

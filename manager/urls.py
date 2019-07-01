@@ -101,6 +101,8 @@ urlpatterns = [
     # 首页弹屏
     path('ad/adlist/', AdView.as_view()),
     path('ad/addad/', views.add_ad, name='add_ad'),
+    path('ad/modifyad/', views.modify_ad, name='modify_ad'),
+    path('ad/delad/', views.del_ad, name='del_ad'),
 ]
 
 # router = SimpleRouter()

@@ -271,10 +271,38 @@ class ActivitySerializer(serializers.ModelSerializer):
 
 class CycleBannerSerializer(serializers.ModelSerializer):
 
+    linkObjectInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_linkObjectInfo(cycleBanner):
+        linkObjectInfo = ""
+        if cycleBanner.type == 0:   # 活动
+            try:
+                linkObjectInfo = Activity.objects.filter(uuid=cycleBanner.target).first().name
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif cycleBanner.type == 1: # 专辑
+            pass
+        elif cycleBanner.type == 2: # 音频
+            try:
+                audioStory = AudioStory.objects.filter(uuid=cycleBanner.target).first()
+                linkObjectInfo = audioStory.storyUuid.name if audioStory.audioStoryType else audioStory.name
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif cycleBanner.type == 3: # story
+            try:
+                linkObjectInfo = Story.objects.filter(uuid=cycleBanner.target).first().name
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif cycleBanner.type == 4:
+            linkObjectInfo = cycleBanner.target
+
+        return linkObjectInfo
+
 
     class Meta:
         model = CycleBanner
-        exclude = ("location", "isDelete")
+        exclude = ("location", "isDelete", "target")
 
 
 

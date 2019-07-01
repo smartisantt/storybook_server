@@ -7,7 +7,7 @@ from rest_framework.routers import SimpleRouter
 from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
-    ActivityView, CycleBannerView
+    ActivityView, CycleBannerView, AdView
 
 app_name = 'manager'
 
@@ -79,6 +79,8 @@ urlpatterns = [
 
     path('banner/bannerlist/', CycleBannerView.as_view()),
     path('banner/changecbstatus/', views.change_cycle_banner_status, name='change_cycle_banner_status'),
+    path('banner/addcyclebanner/', views.add_cycle_banner, name='add_cycle_banner'),
+    path('banner/modifycyclebanner/', views.modify_cycle_banner, name='modify_cycle_banner'),
 
     # 用户管理
     path('user/userlist/', UserView.as_view()),
@@ -94,6 +96,11 @@ urlpatterns = [
     path('activity/rankactivity/', views.activity_rank, name='activity_rank'),
     path('activity/createactivity/', views.create_activity, name='create_activity'),
     path('activity/modifyactivity/', views.modify_activity, name='modify_activity'),
+
+
+    # 首页弹屏
+    path('ad/adlist/', AdView.as_view()),
+    path('ad/addad/', views.add_ad, name='add_ad'),
 ]
 
 # router = SimpleRouter()

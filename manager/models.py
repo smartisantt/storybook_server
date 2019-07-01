@@ -33,11 +33,14 @@ class Ad(BaseModle, models.Model):
     """
     首页弹屏广告
     """
+    name = models.CharField(max_length=64, null=True)
     icon = models.CharField(max_length=255, verbose_name='广告图片', null=True)
-    jumpUrl = models.CharField(max_length=255, verbose_name='跳转地址', null=True)
+    type = models.CharField(max_length=64, null=True)  # 跳转类型 0活动 1专辑 2audiostory 3story 4外部链接
+    target = models.CharField(max_length=255, null=True)  # 跳转uuid 或者外部url
+    orderNum = models.IntegerField(null=True)  # 显示序号  数字越小越优先显示
     startTime = models.DateTimeField(verbose_name='时效开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='时效结束时间', null=True)
-    isDelete = models.BooleanField(verbose_name='软删除', null=True)
+    isDelete = models.BooleanField(verbose_name='软删除', default=False)
 
     class Meta:
         db_table = 'tb_ad'
@@ -290,7 +293,7 @@ class CycleBanner(BaseModle, models.Model):
     startTime = models.DateTimeField(null=True)  # 有效起始时间
     endTime = models.DateTimeField(null=True)
     type = models.CharField(max_length=64, null=True)  # 跳转类型 0活动 1专辑 2audiostory 3story 4外部链接
-    target = models.CharField(max_length=128, null=True)  # 跳转uuid
+    target = models.CharField(max_length=255, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
     location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图
     isDelete = models.BooleanField(default=False) # 1 删除   0 没有删除

@@ -79,6 +79,8 @@ urlpatterns = [
 
     path('banner/bannerlist/', CycleBannerView.as_view()),
     path('banner/changecbstatus/', views.change_cycle_banner_status, name='change_cycle_banner_status'),
+    path('banner/addcyclebanner/', views.add_cycle_banner, name='add_cycle_banner'),
+    path('banner/modifycyclebanner/', views.modify_cycle_banner, name='modify_cycle_banner'),
 
     # 用户管理
     path('user/userlist/', UserView.as_view()),

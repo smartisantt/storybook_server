@@ -1893,7 +1893,115 @@ class CycleBannerView(ListAPIView):
 
 
 
+# 添加轮播图
+def add_cycle_banner(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    name = data.get('name', '')
+    icon = data.get('icon', '')
+    type = data.get('type', '')
+    target = data.get('target', '')
+    orderNum = data.get('ordernum', '')
+    startTime = data.get('starttime', '')
+    endTime = data.get('endtime', '')
+    if not all([name, icon, type in range(0, 5), startTime, orderNum, endTime, target]):
+        return http_return(400, '参数错误')
+    if CycleBanner.objects.filter(name=name, isDelete=False).exists():
+        return http_return(400, '重复标题')
+
+    if CycleBanner.objects.filter(orderNum=orderNum, isDelete=False).exists():
+        return http_return(400, '重复排序')
+
+    if startTime > endTime:
+        return http_return(400, '时间错误')
+
+    if not all([isinstance(startTime, int), isinstance(endTime, int)]):
+        return http_return(400, '时间错误')
+
+    startTime = int(startTime) / 1000
+    endTime = int(endTime) / 1000
+    startTime = datetime.fromtimestamp(startTime)
+    endTime = datetime.fromtimestamp(endTime)
+
+    try:
+        uuid = get_uuid()
+        CycleBanner.objects.create(
+            uuid=uuid,
+            name=name,
+            type=type,
+            startTime=startTime,
+            endTime=endTime,
+            orderNum=orderNum,
+            target=target,
+            location=0,
+            icon=icon
+        )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+
+
+
 # 修改轮播图
+def modify_cycle_banner(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    name = data.get('name', '')
+    icon = data.get('icon', '')
+    type = data.get('type', '')
+    target = data.get('target', '')
+    orderNum = data.get('ordernum', '')
+    startTime = data.get('starttime', '')
+    endTime = data.get('endtime', '')
+    if not all([uuid, name, icon, type in range(0, 5), startTime, orderNum, endTime, target]):
+        return http_return(400, '参数错误')
+
+    cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False).first()
+    if not cycleBanner:
+        return http_return(400, '没有对象')
+
+    myName = cycleBanner.name
+    myOrderNum = cycleBanner.orderNum
+
+    if myName != name:
+        if CycleBanner.objects.filter(name=name, isDelete=False).exists():
+            return http_return(400, '重复标题')
+    if myOrderNum != orderNum:
+        if CycleBanner.objects.filter(orderNum=orderNum, isDelete=False).exists():
+            return http_return(400, '重复排序')
+
+    if startTime > endTime:
+        return http_return(400, '时间错误')
+
+    if not all([isinstance(startTime, int), isinstance(endTime, int)]):
+        return http_return(400, '时间错误')
+
+    startTime = int(startTime) / 1000
+    endTime = int(endTime) / 1000
+    startTime = datetime.fromtimestamp(startTime)
+    endTime = datetime.fromtimestamp(endTime)
+
+    try:
+        cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False)
+        cycleBanner.update(
+            updateTime=datetime.now(),
+            name=name,
+            type=type,
+            startTime=startTime,
+            endTime=endTime,
+            orderNum=orderNum,
+            target=target,
+            location=0,
+            icon=icon
+        )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
 
 
 # 停用/恢复/删除

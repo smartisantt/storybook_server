@@ -293,6 +293,7 @@ class CycleBanner(BaseModle, models.Model):
     target = models.CharField(max_length=128, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
     location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图
+    isDelete = models.BooleanField(default=False) # 1 删除   0 没有删除
 
     class Meta:
         db_table = 'tb_viewpager'

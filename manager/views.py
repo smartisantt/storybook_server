@@ -1867,7 +1867,7 @@ class CycleBannerView(ListAPIView):
     queryset = CycleBanner.objects.all()
     serializer_class = CycleBannerSerializer
     filter_class = CycleBannerFilter
-    pagination_class = None
+    pagination_class = MyPagination
 
 
     def get_queryset(self):
@@ -1891,3 +1891,9 @@ class CycleBannerView(ListAPIView):
             return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
         return self.queryset
 
+
+
+# 修改轮播图
+
+
+# 停用/恢复/删除

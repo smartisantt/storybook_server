@@ -10,14 +10,14 @@ from rest_framework.generics import ListAPIView
 
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter, \
-    AdFilter
+    AdFilter, FeedbackFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer, CycleBannerSerializer
+    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer
 from storybook_sever.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime
@@ -1056,6 +1056,7 @@ def change_order(request):
     if not bgm:
         return http_return(400, "没有对象")
     mySortNum = bgm.sortNum
+    swapSortNum = 0
     # 向上
     if direct == "up":
         # 比当前sortNum小的最大值
@@ -1318,10 +1319,88 @@ def add_ad(request):
         return http_return(400, '添加失败')
 
 # 编辑
+def modify_ad(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    name = data.get('name', '')
+    icon = data.get('icon', '')
+    type = data.get('type', '')
+    target = data.get('target', '')
+    orderNum = data.get('ordernum', '')
+    startTime = data.get('starttime', '')
+    endTime = data.get('endtime', '')
+    if not all([uuid, name, icon, type in range(0, 5), startTime, orderNum, endTime, target]):
+        return http_return(400, '参数错误')
+
+    ad = Ad.objects.filter(uuid=uuid, isDelete=False).first()
+    if not ad:
+        return http_return(400, '没有对象')
+
+    myName = ad.name
+    myOrderNum = ad.orderNum
+
+    if myName != name:
+        if CycleBanner.objects.filter(name=name, isDelete=False).exists():
+            return http_return(400, '重复标题')
+    if myOrderNum != orderNum:
+        if CycleBanner.objects.filter(orderNum=orderNum, isDelete=False).exists():
+            return http_return(400, '重复排序')
+
+    if startTime > endTime:
+        return http_return(400, '时间错误')
+
+    if not all([isinstance(startTime, int), isinstance(endTime, int)]):
+        return http_return(400, '时间错误')
+
+    startTime = int(startTime) / 1000
+    endTime = int(endTime) / 1000
+    startTime = datetime.fromtimestamp(startTime)
+    endTime = datetime.fromtimestamp(endTime)
+
+    try:
+        ad = Ad.objects.filter(uuid=uuid, isDelete=False)
+        ad.update(
+            updateTime=datetime.now(),
+            name=name,
+            type=type,
+            startTime=startTime,
+            endTime=endTime,
+            orderNum=orderNum,
+            target=target,
+            icon=icon
+        )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
 
 
 
 # 删除
+def del_ad(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+
+
+    if not uuid:
+        return http_return(400, '参数错误')
+
+    ad = Ad.objects.filter(uuid=uuid, isDelete=False).first()
+    if not ad:
+        return http_return(400, '没有对象')
+
+    try:
+        with transaction.atomic():
+            ad.isDelete = True
+            ad.save()
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
 
 
 
@@ -2070,7 +2149,7 @@ def modify_cycle_banner(request):
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '添加失败')
+        return http_return(400, '修改失败')
 
 
 # 停用/恢复/删除
@@ -2101,3 +2180,33 @@ def change_cycle_banner_status(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
+
+
+
+# 反馈管理列表
+class FeedbackView(ListAPIView):
+    queryset = Feedback.objects.all().order_by("-createTime")
+    serializer_class = FeedbackSerializer
+    filter_class = FeedbackFilter
+    pagination_class = MyPagination
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime)/1000
+            endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            return self.queryset.filter(createTime__range=(starttime, endtime))
+        return self.queryset
+

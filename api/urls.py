@@ -58,5 +58,6 @@ urlpatterns = [
     path('personal/feedback/list', views.feedback_reply_list, name='feedback_reply_list'),  # 回复列表
     path('personal/feedback/info', views.feedback_reply_info, name='feedback_reply_info'),  # 回复详情
 
+    path('advertising/list', views.advertising_list, name='advertising_list'),  # 广告列表
 
 ]

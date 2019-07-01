@@ -2,7 +2,7 @@ from datetime import datetime
 
 import django_filters
 
-from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity, CycleBanner, Ad
+from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity, CycleBanner, Ad, Feedback
 from utils.errors import ParamsException
 
 
@@ -158,6 +158,17 @@ class AdFilter(django_filters.FilterSet):
     class Meta:
         model = Ad
         fields = ("name", )
+
+
+
+class FeedbackFilter(django_filters.FilterSet):
+
+    name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+
+    class Meta:
+        model = Feedback
+        fields = ("type", )
 
 
 

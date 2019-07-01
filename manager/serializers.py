@@ -3,7 +3,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner
+from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
+    Feedback
 from utils.errors import ParamsException
 
 
@@ -210,6 +211,30 @@ class HotSearchSerializer(serializers.ModelSerializer):
 
 
 class AdSerializer(serializers.ModelSerializer):
+    linkObjectInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_linkObjectInfo(ad):
+        linkObjectInfo = ""
+        if ad.type == 0:  # 活动
+            try:
+                linkObjectInfo = Activity.objects.filter(uuid=ad.target).first().name
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif ad.type == 1:  # 专辑
+            pass
+        elif ad.type == 2:  # 音频
+            try:
+                audioStory = AudioStory.objects.filter(uuid=ad.target).first()
+                linkObjectInfo = audioStory.storyUuid.name if audioStory.audioStoryType else audioStory.name
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif ad.type == 3:  # 商品
+            pass
+        elif ad.type == 4:
+            linkObjectInfo = ad.target
+
+        return linkObjectInfo
 
     class Meta:
         model = Ad
@@ -271,12 +296,49 @@ class ActivitySerializer(serializers.ModelSerializer):
 
 class CycleBannerSerializer(serializers.ModelSerializer):
 
+    linkObjectInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_linkObjectInfo(cycleBanner):
+        linkObjectInfo = ""
+        if cycleBanner.type == 0:   # 活动
+            try:
+                linkObjectInfo = Activity.objects.filter(uuid=cycleBanner.target).first().name
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif cycleBanner.type == 1: # 专辑
+            pass
+        elif cycleBanner.type == 2: # 音频
+            try:
+                audioStory = AudioStory.objects.filter(uuid=cycleBanner.target).first()
+                linkObjectInfo = audioStory.storyUuid.name if audioStory.audioStoryType else audioStory.name
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif cycleBanner.type == 3: # 商品
+            pass
+        elif cycleBanner.type == 4:
+            linkObjectInfo = cycleBanner.target
+
+        return linkObjectInfo
+
 
     class Meta:
         model = CycleBanner
         exclude = ("location", "isDelete")
 
 
+
+class FeedbackSerializer(serializers.ModelSerializer):
+
+    userInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_userInfo(feedback):
+        return UserDetailSerializer(feedback.userUuid).data
+
+    class Meta:
+        model = Feedback
+        exclude = ("userUuid", )
 
 
 

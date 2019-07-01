@@ -1670,17 +1670,73 @@ def cancel_forbid(request):
 
 
 # 活动
-class GameInfoView(ListAPIView):
-    queryset = GameInfo.objects.all().prefetch_related().order_by('-createTime')
-    serializer_class = GameInfoSerializer
-    filter_class = GameInfoFilter
-    pagination_class = MyPagination
+# class GameInfoView(ListAPIView):
+#     queryset = GameInfo.objects.all()
+#     serializer_class = GameInfoSerializer
+#     filter_class = GameInfoFilter
+#     pagination_class = MyPagination
+#
+#     def get_queryset(self):
+#         activityuuid = self.request.query_params.get('activityuuid', '')
+#         if not activityuuid:
+#             raise ParamsException({'code': 400, 'msg': '参数错误'})
+#
+#         act = Activity.objects.filter(uuid=activityuuid).first()
+#         if not act:
+#             raise ParamsException({'code': 400, 'msg': '活动信息不存在'})
+#
+#         self.queryset = self.queryset.filter(activityUuid__uuid=activityuuid).all()
+#
+#         self.queryset = sorted(self.queryset,
+#                        key=lambda x: 0.75 * x.audioUuid.bauUuid.filter(type=1).count() + 0.25 * x.audioUuid.playTimes,
+#                        reverse=True)
+#         self.queryset.order_by()
+#         return self.queryset
 
-    def get_queryset(self):
-        activityuuid = self.request.query_params.get('activityuuid', '')
-        if not activityuuid:
-            raise ParamsException({'code': 400, 'msg': '参数错误'})
-
+def activity_rank(request):
+    """
+    活动排行
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    activityUuid = data.get('activityuuid', '')
+    page = data.get('page', '')
+    page_size = data.get('page_size', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    act = Activity.objects.filter(uuid=activityUuid).first()
+    if not act:
+        return http_return(400, '活动信息不存在')
+    games = GameInfo.objects.filter(activityUuid__uuid=activityUuid).all()
+    games = sorted(games,
+                   key=lambda x: 0.75 * x.audioUuid.bauUuid.filter(type=1).count() + 0.25 * x.audioUuid.playTimes,
+                   reverse=True)
+    total, games = page_index(games, page, page_size)
+    activityRankList = []
+    for index,game in enumerate(games):
+        name = game.audioUuid.name
+        if game.audioUuid.audioStoryType:
+            name = game.audioUuid.storyUuid.name
+        activityRankList.append({
+            "rank": index+1+(int(page)-1)*int(page_size) if page else index+1,
+            "publisher": {
+                "uuid": game.userUuid.uuid or '',
+                "nickname": game.userUuid.nickName or '',
+                "avatar": game.userUuid.avatar or '',
+            },
+            "audio": {
+                "id": game.audioUuid.id or '',
+                "uuid": game.audioUuid.uuid or '',
+                "bgmUrl": game.audioUuid.bgm.url or '',
+                "voiceUrl": game.audioUuid.voiceUrl or '',
+                "name": name or '',
+            },
+            "score": 0.75 * game.audioUuid.bauUuid.filter(type=1).count() + 0.25 * game.audioUuid.playTimes,
+        })
+    return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
 
 
 

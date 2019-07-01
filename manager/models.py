@@ -289,7 +289,7 @@ class CycleBanner(BaseModle, models.Model):
     icon = models.CharField(max_length=255, null=True)  # 轮播图片
     startTime = models.DateTimeField(null=True)  # 有效起始时间
     endTime = models.DateTimeField(null=True)
-    type = models.CharField(max_length=64, null=True)  # 跳转类型 0活动 1专辑 2作品 3故事 4外部链接
+    type = models.CharField(max_length=64, null=True)  # 跳转类型 0活动 1专辑 2audiostory 3story 4外部链接
     target = models.CharField(max_length=128, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
     location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图

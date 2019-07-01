@@ -7,7 +7,7 @@ from rest_framework.routers import SimpleRouter
 from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
-    ActivityView, CycleBannerView, AdView
+    ActivityView, CycleBannerView, AdView, FeedbackView
 
 app_name = 'manager'
 
@@ -103,6 +103,9 @@ urlpatterns = [
     path('ad/addad/', views.add_ad, name='add_ad'),
     path('ad/modifyad/', views.modify_ad, name='modify_ad'),
     path('ad/delad/', views.del_ad, name='del_ad'),
+
+
+    path('feedback/feedbacklist/', FeedbackView.as_view()),
 ]
 
 # router = SimpleRouter()

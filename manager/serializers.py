@@ -3,7 +3,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner
+from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
+    Feedback
 from utils.errors import ParamsException
 
 
@@ -228,11 +229,8 @@ class AdSerializer(serializers.ModelSerializer):
                 linkObjectInfo = audioStory.storyUuid.name if audioStory.audioStoryType else audioStory.name
             except:
                 raise ParamsException({'code': 400, 'msg': '参数错误'})
-        elif ad.type == 3:  # story
-            try:
-                linkObjectInfo = Story.objects.filter(uuid=ad.target).first().name
-            except:
-                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif ad.type == 3:  # 商品
+            pass
         elif ad.type == 4:
             linkObjectInfo = ad.target
 
@@ -316,11 +314,8 @@ class CycleBannerSerializer(serializers.ModelSerializer):
                 linkObjectInfo = audioStory.storyUuid.name if audioStory.audioStoryType else audioStory.name
             except:
                 raise ParamsException({'code': 400, 'msg': '参数错误'})
-        elif cycleBanner.type == 3: # story
-            try:
-                linkObjectInfo = Story.objects.filter(uuid=cycleBanner.target).first().name
-            except:
-                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif cycleBanner.type == 3: # 商品
+            pass
         elif cycleBanner.type == 4:
             linkObjectInfo = cycleBanner.target
 
@@ -332,6 +327,18 @@ class CycleBannerSerializer(serializers.ModelSerializer):
         exclude = ("location", "isDelete")
 
 
+
+class FeedbackSerializer(serializers.ModelSerializer):
+
+    userInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_userInfo(feedback):
+        return UserDetailSerializer(feedback.userUuid).data
+
+    class Meta:
+        model = Feedback
+        exclude = ("userUuid", )
 
 
 

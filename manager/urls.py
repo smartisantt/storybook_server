@@ -97,8 +97,10 @@ urlpatterns = [
     path('activity/createactivity/', views.create_activity, name='create_activity'),
     path('activity/modifyactivity/', views.modify_activity, name='modify_activity'),
 
+
     # 首页弹屏
     path('ad/adlist/', AdView.as_view()),
+    path('ad/addad/', views.add_ad, name='add_ad'),
 ]
 
 # router = SimpleRouter()

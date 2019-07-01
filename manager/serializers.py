@@ -213,7 +213,7 @@ class AdSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ad
-        fields = "__all__"
+        exclude = ("isDelete", )
 
 
 

@@ -40,7 +40,7 @@ class Ad(BaseModle, models.Model):
     orderNum = models.IntegerField(null=True)  # 显示序号  数字越小越优先显示
     startTime = models.DateTimeField(verbose_name='时效开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='时效结束时间', null=True)
-    isDelete = models.BooleanField(verbose_name='软删除', null=True)
+    isDelete = models.BooleanField(verbose_name='软删除', default=False)
 
     class Meta:
         db_table = 'tb_ad'

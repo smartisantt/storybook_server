@@ -22,6 +22,7 @@ class Activity(BaseModle, models.Model):
     intro = models.CharField(max_length=1024, verbose_name="活动介绍", null=True)
     status = models.CharField(max_length=32, verbose_name="活动状态", null=True)  # normal正常 forbid 禁用 destroy 删除
     icon = models.CharField(max_length=256, verbose_name="活动图片", null=True)
+    orderNum = models.IntegerField(null=True)  # 显示序号  数字越小越优先显示
     startTime = models.DateTimeField(verbose_name='活动开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='活动结束时间', null=True)
 

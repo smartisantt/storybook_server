@@ -9,7 +9,8 @@ from rest_framework.generics import ListAPIView
 
 
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter
+    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter, \
+    AdFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -1242,6 +1243,7 @@ def del_keyword(request):
 class AdView(ListAPIView):
     queryset = Ad.objects.filter(isDelete=False).only('id')
     serializer_class = AdSerializer
+    filter_class = AdFilter
 
 
 

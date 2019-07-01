@@ -229,11 +229,8 @@ class AdSerializer(serializers.ModelSerializer):
                 linkObjectInfo = audioStory.storyUuid.name if audioStory.audioStoryType else audioStory.name
             except:
                 raise ParamsException({'code': 400, 'msg': '参数错误'})
-        elif ad.type == 3:  # story
-            try:
-                linkObjectInfo = Story.objects.filter(uuid=ad.target).first().name
-            except:
-                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif ad.type == 3:  # 商品
+            pass
         elif ad.type == 4:
             linkObjectInfo = ad.target
 
@@ -317,11 +314,8 @@ class CycleBannerSerializer(serializers.ModelSerializer):
                 linkObjectInfo = audioStory.storyUuid.name if audioStory.audioStoryType else audioStory.name
             except:
                 raise ParamsException({'code': 400, 'msg': '参数错误'})
-        elif cycleBanner.type == 3: # story
-            try:
-                linkObjectInfo = Story.objects.filter(uuid=cycleBanner.target).first().name
-            except:
-                raise ParamsException({'code': 400, 'msg': '参数错误'})
+        elif cycleBanner.type == 3: # 商品
+            pass
         elif cycleBanner.type == 4:
             linkObjectInfo = cycleBanner.target
 

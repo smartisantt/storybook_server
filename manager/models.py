@@ -73,13 +73,14 @@ class Feedback(BaseModle, models.Model):
     """
     用户反馈表
     """
-    type = models.IntegerField(max_length=26, null=True)#反馈问题类型 1产品建议 2功能异常 3其他问题
+    type = models.IntegerField(max_length=26, null=True)  # 反馈问题类型 1产品建议 2功能异常 3其他问题
     content = models.CharField(max_length=1024, null=True)
     icon = models.CharField(max_length=1024, null=True)
     tel = models.CharField(max_length=20, null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userFeedbackUuid', to_field='uuid')
     status = models.IntegerField(default=0)  # 处理状态 0未处理 1已处理
     replyInfo = models.CharField(max_length=1024, null=True)  # 回复信息
+    isRead = models.BooleanField(default=False)  # 用户是否已读
 
     class Meta:
         db_table = 'tb_feedback'
@@ -212,7 +213,7 @@ class User(BaseModle, models.Model):
     avatar = models.CharField(max_length=255, null=True)  # 用户头像
     gender = models.IntegerField(null=True)  # 性别 0未知  1男  2女
     status = models.CharField(max_length=64, null=True)  # 状态 normal  destroy  forbbiden_login  forbbiden_say
-    settingStatus = models.CharField(max_length=64, null=True) # 设置的禁止方式 forbbiden_login  forbbiden_say
+    settingStatus = models.CharField(max_length=64, null=True)  # 设置的禁止方式 forbbiden_login  forbbiden_say
     roles = models.CharField(max_length=1024, null=True)  # 角色 normalUser adminUser
     city = models.CharField(max_length=255, null=True)
 

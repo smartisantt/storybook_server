@@ -686,12 +686,19 @@ def index_more(request):
     type = data.get('type', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
+    sort = data.get('sort', '')  # rank:最热 latest:最新
     # MOD1每日一读  MOD2抢先听  MOD3热门推荐 MOD4猜你喜欢
     if type in ['MOD1', 'MOD2', 'MOD3']:
         audioStoryList = []
-        module = Module.objects.filter(type=type, isDelete=False).order_by("orderNum")
+        module = Module.objects.filter(type=type, isDelete=False)
         if type == 'MOD1':
             module = module.filter(audioUuid__audioStoryType=True)
+        if sort == "latest":
+            module = module.order_by("orderNum", '-createTime')
+        elif sort == "rank":
+            module = module.order_by("orderNum", '-audioUuid__playTimes')
+        else:
+            return http_return(400, '参数错误')
         modules = module.all()
         total, modules = page_index(modules, page, pageCount)
         if modules:
@@ -721,8 +728,14 @@ def index_more(request):
                 })
     elif type == 'MOD4':
         audioStoryList = []
-        audios = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
-            isDelete=False).order_by("-playTimes").all()
+        audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
+            isDelete=False)
+        if sort == "latest":
+            audios = audio.order_by('-createTime').all()
+        elif sort == "rank":
+            audios = audio.order_by('-playTimes').all()
+        else:
+            return http_return(400, '参数错误')
         total, audios = page_index(audios, page, pageCount)
         if audios:
             for audio in audios:
@@ -1614,16 +1627,75 @@ def feedback_add(request):
     if not user:
         return http_return(400, '登录已过期')
     try:
-        feedback = Feedback(
-            uuid=get_uuid(),
-            type=type,
-            content=content,
-            icon=','.join(iconList),
-            tel=tel,
-            userUuid=user
-        )
-        feedback.save()
+        with transaction.atomic():
+            feedback = Feedback(
+                uuid=get_uuid(),
+                type=type,
+                content=content,
+                icon=','.join(iconList),
+                tel=tel,
+                userUuid=user
+            )
+            feedback.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '反馈失败')
     return http_return(200, '反馈成功')
+
+
+@check_identify
+def feedback_reply_list(request):
+    """
+    反馈信息
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    selfUuid = data['_cache']['uuid']
+    feed = Feedback.objects.filter(userUuid__uuid=selfUuid, status=1)
+    feeds = feed.order_by("-updateTime").all()
+    feedbackList = []
+    for feed in feeds:
+        feedbackList.append({
+            "uuid": feed.uuid,
+            "type": feed.type if feed.type else '',
+            "content": feed.content if feed.content else '',
+            "reply": feed.replyInfo if feed.replyInfo else '',
+            "updateTime": datetime_to_unix(feed.updateTime),
+            "isRead": feed.isRead,
+        })
+    return http_return(200, '成功', feedbackList)
+
+
+@check_identify
+def feedback_reply_info(request):
+    """
+    反馈信息
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    feed = Feedback.objects.filter(uuid=uuid).first()
+    try:
+        with transaction.atomic():
+            feed.isRead = True
+            feed.save()
+    except Exception as e:
+        logging.error(str(e))
+        print(str(e))
+        return http_return(400, '查看失败')
+    replyInfo = {
+        "uuid": feed.uuid,
+        "type": feed.type if feed.type else '',
+        "content": feed.content if feed.content else '',
+        "icon": feed.icon.split(',') if feed.icon else [],
+        "reply": feed.replyInfo if feed.replyInfo else '',
+        "createTime": datetime_to_unix(feed.createTime),
+        "updateTime": datetime_to_unix(feed.updateTime),
+    }
+    return http_return(200, '成功', replyInfo)

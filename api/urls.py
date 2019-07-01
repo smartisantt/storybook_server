@@ -55,6 +55,8 @@ urlpatterns = [
     path('personal/history/del', views.personal_history_del, name='personal_history_del'),  # 清空播放记录
     path('personal/change', views.personal_change, name='personal_change'),  # 修改个人资料
     path('personal/feedback/add', views.feedback_add, name='feedback_add'),  # 添加反馈信息
+    path('personal/feedback/list', views.feedback_reply_list, name='feedback_reply_list'),  # 回复列表
+    path('personal/feedback/info', views.feedback_reply_info, name='feedback_reply_info'),  # 回复详情
 
 
 ]

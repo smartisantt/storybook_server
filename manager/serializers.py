@@ -198,10 +198,22 @@ class ModuleSerializer(serializers.ModelSerializer):
 
 
 class GameInfoSerializer(serializers.ModelSerializer):
+    # userInfo = serializers.SerializerMethodField()
+    audioInfo = serializers.SerializerMethodField()
+
+    # @staticmethod
+    # def get_userInfo(gameInfo):
+    #     return UserSearchSerializer(gameInfo.userUuid).data
+
+    @staticmethod
+    def get_audioInfo(gameInfo):
+        # return AudioStoryInfoSerializer(gameInfo.audioUuid).data
+        # return AudioStorySimpleSerializer(gameInfo.audioUuid).data
+        pass
 
     class Meta:
         model = GameInfo
-        fields = "__all__"
+        fields = ("createTime", "uuid", "audioUuid", "audioInfo")
 
 
 class ActivitySerializer(serializers.ModelSerializer):

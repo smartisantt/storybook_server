@@ -87,7 +87,9 @@ urlpatterns = [
 
     # 活动管理
     path('activity/activitylist/', ActivityView.as_view()),
+    path('activity/gameinfolist/', GameInfoView.as_view()),
     path('activity/createactivity/', views.create_activity, name='create_activity'),
+    path('activity/modifyactivity/', views.modify_activity, name='modify_activity'),
 ]
 
 # router = SimpleRouter()

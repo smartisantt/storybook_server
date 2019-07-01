@@ -27,6 +27,8 @@ class StorySimpleSerializer(serializers.ModelSerializer):
 
 
 
+
+
 class TagsSimpleSerialzer(serializers.ModelSerializer):
 
     class Meta:
@@ -118,6 +120,34 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
 
 
 
+class AudioStoryDownloadSerializer(serializers.ModelSerializer):
+    # tagsInfo = serializers.SerializerMethodField()
+    bgmInfo = serializers.SerializerMethodField()
+    userInfo = serializers.SerializerMethodField()
+    # storyInfo = serializers.SerializerMethodField()
+
+    # @staticmethod
+    # def get_tagsInfo(audioinfo):
+    #     return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+
+    @staticmethod
+    def get_bgmInfo(audioinfo):
+        return BgmSimpleSerializer(audioinfo.bgm).data
+
+    @staticmethod
+    def get_userInfo(audioinfo):
+        return UserSerializer(audioinfo.userUuid).data
+
+    # @staticmethod
+    # def get_storyInfo(audioinfo):
+    #     return StorySerializer(audioinfo.storyUuid).data
+
+    class Meta:
+        model = AudioStory
+        exclude = ('name', 'bgIcon', 'tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm', 'isDelete')
+
+
+
 class AudioStorySimpleSerializer(serializers.ModelSerializer):
     storyInfo = serializers.SerializerMethodField()
     nickName = serializers.SerializerMethodField()
@@ -133,6 +163,9 @@ class AudioStorySimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = AudioStory
         fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'nickName', 'createTime')
+
+
+
 
 
 class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
@@ -200,6 +233,11 @@ class ModuleSerializer(serializers.ModelSerializer):
 class GameInfoSerializer(serializers.ModelSerializer):
     # userInfo = serializers.SerializerMethodField()
     audioInfo = serializers.SerializerMethodField()
+    score = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_score(gameInfo):
+        return 0.75 * gameInfo.audioUuid.bauUuid.filter(type=1).count() + 0.25 * gameInfo.audioUuid.playTimes
 
     # @staticmethod
     # def get_userInfo(gameInfo):
@@ -208,12 +246,12 @@ class GameInfoSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_audioInfo(gameInfo):
         # return AudioStoryInfoSerializer(gameInfo.audioUuid).data
-        # return AudioStorySimpleSerializer(gameInfo.audioUuid).data
-        pass
+        return AudioStoryDownloadSerializer(gameInfo.audioUuid).data
+
 
     class Meta:
         model = GameInfo
-        fields = ("createTime", "uuid", "audioUuid", "audioInfo")
+        fields = ("createTime", "uuid", "audioUuid", "audioInfo", "score")
 
 
 class ActivitySerializer(serializers.ModelSerializer):
@@ -226,7 +264,7 @@ class ActivitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Activity
-        fields = ("name", "startTime", "endTime", "count")
+        fields = ("name", "startTime", "endTime", "count", "uuid", "id")
 
 
 

@@ -3,7 +3,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from common.common import get_uuid
-from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner
+from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
+    Feedback
 from utils.errors import ParamsException
 
 
@@ -332,6 +333,18 @@ class CycleBannerSerializer(serializers.ModelSerializer):
         exclude = ("location", "isDelete")
 
 
+
+class FeedbackSerializer(serializers.ModelSerializer):
+
+    userInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_userInfo(feedback):
+        return UserDetailSerializer(feedback.userUuid).data
+
+    class Meta:
+        model = Feedback
+        exclude = ("userUuid", )
 
 
 

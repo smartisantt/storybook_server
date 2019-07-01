@@ -10,14 +10,14 @@ from rest_framework.generics import ListAPIView
 
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter, \
-    AdFilter
+    AdFilter, FeedbackFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer, CycleBannerSerializer
+    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer
 from storybook_sever.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime
@@ -1056,6 +1056,7 @@ def change_order(request):
     if not bgm:
         return http_return(400, "没有对象")
     mySortNum = bgm.sortNum
+    swapSortNum = 0
     # 向上
     if direct == "up":
         # 比当前sortNum小的最大值
@@ -2179,3 +2180,33 @@ def change_cycle_banner_status(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
+
+
+
+# 反馈管理列表
+class FeedbackView(ListAPIView):
+    queryset = Feedback.objects.all().order_by("-createTime")
+    serializer_class = FeedbackSerializer
+    filter_class = FeedbackFilter
+    pagination_class = MyPagination
+
+    def get_queryset(self):
+        startTime = self.request.query_params.get('starttime', '')
+        endTime = self.request.query_params.get('endtime', '')
+        if (startTime and not endTime) or  (not startTime and endTime):
+            raise ParamsException({'code': 400, 'msg': '时间错误'})
+        if startTime and endTime:
+            if not all([startTime.isdigit(), endTime.isdigit()]):
+                raise ParamsException({'code': 400, 'msg': '时间错误'})
+
+            startTime = int(startTime)/1000
+            endTime = int(endTime)/1000
+            if endTime < startTime:
+                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+            startTime = datetime.fromtimestamp(startTime)
+            endTime = datetime.fromtimestamp(endTime)
+            starttime = datetime(startTime.year, startTime.month, startTime.day)
+            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+            return self.queryset.filter(createTime__range=(starttime, endtime))
+        return self.queryset
+

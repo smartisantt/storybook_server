@@ -289,7 +289,7 @@ class ActivitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Activity
-        fields = ("name", "startTime", "endTime", "count", "uuid", "id")
+        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon")
 
 
 

@@ -6,6 +6,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
+from functools import reduce
 
 
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
@@ -196,12 +197,88 @@ def total_data(request):
 
 
         # 儿歌
-        tags1 = Tag.objects.filter(name='儿歌').first()
-        tag1
+        tags1 = Tag.objects.filter(code="RECORDTYPE", name='儿歌').first()
+        tags1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()     # 儿歌作品数
+        user1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+            values('userUuid_id').annotate(Count('userUuid_id')).count()                                #  录音类型人数，去重
+
+        # result = Tag.objects.filter(code="RECORDTYPE").annotate(Count('tagsAudioStory'))
+
         # 父母学堂
+        tags2 = Tag.objects.filter(code="RECORDTYPE", name='父母学堂').first()
+        tags2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+        user2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+            values('userUuid_id').annotate(Count('userUuid_id')).count()
+
         # 国学
+        tags3 = Tag.objects.filter(code="RECORDTYPE", name='国学').first()
+        tags3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+        user3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+            values('userUuid_id').annotate(Count('userUuid_id')).count()
+
         # 英文
+        tags4 = Tag.objects.filter(code="RECORDTYPE", name='英文').first()
+        tags4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+        user4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)). \
+            values('userUuid_id').annotate(Count('userUuid_id')).count()
+
         # 其他
+        tags5 = Tag.objects.filter(code="RECORDTYPE", name='其他').first()
+        tags5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+        user5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+            values('userUuid_id').annotate(Count('userUuid_id')).count()
+
+        # 活跃用户排行
+        data1_list = []
+        # result = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id'))[:1]
+        res = User.objects.annotate(audioStory_count_by_user = Count("useAudioUuid")).order_by('-audioStory_count_by_user')[:5]
+        for index,item in enumerate(res.values()):
+            data = {
+                'orderNum': index+1,
+                'name': item['nickName'],
+                'audioStory': item['audioStory_count_by_user']
+            }
+            data1_list.append(data)
+        # 热门录制排行
+        data2_list = []
+        res = Story.objects.filter(status="normal", createTime__range=(t1, t2)).order_by('-recordNum')[:5]
+        for index,item in enumerate(res.values()):
+            data = {
+                'orderNum': index + 1 or -1,
+                'name': item['name'] or '',
+                'recordNum': item['recordNum'] or 0
+            }
+            data2_list.append(data)
+
+        # 热门播放排行
+        data3_list = []
+        res = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).order_by('-playTimes')[:5]
+        for index,item in enumerate(res):
+            data = {
+                'orderNum': index + 1,
+                'name': item.storyUuid.name if item.audioStoryType else item.name,
+                'playTimes': item.playTimes
+            }
+            data3_list.append(data)
+
+        # 图表数据--新增用户
+        res = User.objects.filter(createTime__range=(t1, t2)).\
+            extra(select={"createTime": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}).\
+            order_by('createTime').values('createTime')\
+            .annotate(user_num=Count('createTime')).values('createTime', 'user_num')
+
+
+        if res:
+            res = list(res)
+        else:
+            res = []
+        # 活跃用户
+        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id'). \
+            annotate(Count('userUuid_id')).extra(select={"createTime": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}).\
+            order_by('createTime').values('createTime')\
+            .annotate(user_num=Count('userUuid_id')).values('createTime', 'user_num')
+
+
 
         return http_return(200, 'OK',
                            {
@@ -210,7 +287,10 @@ def total_data(request):
                                'totalAlbums': totalAlbums,
                                'newUsers': newUsers,
                                'activityUsers': activityUsers,
-                               'newAudioStory': newAudioStory
+                               'newAudioStory': newAudioStory,
+                               'activityUsersRank': data1_list,
+                               'hotRecordRank': data2_list,
+                               'hotPlayAudioStory': data3_list,
                            })
 
 
@@ -1905,7 +1985,7 @@ def activity_rank(request):
             "audio": {
                 "id": game.audioUuid.id or '',
                 "uuid": game.audioUuid.uuid or '',
-                "bgmUrl": game.audioUuid.bgm.url or '',
+                "bgmUrl":  game.audioUuid.bgm.url if game.audioUuid.bgm else '',
                 "voiceUrl": game.audioUuid.voiceUrl or '',
                 "name": name or '',
             },

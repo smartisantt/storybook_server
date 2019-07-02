@@ -95,7 +95,7 @@ def recording_index_list(request):
             "content": st.content if st.content else '',
             "count": st.recordNum,
         })
-    return http_return(200, '成功', {"total": total, "storyList": storyList})
+    return http_return(200, '成功', {"total": total, "list": storyList})
 
 
 @check_identify
@@ -354,7 +354,7 @@ def user_audio_list(request):
             "createTime": datetime_to_unix(audio.createTime),
             "tagList": tagList
         })
-    return http_return(200, '成功', {"total": total, "audioStoryList": audioList})
+    return http_return(200, '成功', {"total": total, "list": audioList})
 
 
 @check_identify
@@ -390,7 +390,7 @@ def user_fans(request):
             "avatar": u.avatar if u.avatar else '',
             "name": u.nickName if u.nickName else ''
         })
-    return http_return(200, '成功', {"total": total, "userList": userList})
+    return http_return(200, '成功', {"total": total, "list": userList})
 
 
 @check_identify
@@ -790,7 +790,7 @@ def index_more(request):
                 })
     else:
         return http_return(400, '参数错误')
-    return http_return(200, '成功', {"total": total, "audioStoryList": audioStoryList})
+    return http_return(200, '成功', {"total": total, "list": audioStoryList})
 
 
 @check_identify
@@ -898,7 +898,7 @@ def search_audio(request):
             "remarks": au.remarks,
             "story": story,
         })
-    return http_return(200, '成功', {"audioStoryList": audioList, "total": total})
+    return http_return(200, '成功', {"list": audioList, "total": total})
 
 
 @check_identify
@@ -936,7 +936,7 @@ def search_user(request):
             "audioStoryCount": audioCount,
             "followersCount": followers,
         })
-    return http_return(200, '成功', {"total": total, "userList": userList})
+    return http_return(200, '成功', {"total": total, "list": userList})
 
 
 @check_identify
@@ -1393,7 +1393,7 @@ def activity_rank(request):
             },
             "score": 0.75 * game.audioUuid.bauUuid.filter(type=1).count() + 0.25 * game.audioUuid.playTimes,
         })
-    return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
+    return http_return(200, '成功', {"total": total, "list": activityRankList})
 
 
 @check_identify
@@ -1539,11 +1539,15 @@ def personal_audiostory(request):
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = []
     for audio in audios:
-        icon = audio.bgIcon
-        name = audio.name
+        story = None
         if audio.audioStoryType:
-            icon = audio.storyUuid.faceIcon if audio.storyUuid else ''
-            name = audio.storyUuid.name if audio.storyUuid else ''
+            story = {
+                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
+                "name": audio.storyUuid.name if audio.storyUuid else '',
+                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
+                "content": audio.storyUuid.content if audio.storyUuid else '',
+                "intro": audio.storyUuid.intro if audio.storyUuid else ''
+            }
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
@@ -1554,13 +1558,14 @@ def personal_audiostory(request):
         audioStoryList.append({
             "uuid": audio.uuid,
             "duration": audio.duration,
-            "icon": icon if icon else '',
-            "name": name if name else '',
+            "icon": audio.bgIcon if audio.bgIcon else '',
+            "name": audio.name if audio.name else '',
             "palyCount": audio.playTimes,
             "createTime": datetime_to_unix(audio.createTime),
-            "tagList": tagList
+            "tagList": tagList,
+            "story": story,
         })
-    return http_return(200, '成功', {"audioStoryList": audioStoryList, "total": total})
+    return http_return(200, '成功', {"list": audioStoryList, "total": total})
 
 
 @check_identify
@@ -1581,29 +1586,38 @@ def personal_history_list(request):
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
     for behav in behavs:
-        icon = behav.audioUuid.bgIcon
-        name = behav.audioUuid.name
-        if behav.audioUuid.audioStoryType:
-            icon = behav.audioUuid.storyUuid.faceIcon if behav.audioUuid.storyUuid else ''
-            name = behav.audioUuid.storyUuid.name if behav.audioUuid.storyUuid else ''
+        audio = behav.audioUuid
+        story = None
+        if audio.audioStoryType:
+            story = {
+                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
+                "name": audio.storyUuid.name if audio.storyUuid else '',
+                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
+                "content": audio.storyUuid.content if audio.storyUuid else '',
+                "intro": audio.storyUuid.intro if audio.storyUuid else ''
+            }
         tagList = []
-        for tag in behav.audioUuid.tags.all():
+        for tag in audio.tags.all():
             tagList.append({
                 'uuid': tag.uuid,
                 'name': tag.name if tag.name else '',
                 "icon": tag.icon if tag.icon else '',
             })
         audio = {
-            "uuid": behav.audioUuid.uuid,
-            "icon": icon if icon else '',
-            "name": name if name else '',
-            "tagList": tagList
+            "uuid": audio.uuid,
+            "duration": audio.duration,
+            "icon": audio.bgIcon if audio.bgIcon else '',
+            "name": audio.name if audio.name else '',
+            "palyCount": audio.playTimes,
+            "createTime": datetime_to_unix(audio.createTime),
+            "tagList": tagList,
+            "story": story,
         }
         palyHistoryList.append({
             "uuid": behav.uuid,
             "audio": audio,
         })
-    return http_return(200, '成功', {"palyHistoryList": palyHistoryList, "total": total})
+    return http_return(200, '成功', {"list": palyHistoryList, "total": total})
 
 
 @check_identify

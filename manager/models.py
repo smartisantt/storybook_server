@@ -333,7 +333,7 @@ class AudioStory(BaseModle, models.Model):
     bgIcon = models.CharField(max_length=255, null=True)  # 封面图片
     remarks = models.CharField(max_length=512, null=True)  # 录制感受
     duration = models.IntegerField(null=True)  # 作品时长
-    tags = models.ManyToManyField('Tag')  # 作品标签
+    tags = models.ManyToManyField('Tag', related_name="tagsAudioStory")  # 作品标签
     storyUuid = models.ForeignKey('Story', on_delete=models.CASCADE, related_name='storyAudioStory',
                                   to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
     albumUuid = models.ForeignKey('Album', on_delete=models.CASCADE, related_name='albumAudioUuid', to_field='uuid',

@@ -150,21 +150,21 @@ def save_search(data):
     :return:
     """
     # 存储搜索记录
-    keyWord = data.get('keyword', '')
+    keyword = data.get('keyword', '')
     uuid = data['_cache']['uuid']
     user = User.objects.filter(uuid=uuid).first()
     try:
         with transaction.atomic():
             SearchHistory.objects.create(
                 uuid=get_uuid(),
-                searchName=keyWord,
+                searchName=keyword,
                 userUuid=user,
             )
     except Exception as e:
         logging.error(str(e))
         return False
     # 累加搜索次数
-    hot = HotSearch.objects.filter(keyword=keyWord).first()
+    hot = HotSearch.objects.filter(keyword=keyword).first()
     if hot:
         try:
             with transaction.atomic():
@@ -178,7 +178,7 @@ def save_search(data):
             with transaction.atomic():
                 HotSearch.objects.create(
                     uuid=get_uuid(),
-                    keyword=keyWord,
+                    keyword=keyword,
                     searchNum=1,
                 )
         except Exception as e:

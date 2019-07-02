@@ -149,8 +149,8 @@ def total_data(request):
     endTimestamp = data.get('endTime', '')
 
     if startTimestamp and endTimestamp:
-        startTimestamp = startTimestamp/1000
-        endTimestamp = endTimestamp/1000
+        startTimestamp = int(startTimestamp/1000)
+        endTimestamp = int(endTimestamp/1000)
     else:
         return http_return(400, '参数有误')
     # 小于2019-05-30 00:00:00的时间不合法
@@ -167,9 +167,9 @@ def total_data(request):
         # 音频总数
         totalAudioStory = AudioStory.objects.filter(isDelete=False).count()
         # 专辑总数
-        totalAlbums = Album.objects.all().count()
+        totalAlbums = Album.objects.filter(isDelete=False).count()
         # 新增用户人数
-        newUsers = User.objects.filter(createTime__range=(t1, t2)).count()
+        newUsers = User.objects.filter(createTime__range=(t1, t2)).exclude(status='destroy').count()
         # 活跃用户人数
         activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id').\
             annotate(Count('userUuid_id')).count()
@@ -177,10 +177,31 @@ def total_data(request):
         newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
 
         # 男性
+        male = User.objects.filter(gender=1).exclude(status='destroy').count()
 
         # 女性
+        female = User.objects.filter(gender=2).exclude(status='destroy').count()
 
         # 未知
+        unkonwGender = User.objects.filter(gender=0).exclude(status='destroy').count()
+
+
+        # 模板音频
+        aduioStoryCount = AudioStory.objects.filter(
+            isDelete=False, audioStoryType=1, isUpload=1, createTime__range=(t1, t2)).count()
+
+        # 自由录制
+        freedomStoryCount = AudioStory.objects.filter(
+            isDelete=False, audioStoryType=0, isUpload=1, createTime__range=(t1, t2)).count()
+
+
+        # 儿歌
+        tags1 = Tag.objects.filter(name='儿歌').first()
+        tag1
+        # 父母学堂
+        # 国学
+        # 英文
+        # 其他
 
         return http_return(200, 'OK',
                            {
@@ -1774,7 +1795,7 @@ def forbidden_user(request):
 
 
     # if endTimestamp < startTimestamp or endTimestamp <= int(time.time()*1000) or startTimestamp <= int(time.time()*1000):
-    if endTimestamp < startTimestamp or endTimestamp:
+    if endTimestamp < startTimestamp:
         return http_return(400, '无效时间')
 
     startTimestamp = startTimestamp/1000

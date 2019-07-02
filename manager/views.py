@@ -165,7 +165,7 @@ def total_data(request):
         # 用户总人数
         totalUsers = User.objects.exclude(status='destroy').count()
         # 音频总数
-        totalAudioStory = AudioStory.objects.all().count()
+        totalAudioStory = AudioStory.objects.filter(isDelete=False).count()
         # 专辑总数
         totalAlbums = Album.objects.all().count()
         # 新增用户人数
@@ -175,6 +175,12 @@ def total_data(request):
             annotate(Count('userUuid_id')).count()
         # 新增音频数
         newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
+
+        # 男性
+
+        # 女性
+
+        # 未知
 
         return http_return(200, 'OK',
                            {
@@ -2209,4 +2215,31 @@ class FeedbackView(ListAPIView):
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             return self.queryset.filter(createTime__range=(starttime, endtime))
         return self.queryset
+
+
+# 客服处理
+def reply(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    replyInfo = data.get('replyInfo', '')
+    if not all([uuid, replyInfo]):
+        return http_return(400, '参数错误')
+
+    feedback = Feedback.objects.filter(uuid=uuid, status=0).first()
+    if not feedback:
+        return http_return(400, '没有对象')
+
+
+    try:
+        with transaction.atomic():
+            feedback.replyInfo = replyInfo
+            feedback.status = 1
+            feedback.save()
+            # 关联用户操作记录
+            return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '回复失败')
 

@@ -105,7 +105,9 @@ urlpatterns = [
     path('ad/delad/', views.del_ad, name='del_ad'),
 
 
+
     path('feedback/feedbacklist/', FeedbackView.as_view()),
+    path('feedback/reply/', views.reply, name='reply'),
 ]
 
 # router = SimpleRouter()

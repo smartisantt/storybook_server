@@ -62,7 +62,7 @@ class UserSearchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('uuid', 'nickName')
+        fields = ('uuid', 'nickName', 'id')
 
 
 class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
@@ -334,7 +334,7 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_userInfo(feedback):
-        return UserDetailSerializer(feedback.userUuid).data
+        return UserSearchSerializer(feedback.userUuid).data
 
     class Meta:
         model = Feedback

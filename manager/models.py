@@ -311,6 +311,7 @@ class Album(BaseModle, models.Model):
     icon = models.CharField(max_length=255, null=True)  # 专辑封面
     status = models.CharField(max_length=32, null=True)  # 专辑状态
     tags = models.ManyToManyField(Tag)  # 标签
+    isDelete = models.BooleanField(default=False)  # 1 删除   0 没有删除
 
     class Meta:
         db_table = 'tb_album'

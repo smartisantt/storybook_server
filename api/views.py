@@ -145,7 +145,8 @@ def recording_stroy_detail(request):
         "uuid": story.uuid,
         "name": story.name if story.name else '',
         "content": story.content if story.content else '',
-        "icon": story.faceIcon if story.faceIcon else ''
+        "icon": story.faceIcon if story.faceIcon else '',
+        "intro": story.intro if story.intro else '',
     }
     return http_return(200, '成功', d)
 
@@ -286,7 +287,7 @@ def user_center(request):
     userDict = {
         "uuid": user.uuid,
         "name": user.nickName if user.nickName else '',
-        "avatar": user.avatar if user.avater else '',
+        "avatar": user.avatar if user.avatar else '',
         "id": user.id,
         "isFollower": isFollow,
         "intro": user.intro if user.intro else '',

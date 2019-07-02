@@ -859,19 +859,19 @@ def search_audio(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    keyWord = data.get('keyword')
+    keyword = data.get('keyword')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
         return http_return(400, '未获取到用户信息')
-    if not keyWord:
+    if not keyword:
         return http_return(400, '参数错误')
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
     audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
-    audio = audio.filter(Q(storyUuid__name__contains=keyWord) | Q(name__contains=keyWord)).order_by("-createTime")
+    audio = audio.filter(Q(storyUuid__name__contains=keyword) | Q(name__contains=keyword)).order_by("-createTime")
     audios = audio.all()
     total, audios = page_index(audios, page, pageCount)
     audioList = []
@@ -912,19 +912,19 @@ def search_user(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    keyWord = data.get('keyword')
+    keyword = data.get('keyword')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
         return http_return(400, '未获取到用户信息')
-    if not keyWord:
+    if not keyword:
         return http_return(400, '参数错误')
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
     user = User.objects.filter(roles='normalUser')
-    users = user.filter(nickName__contains=keyWord).order_by("-createTime").all()
+    users = user.filter(nickName__contains=keyword).order_by("-createTime").all()
     total, users = page_index(users, page, pageCount)
     userList = []
     for u in users:

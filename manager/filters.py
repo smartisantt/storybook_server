@@ -162,13 +162,16 @@ class AdFilter(django_filters.FilterSet):
 
 
 class FeedbackFilter(django_filters.FilterSet):
+    id = django_filters.NumberFilter(method='filter_by_id')
 
-    name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
-
+    @staticmethod
+    def filter_by_id(queryset, name, value):
+        user = User.objects.filter(id=value).first()
+        return queryset.filter(userUuid=user)
 
     class Meta:
         model = Feedback
-        fields = ("type", )
+        fields = ("type", "status")# 反馈问题类型 1产品建议 2功能异常 3其他问题
 
 
 

@@ -296,7 +296,7 @@ class CycleBanner(BaseModle, models.Model):
     target = models.CharField(max_length=255, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
     location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图
-    isDelete = models.BooleanField(default=False) # 1 删除   0 没有删除
+    isDelete = models.BooleanField(default=False)  # 1 删除   0 没有删除
 
     class Meta:
         db_table = 'tb_viewpager'
@@ -362,3 +362,15 @@ class Behavior(BaseModle, models.Model):
 
     class Meta:
         db_table = 'tb_behavior'
+
+
+class ActivityConfig(BaseModle, models.Model):
+    """
+    活动参数配置表
+    """
+    praiseNum = models.IntegerField(null=True)  # 点赞所占比例
+    playTimesNum = models.IntegerField(null=True)  # 播放所占比例
+    status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消 2:删除 3：默认
+
+    class Meta:
+        db_table = 'tb_activity_config'

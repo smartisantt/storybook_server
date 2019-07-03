@@ -555,7 +555,7 @@ def audio_play(request):
 
     return http_return(200, '成功',
                        {"total": total,
-                        "audioStoryList": audioList,
+                        "list": audioList,
                         "audioStory": playDict, })
 
 
@@ -1004,7 +1004,7 @@ def audiostory_category_detail(request):
             "tagList": tagList,
             "story": story,
         })
-    return http_return(200, '成功', {"total": total, "audioStoryList": audioStoryList})
+    return http_return(200, '成功', {"total": total, "list": audioStoryList})
 
 
 @check_identify
@@ -1339,9 +1339,15 @@ def activity_detail(request):
     game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
     if game:
         status = True
+        config = ActivityConfig.objects.filter(status=0).first()
+        if not config:
+            return http_return(400, '未获取到参数配置')
+        praiseNum = config.praiseNum / 100
+        playTimesNum = config.playTimesNum / 100
         games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
         games = sorted(games,
-                       key=lambda x: 0.75 * x.audioUuid.bauUuid.filter(type=1).count() + 0.25 * x.audioUuid.playTimes,
+                       key=lambda x: praiseNum * x.audioUuid.bauUuid.filter(
+                           type=1).count() + playTimesNum * x.audioUuid.playTimes,
                        reverse=True)
         rank = games.index(game) + 1
     userInfo = {
@@ -1372,9 +1378,15 @@ def activity_rank(request):
     act = Activity.objects.filter(uuid=uuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
+    config = ActivityConfig.objects.filter(status=0).first()
+    if not config:
+        return http_return(400, '未获取到参数配置')
+    praiseNum = config.praiseNum / 100
+    playTimesNum = config.playTimesNum / 100
     games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
     games = sorted(games,
-                   key=lambda x: 0.75 * x.audioUuid.bauUuid.filter(type=1).count() + 0.25 * x.audioUuid.playTimes,
+                   key=lambda x: praiseNum * x.audioUuid.bauUuid.filter(
+                       type=1).count() + playTimesNum * x.audioUuid.playTimes,
                    reverse=True)
     total, games = page_index(games, page, pageCount)
     activityRankList = []
@@ -1420,6 +1432,8 @@ def activity_audiostory_list(request):
         userUuid__uuid=data['_cache']['uuid'], isDelete=False)
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
+    if not activity:
+        return http_return(400, '活动信息不存在')
     startTime = activity.startTime
     endTime = activity.endTime
     audio = audio.filter(createTime__gte=startTime, createTime__lte=endTime)

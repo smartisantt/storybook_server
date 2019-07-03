@@ -273,18 +273,21 @@ def total_data(request):
         else:
             res = []
         # 活跃用户
-        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id'). \
-            annotate(Count('userUuid_id')).extra(select={"createTime": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}).\
-            order_by('createTime').values('createTime')\
-            .annotate(user_num=Count('userUuid_id')).values('createTime', 'user_num')
 
+        res2 = LoginLog.objects.filter(createTime__range=(t1, t2)). \
+            extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}). \
+            values('time').annotate(num=Count('createTime', distinct=True)).values('time', 'num')
+        if res2:
+            res2 = list(res2)
+        else:
+            res2 = []
 
 
         return http_return(200, 'OK',
                            {
-                               'totalUsers': totalUsers,
-                               'totalAudioStory': totalAudioStory,
-                               'totalAlbums': totalAlbums,
+                               'totalUsers': totalUsers,            # 总用户人数
+                               'totalAudioStory': totalAudioStory,  # 音频总数
+                               'totalAlbums': totalAlbums,          # 总的专辑数
                                'newUsers': newUsers,
                                'activityUsers': activityUsers,
                                'newAudioStory': newAudioStory,

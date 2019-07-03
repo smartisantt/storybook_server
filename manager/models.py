@@ -90,15 +90,26 @@ class Feedback(BaseModle, models.Model):
 
 
 class LoginLog(BaseModle, models.Model):
-    """
-    登录日志
-    """
+    """登录日志"""
     ipAddr = models.CharField(max_length=126, verbose_name='IP地址', null=True)
     devCode = models.CharField(max_length=256, verbose_name='设备编号', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='longinLogUuid', to_field='uuid')
+    platform = models.CharField(max_length=126, verbose_name='登录平台', null=True),    # ANDROID  / IOS / H5 / PC / WEAPP
+    isManager = models.BooleanField(default=False)      # 0 客户端  1 是后台管理端
 
     class Meta:
         db_table = 'tb_login_log'
+
+
+class Operation(BaseModle, models.Model):
+    """后台人员操作记录表"""
+    userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='oUserUuid', to_field='uuid')
+    operation = models.CharField(max_length=255, null=True)     # create retrieve update delete
+    objectUuid = models.CharField(max_length=64, unique=True)
+    remark = models.CharField(max_length=255, null=True)
+
+    class Meta:
+        db_table = "tb_operation_record"
 
 
 class Module(BaseModle, models.Model):

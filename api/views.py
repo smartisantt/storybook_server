@@ -602,19 +602,11 @@ def index_list(request):
     ever = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True).order_by(
         "orderNum").first()
     if ever:
-        story = {
-            "uuid": ever.audioUuid.storyUuid.uuid if ever.audioUuid.storyUuid else '',
-            "name": ever.audioUuid.storyUuid.name if ever.audioUuid.storyUuid else '',
-            "icon": ever.audioUuid.storyUuid.faceIcon if ever.audioUuid.storyUuid else '',
-            "content": ever.audioUuid.storyUuid.content if ever.audioUuid.storyUuid else '',
-            "intro": ever.audioUuid.storyUuid.intro if ever.audioUuid.storyUuid else ''
-        }
         everList.append({
             "uuid": ever.audioUuid.uuid,
             "name": ever.audioUuid.name if ever.audioUuid.name else '',
-            "remarks": ever.audioUuid.remarks if ever.audioUuid.remarks else '',
+            "content": ever.audioUuid.remarks if ever.audioUuid.remarks else '',
             "icon": ever.audioUuid.bgIcon if ever.audioUuid.bgIcon else '',
-            "story": story,
             "type": '',
             "target": '',
         })
@@ -623,21 +615,11 @@ def index_list(request):
     firsts = Module.objects.filter(type='MOD2', isDelete=False).order_by("orderNum").all()[:4]
     if firsts:
         for first in firsts:
-            story = None
-            if first.audioUuid.audioStoryType:
-                story = {
-                    "uuid": first.audioUuid.storyUuid.uuid if first.audioUuid.storyUuid else '',
-                    "name": first.audioUuid.storyUuid.name if first.audioUuid.storyUuid else '',
-                    "icon": first.audioUuid.storyUuid.faceIcon if first.audioUuid.storyUuid else '',
-                    "content": first.audioUuid.storyUuid.content if first.audioUuid.storyUuid else '',
-                    "intro": first.audioUuid.storyUuid.intro if first.audioUuid.storyUuid else ''
-                }
             firstList.append({
                 "uuid": first.audioUuid.uuid,
                 "name": first.audioUuid.name if first.audioUuid.name else '',
                 "icon": first.audioUuid.bgIcon if first.audioUuid.bgIcon else '',
-                "remarks": first.audioUuid.remarks if first.audioUuid.remarks else '',
-                "story": story,
+                "content": first.audioUuid.remarks if first.audioUuid.remarks else '',
                 "type": '',
                 "target": '',
             })
@@ -646,21 +628,11 @@ def index_list(request):
     hots = Module.objects.filter(type='MOD3', isDelete=False).order_by("orderNum").all()[:4]
     if hots:
         for hot in hots:
-            story = None
-            if hot.audioUuid.audioStoryType:
-                story = {
-                    "uuid": hot.audioUuid.storyUuid.uuid if hot.audioUuid.storyUuid else '',
-                    "name": hot.audioUuid.storyUuid.name if hot.audioUuid.storyUuid else '',
-                    "icon": hot.audioUuid.storyUuid.faceIcon if hot.audioUuid.storyUuid else '',
-                    "content": hot.audioUuid.storyUuid.content if hot.audioUuid.storyUuid else '',
-                    "intro": hot.audioUuid.storyUuid.intro if hot.audioUuid.storyUuid else ''
-                }
             hotList.append({
                 "uuid": hot.audioUuid.uuid,
                 "name": hot.audioUuid.name if hot.audioUuid.name else '',
                 "icon": hot.audioUuid.bgIcon if hot.audioUuid.bgIcon else '',
-                "remarks": hot.audioUuid.remarks if hot.audioUuid.remarks else '',
-                "story": story,
+                "content": hot.audioUuid.remarks if hot.audioUuid.remarks else '',
                 "type": '',
                 "target": '',
             })
@@ -670,21 +642,11 @@ def index_list(request):
         isDelete=False).order_by("-playTimes").all()[:6]
     if audios:
         for audio in audios:
-            story = None
-            if audio.audioStoryType:
-                story = {
-                    "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                    "name": audio.storyUuid.name if audio.storyUuid else '',
-                    "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                    "content": audio.storyUuid.content if audio.storyUuid else '',
-                    "intro": audio.storyUuid.intro if audio.storyUuid else ''
-                }
             likeList.append({
                 "uuid": audio.uuid,
                 "name": audio.name if audio.name else '',
                 "icon": audio.bgIcon if audio.bgIcon else '',
-                "remarks": audio.remarks if audio.remarks else '',
-                "story": story,
+                "content": audio.remarks if audio.remarks else '',
                 "type": '',
                 "target": ''
             })

@@ -1432,6 +1432,8 @@ def activity_audiostory_list(request):
         userUuid__uuid=data['_cache']['uuid'], isDelete=False)
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
+    if not activity:
+        return http_return(400, '活动信息不存在')
     startTime = activity.startTime
     endTime = activity.endTime
     audio = audio.filter(createTime__gte=startTime, createTime__lte=endTime)

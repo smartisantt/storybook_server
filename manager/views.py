@@ -228,6 +228,15 @@ def total_data(request):
         user5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
             values('userUuid_id').annotate(Count('userUuid_id')).count()
 
+        recordTypePercentage = [
+            {'name': '儿歌', 'tagsNum': tags1Count, 'userNum': user1Count},
+            {'name': '儿歌', 'tagsNum': tags2Count, 'userNum': user2Count},
+            {'name': '国学', 'tagsNum': tags3Count, 'userNum': user3Count},
+            {'name': '英文', 'tagsNum': tags4Count, 'userNum': user4Count},
+            {'name': '其他', 'tagsNum': tags5Count, 'userNum': user5Count}
+        ]
+
+
         # 活跃用户排行
         data1_list = []
         # result = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id'))[:1]
@@ -236,7 +245,7 @@ def total_data(request):
             data = {
                 'orderNum': index+1,
                 'name': item['nickName'],
-                'audioStory': item['audioStory_count_by_user']
+                'recordCount': item['audioStory_count_by_user']
             }
             data1_list.append(data)
         # 热门录制排行
@@ -252,8 +261,8 @@ def total_data(request):
 
         # 热门播放排行
         data3_list = []
-        res = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).order_by('-playTimes')[:5]
-        for index,item in enumerate(res):
+        audioStory = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).order_by('-playTimes')[:5]
+        for index,item in enumerate(audioStory):
             data = {
                 'orderNum': index + 1,
                 'name': item.storyUuid.name if item.audioStoryType else item.name,
@@ -262,25 +271,23 @@ def total_data(request):
             data3_list.append(data)
 
         # 图表数据--新增用户
-        res = User.objects.filter(createTime__range=(t1, t2)).\
-            extra(select={"createTime": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}).\
-            order_by('createTime').values('createTime')\
-            .annotate(user_num=Count('createTime')).values('createTime', 'user_num')
-
-
-        if res:
-            res = list(res)
+        graph1 = User.objects.filter(createTime__range=(t1, t2)).\
+            extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}).\
+            order_by('time').values('time')\
+            .annotate(userNum=Count('createTime')).values('time', 'userNum')
+        if graph1:
+            graph1 = list(graph1)
         else:
-            res = []
+            graph1 = []
+
         # 活跃用户
-
-        res2 = LoginLog.objects.filter(createTime__range=(t1, t2)). \
+        graph2 = LoginLog.objects.filter(createTime__range=(t1, t2)). \
             extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}). \
-            values('time').annotate(num=Count('createTime', distinct=True)).values('time', 'num')
-        if res2:
-            res2 = list(res2)
+            values('time').annotate(userNum=Count('createTime', distinct=True)).values('time', 'userNum')
+        if graph2:
+            graph2 = list(graph2)
         else:
-            res2 = []
+            graph2 = []
 
 
         return http_return(200, 'OK',
@@ -288,12 +295,20 @@ def total_data(request):
                                'totalUsers': totalUsers,            # 总用户人数
                                'totalAudioStory': totalAudioStory,  # 音频总数
                                'totalAlbums': totalAlbums,          # 总的专辑数
-                               'newUsers': newUsers,
-                               'activityUsers': activityUsers,
-                               'newAudioStory': newAudioStory,
-                               'activityUsersRank': data1_list,
-                               'hotRecordRank': data2_list,
-                               'hotPlayAudioStory': data3_list,
+                               'newUsers': newUsers,                # 新增用户人数
+                               'activityUsers': activityUsers,      # 活跃用户人数
+                               'newAudioStory': newAudioStory,      # 新增音频数
+                               'activityUsersRank': data1_list,     # 活跃用户排行
+                               'male': male,                         # 男性
+                               'female': female,                     # 女性
+                               'unkonwGender': unkonwGender,        # 未知性别
+                               'aduioStoryCount': aduioStoryCount,  # 模板音频数量
+                               'freedomStoryCount': freedomStoryCount,  # 自由录制音频数量
+                               'recordTypePercentage': recordTypePercentage,
+                               'hotRecordRank': data2_list,         # 热门录制排行
+                               'hotPlayAudioStoryRank': data3_list,     # 热门播放排行
+                               'newUserGraph': graph1,              # 新增用户折线图
+                               'activityUserGraph': graph2,         # 活跃用户折线图
                            })
 
 
@@ -2160,9 +2175,9 @@ def add_cycle_banner(request):
     icon = data.get('icon', '')
     type = data.get('type', '')
     target = data.get('target', '')
-    orderNum = data.get('ordernum', '')
-    startTime = data.get('starttime', '')
-    endTime = data.get('endtime', '')
+    orderNum = data.get('orderNum', '')
+    startTime = data.get('startTime', '')
+    endTime = data.get('endTime', '')
     if not all([name, icon, type in range(0, 5), startTime, orderNum, endTime, target]):
         return http_return(400, '参数错误')
     if CycleBanner.objects.filter(name=name, isDelete=False).exists():

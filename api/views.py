@@ -555,7 +555,7 @@ def audio_play(request):
 
     return http_return(200, '成功',
                        {"total": total,
-                        "audioStoryList": audioList,
+                        "list": audioList,
                         "audioStory": playDict, })
 
 
@@ -1004,7 +1004,7 @@ def audiostory_category_detail(request):
             "tagList": tagList,
             "story": story,
         })
-    return http_return(200, '成功', {"total": total, "audioStoryList": audioStoryList})
+    return http_return(200, '成功', {"total": total, "list": audioStoryList})
 
 
 @check_identify

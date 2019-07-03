@@ -599,45 +599,28 @@ def index_list(request):
         return http_return(400, '参数错误')
     # 每日一读
     everList = []
-    ever = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True).order_by(
-        "orderNum").first()
-    if ever:
-        story = {
-            "uuid": ever.audioUuid.storyUuid.uuid if ever.audioUuid.storyUuid else '',
-            "name": ever.audioUuid.storyUuid.name if ever.audioUuid.storyUuid else '',
-            "icon": ever.audioUuid.storyUuid.faceIcon if ever.audioUuid.storyUuid else '',
-            "content": ever.audioUuid.storyUuid.content if ever.audioUuid.storyUuid else '',
-            "intro": ever.audioUuid.storyUuid.intro if ever.audioUuid.storyUuid else ''
-        }
-        everList.append({
-            "uuid": ever.audioUuid.uuid,
-            "name": ever.audioUuid.name if ever.audioUuid.name else '',
-            "remarks": ever.audioUuid.remarks if ever.audioUuid.remarks else '',
-            "icon": ever.audioUuid.bgIcon if ever.audioUuid.bgIcon else '',
-            "story": story,
-            "type": '',
-            "target": '',
-        })
+    evers = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True).order_by(
+        "orderNum").all()
+    if evers:
+        for ever in evers:
+            everList.append({
+                "uuid": ever.audioUuid.uuid,
+                "name": ever.audioUuid.name if ever.audioUuid.name else '',
+                "content": ever.audioUuid.remarks if ever.audioUuid.remarks else '',
+                "icon": ever.audioUuid.bgIcon if ever.audioUuid.bgIcon else '',
+                "type": '',
+                "target": '',
+            })
     # 抢先听
     firstList = []
     firsts = Module.objects.filter(type='MOD2', isDelete=False).order_by("orderNum").all()[:4]
     if firsts:
         for first in firsts:
-            story = None
-            if first.audioUuid.audioStoryType:
-                story = {
-                    "uuid": first.audioUuid.storyUuid.uuid if first.audioUuid.storyUuid else '',
-                    "name": first.audioUuid.storyUuid.name if first.audioUuid.storyUuid else '',
-                    "icon": first.audioUuid.storyUuid.faceIcon if first.audioUuid.storyUuid else '',
-                    "content": first.audioUuid.storyUuid.content if first.audioUuid.storyUuid else '',
-                    "intro": first.audioUuid.storyUuid.intro if first.audioUuid.storyUuid else ''
-                }
             firstList.append({
                 "uuid": first.audioUuid.uuid,
                 "name": first.audioUuid.name if first.audioUuid.name else '',
                 "icon": first.audioUuid.bgIcon if first.audioUuid.bgIcon else '',
-                "remarks": first.audioUuid.remarks if first.audioUuid.remarks else '',
-                "story": story,
+                "content": first.audioUuid.remarks if first.audioUuid.remarks else '',
                 "type": '',
                 "target": '',
             })
@@ -646,21 +629,11 @@ def index_list(request):
     hots = Module.objects.filter(type='MOD3', isDelete=False).order_by("orderNum").all()[:4]
     if hots:
         for hot in hots:
-            story = None
-            if hot.audioUuid.audioStoryType:
-                story = {
-                    "uuid": hot.audioUuid.storyUuid.uuid if hot.audioUuid.storyUuid else '',
-                    "name": hot.audioUuid.storyUuid.name if hot.audioUuid.storyUuid else '',
-                    "icon": hot.audioUuid.storyUuid.faceIcon if hot.audioUuid.storyUuid else '',
-                    "content": hot.audioUuid.storyUuid.content if hot.audioUuid.storyUuid else '',
-                    "intro": hot.audioUuid.storyUuid.intro if hot.audioUuid.storyUuid else ''
-                }
             hotList.append({
                 "uuid": hot.audioUuid.uuid,
                 "name": hot.audioUuid.name if hot.audioUuid.name else '',
                 "icon": hot.audioUuid.bgIcon if hot.audioUuid.bgIcon else '',
-                "remarks": hot.audioUuid.remarks if hot.audioUuid.remarks else '',
-                "story": story,
+                "content": hot.audioUuid.remarks if hot.audioUuid.remarks else '',
                 "type": '',
                 "target": '',
             })
@@ -670,21 +643,11 @@ def index_list(request):
         isDelete=False).order_by("-playTimes").all()[:6]
     if audios:
         for audio in audios:
-            story = None
-            if audio.audioStoryType:
-                story = {
-                    "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                    "name": audio.storyUuid.name if audio.storyUuid else '',
-                    "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                    "content": audio.storyUuid.content if audio.storyUuid else '',
-                    "intro": audio.storyUuid.intro if audio.storyUuid else ''
-                }
             likeList.append({
                 "uuid": audio.uuid,
                 "name": audio.name if audio.name else '',
                 "icon": audio.bgIcon if audio.bgIcon else '',
-                "remarks": audio.remarks if audio.remarks else '',
-                "story": story,
+                "content": audio.remarks if audio.remarks else '',
                 "type": '',
                 "target": ''
             })
@@ -1048,28 +1011,16 @@ def index_category_result(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    period = data.get('period', '')
-    type = data.get('type', '')
-    function = data.get('function', '')
-    scenario = data.get('scenario', '')
+    categoryStr = data.get('categoryStr', '')
+    if not categoryStr:
+        return http_return(400, '参数错误')
+    categoryList = categoryStr.split('*')
     audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False)
-    user = User.objects.filter(status="normal")
-    if period:
-        ageList = period.split(',')
-        audio = audio.filter(tags__uuid__in=ageList)
-        user = user.filter(useAudioUuid__tags__uuid__in=ageList)
-    if type:
-        classList = type.split(',')
-        audio = audio.filter(tags__uuid__in=classList)
-        user = user.filter(useAudioUuid__tags__uuid__in=classList)
-    if function:
-        functionList = function.split(',')
-        audio = audio.filter(tags__uuid__in=functionList)
-        user = user.filter(useAudioUuid__tags__uuid__in=functionList)
-    if scenario:
-        scenarioList = scenario.split(',')
-        audio = audio.filter(tags__uuid__in=scenarioList)
-        user = user.filter(useAudioUuid__tags__uuid__in=scenarioList)
+    user = User.objects.filter(status='normal')
+    for cate in categoryList:
+        tagList = cate.split(',')
+        audio = audio.filter(tags__uuid__in=tagList)
+        user = user.filter(useAudioUuid__tags__uuid__in=tagList)
     audios = audio.order_by("-createTime").all()[:6]
     users = user.order_by('-updateTime').all()[:6]
     audioStoryList = []
@@ -1124,25 +1075,16 @@ def index_category_audiostory(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    period = data.get('period', '')
-    type = data.get('type', '')
-    function = data.get('function', '')
-    scenario = data.get('scenario', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
+    categoryStr = data.get('categoryStr', '')
+    if not categoryStr:
+        return http_return(400, '参数错误')
+    categoryList = categoryStr.split('*')
     audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False)
-    if period:
-        ageList = period.split(',')
-        audio = audio.filter(tags__uuid__in=ageList)
-    if type:
-        classList = type.split(',')
-        audio = audio.filter(tags__uuid__in=classList)
-    if function:
-        functionList = function.split(',')
-        audio = audio.filter(tags__uuid__in=functionList)
-    if scenario:
-        scenarioList = scenario.split(',')
-        audio = audio.filter(tags__uuid__in=scenarioList)
+    for cate in categoryList:
+        tagList = cate.split(',')
+        audio = audio.filter(tags__uuid__in=tagList)
     audios = audio.order_by("-createTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = []
@@ -1186,25 +1128,16 @@ def index_category_user(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    period = data.get('period', '')
-    type = data.get('type', '')
-    function = data.get('function', '')
-    scenario = data.get('scenario', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
-    user = User.objects.filter(status="normal")
-    if period:
-        ageList = period.split(',')
-        user = user.filter(useAudioUuid__tags__uuid__in=ageList)
-    if type:
-        classList = type.split(',')
-        user = user.filter(useAudioUuid__tags__uuid__in=classList)
-    if function:
-        functionList = function.split(',')
-        user = user.filter(useAudioUuid__tags__uuid__in=functionList)
-    if scenario:
-        scenarioList = scenario.split(',')
-        user = user.filter(useAudioUuid__tags__uuid__in=scenarioList)
+    categoryStr = data.get('categoryStr', '')
+    if not categoryStr:
+        return http_return(400, '参数错误')
+    categoryList = categoryStr.split('*')
+    user = User.objects.filter(status='normal')
+    for cate in categoryList:
+        tagList = cate.split(',')
+        user = user.filter(useAudioUuid__tags__uuid__in=tagList)
     users = user.order_by('-updateTime').all()
     total, users = page_index(users, page, pageCount)
     userList = []
@@ -1500,6 +1433,9 @@ def activity_join(request):
     user = User.objects.filter(uuid=selfUuid).first()
     if not user:
         return http_return(400, '未获取到用户信息')
+    checkUser = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=selfUuid).first()
+    if checkUser:
+        return http_return(400, '你已参与过该活动')
     try:
         GameInfo.objects.create(
             uuid=get_uuid(),

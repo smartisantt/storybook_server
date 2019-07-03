@@ -109,7 +109,7 @@ class Operation(BaseModle, models.Model):
     remark = models.CharField(max_length=255, null=True)
 
     class Meta:
-        db_table = "t_operation_record"
+        db_table = "tb_operation_record"
 
 
 class Module(BaseModle, models.Model):

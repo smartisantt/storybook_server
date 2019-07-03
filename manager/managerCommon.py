@@ -647,7 +647,7 @@ def create_session(user, token, loginIP):
         'loginIp': loginIP
     }
     try:
-        caches['default'].set(token, user, USER_SESSION_OVER_TIME)
+        caches['default'].set(token, user, USER_CACHE_OVER_TIME)
     except Exception as e:
         logging.error(str(e))
         return False

@@ -25,7 +25,7 @@ class CustomAuthentication(BaseAuthentication):
             raise AuthenticationFailed('连接Redis失败')
 
 
-        # 缓存有数据  - 写日志
+        # 缓存有数据  没有写登录日志
         if user_info:
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
                 exclude(status="destroy").only('userID').first()
@@ -33,18 +33,18 @@ class CustomAuthentication(BaseAuthentication):
                 raise AuthenticationFailed('没有管理员权限')
 
             # 获取登录ip
-            loginIp = get_ip_address(request)
-            try:
-                LoginLog.objects.create(
-                    uuid=get_uuid(),
-                    ipAddr=loginIp,
-                    userUuid=user,
-                    platform=user_info.get('platform', ''),
-                    isManager=True
-                )
-            except Exception as e:
-                logging.error(str(e))
-                raise AuthenticationFailed('保存日志失败')
+            # loginIp = get_ip_address(request)
+            # try:
+            #     LoginLog.objects.create(
+            #         uuid=get_uuid(),
+            #         ipAddr=loginIp,
+            #         userUuid=user,
+            #         platform=user_info.get('platform', ''),
+            #         isManager=True
+            #     )
+            # except Exception as e:
+            #     logging.error(str(e))
+            #     raise AuthenticationFailed('保存日志失败')
         # 缓存中没有数据 - 校验token -  数据库中是否存有此管理员信息 -写日志- 写入缓存
         if not user_info:
             api = Api()
@@ -52,7 +52,6 @@ class CustomAuthentication(BaseAuthentication):
             if not user_info:
                 raise AuthenticationFailed('token已过期')
 
-            # 记录登录ip,存入缓存
             user = User.objects.filter(userID=user_info.get('userId', '') , roles='adminUser').\
             exclude(status="destroy").first()
             if not user:
@@ -60,7 +59,7 @@ class CustomAuthentication(BaseAuthentication):
 
             loginIp = get_ip_address(request)
             if not create_session(user, token, loginIp):
-                raise AuthenticationFailed('用户不存在')
+                raise AuthenticationFailed('写缓存失败')
 
             # 如果有登陆出现，则存登录日志
             try:
@@ -74,4 +73,4 @@ class CustomAuthentication(BaseAuthentication):
             except Exception as e:
                 logging.error(str(e))
                 raise AuthenticationFailed('保存日志失败')
-        return None, None
+        return user, token

@@ -637,13 +637,13 @@ def request_body(request, method='GET'):
     return data
 
 
-def create_session(user_data, token, loginIP):
+def create_session(user, token, loginIP):
     """用户信息保存至caches"""
     user = {
-        'nickName': user_data.nickName or '',
-        'uuid': user_data.uuid,
-        'userId': user_data.userID,
-        'tel': user_data.tel,
+        'nickName': user.nickName or '',
+        'uuid': user.uuid,
+        'userId': user.userID,
+        'tel': user.tel,
         'loginIp': loginIP
     }
     try:

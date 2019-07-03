@@ -35,14 +35,13 @@ class CustomAuthentication(BaseAuthentication):
             # 获取登录ip
             loginIp = get_ip_address(request)
             try:
-                log = LoginLog(
+                LoginLog.objects.create(
                     uuid=get_uuid(),
                     ipAddr=loginIp,
                     userUuid=user,
-                    platform= '',
-                    isManager = True
+                    platform=user_info.get('platform', ''),
+                    isManager=True
                 )
-                log.save()
             except Exception as e:
                 logging.error(str(e))
                 raise AuthenticationFailed('保存日志失败')
@@ -51,28 +50,28 @@ class CustomAuthentication(BaseAuthentication):
             api = Api()
             user_info = api.check_token(token)
             if not user_info:
-                raise AuthenticationFailed('未获取到用户信息')
+                raise AuthenticationFailed('token已过期')
 
             # 记录登录ip,存入缓存
-            user_data = User.objects.filter(userID=user_info.get('userId', '') , roles='adminUser').\
+            user = User.objects.filter(userID=user_info.get('userId', '') , roles='adminUser').\
             exclude(status="destroy").first()
-            if not user_data:
+            if not user:
                 raise AuthenticationFailed('没有管理员权限')
 
             loginIp = get_ip_address(request)
-            if not create_session(user_data, token, loginIp):
+            if not create_session(user, token, loginIp):
                 raise AuthenticationFailed('用户不存在')
 
             # 如果有登陆出现，则存登录日志
             try:
-                log = LoginLog(
+                LoginLog.objects.create(
                     uuid=get_uuid(),
                     ipAddr=user_info.get('loginIp', ''),
-                    userUuid=user_data,
-                    platform=user_info['data'].get('platform', ''),
+                    userUuid=user,
+                    platform=user_info.get('platform', ''),
+                    isManager = True
                 )
-                log.save()
             except Exception as e:
                 logging.error(str(e))
-                return http_return(400, '日志保存失败')
+                raise AuthenticationFailed('保存日志失败')
         return None, None

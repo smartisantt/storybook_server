@@ -172,7 +172,7 @@ def total_data(request):
         # 新增用户人数
         newUsers = User.objects.filter(createTime__range=(t1, t2)).exclude(status='destroy').count()
         # 活跃用户人数
-        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id').\
+        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).values('userUuid_id').\
             annotate(Count('userUuid_id')).count()
         # 新增音频数
         newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
@@ -281,7 +281,7 @@ def total_data(request):
             graph1 = []
 
         # 活跃用户
-        graph2 = LoginLog.objects.filter(createTime__range=(t1, t2)). \
+        graph2 = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False). \
             extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}). \
             values('time').annotate(userNum=Count('createTime', distinct=True)).values('time', 'userNum')
         if graph2:

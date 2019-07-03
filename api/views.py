@@ -1462,7 +1462,7 @@ def activity_join(request):
     user = User.objects.filter(uuid=selfUuid).first()
     if not user:
         return http_return(400, '未获取到用户信息')
-    checkUser = GameInfo.objects.filter(uuid=activityUuid, userUuid__uuid=selfUuid).first()
+    checkUser = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=selfUuid).first()
     if checkUser:
         return http_return(400, '你已参与过该活动')
     try:

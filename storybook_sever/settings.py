@@ -262,4 +262,8 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'utils.renderer.MyJsonRenderer',
     ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'manager.auths.CustomAuthentication',
+    ),
+    'EXCEPTION_HANDLER': 'utils.custom_exceptions.custom_exception_handler'
 }

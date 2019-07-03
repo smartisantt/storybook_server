@@ -637,6 +637,23 @@ def request_body(request, method='GET'):
     return data
 
 
+def create_session(user_data, token, loginIP):
+    """用户信息保存至caches"""
+    user = {
+        'nickName': user_data.nickName or '',
+        'uuid': user_data.uuid,
+        'userId': user_data.userID,
+        'tel': user_data.tel,
+        'loginIp': loginIP
+    }
+    try:
+        caches['default'].set(token, user, USER_SESSION_OVER_TIME)
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    return True
+
+
 
 
 if __name__ == '__main__':

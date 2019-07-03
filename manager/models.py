@@ -76,7 +76,7 @@ class Feedback(BaseModle, models.Model):
     """
     用户反馈表
     """
-    type = models.IntegerField(max_length=26, null=True)  # 反馈问题类型 1产品建议 2功能异常 3其他问题
+    type = models.IntegerField(null=True)  # 反馈问题类型 1产品建议 2功能异常 3其他问题
     content = models.CharField(max_length=1024, null=True)
     icon = models.CharField(max_length=1024, null=True)
     tel = models.CharField(max_length=20, null=True)

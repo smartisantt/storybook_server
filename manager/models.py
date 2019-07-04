@@ -76,7 +76,7 @@ class Feedback(BaseModle, models.Model):
     """
     用户反馈表
     """
-    type = models.IntegerField(max_length=26, null=True)  # 反馈问题类型 1产品建议 2功能异常 3其他问题
+    type = models.IntegerField(null=True)  # 反馈问题类型 1产品建议 2功能异常 3其他问题
     content = models.CharField(max_length=1024, null=True)
     icon = models.CharField(max_length=1024, null=True)
     tel = models.CharField(max_length=20, null=True)
@@ -94,8 +94,8 @@ class LoginLog(BaseModle, models.Model):
     ipAddr = models.CharField(max_length=126, verbose_name='IP地址', null=True)
     devCode = models.CharField(max_length=256, verbose_name='设备编号', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='longinLogUuid', to_field='uuid')
-    platform = models.CharField(max_length=126, verbose_name='登录平台', null=True),    # ANDROID  / IOS / H5 / PC / WEAPP
-    isManager = models.BooleanField(default=False)      # 0 客户端  1 是后台管理端
+    platform = models.CharField(max_length=126, verbose_name='登录平台', null=True)    # ANDROID  / IOS / H5 / PC / WEAPP
+    isManager = models.BooleanField(default=False)      # 0 客户端登录  1 是后台管理端
 
     class Meta:
         db_table = 'tb_login_log'

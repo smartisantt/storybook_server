@@ -24,7 +24,7 @@ class CustomAuthentication(BaseAuthentication):
             logging.error(str(e))
             raise AuthenticationFailed('连接Redis失败')
 
-
+        user = None
         # 缓存有数据  没有写登录日志
         if user_info:
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
@@ -52,7 +52,7 @@ class CustomAuthentication(BaseAuthentication):
             if not user_info:
                 raise AuthenticationFailed('token已过期')
 
-            user = User.objects.filter(userID=user_info.get('userId', '') , roles='adminUser').\
+            user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
             exclude(status="destroy").first()
             if not user:
                 raise AuthenticationFailed('没有管理员权限')
@@ -67,7 +67,7 @@ class CustomAuthentication(BaseAuthentication):
                     uuid=get_uuid(),
                     ipAddr=user_info.get('loginIp', ''),
                     userUuid=user,
-                    platform=user_info.get('platform', ''),
+                    userAgent=request.META.get('HTTP_USER_AGENT', ''),
                     isManager = True
                 )
             except Exception as e:

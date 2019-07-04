@@ -43,39 +43,41 @@ def login(request):
     user_data = caches['default'].get(token)
     # 缓存有数据,则在缓存中拿数据，登录日志添加新数据
     if user_data:
+
+        # 登录前更新用户状态
+        currentTime = datetime.now()
+        # 到了生效时间
+        User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal"). \
+            update(status=F("settingStatus"), updateTime=currentTime)
+        # 过了结束时间
+        User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
+            update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
+
+        # 获取缓存用户信息
+        user_info = caches['default'].get(token)
+        user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
+            exclude(status="destroy").only('userID').first()
+        role = user.roles
+        status = user.status
+        if status == 'forbbiden_login':
+            return http_return(400, '此用户被禁止登录')
         try:
-            # 登录前更新用户状态
-            currentTime = datetime.now()
-            # 到了生效时间
-            User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal"). \
-                update(status=F("settingStatus"), updateTime=currentTime)
-            # 过了结束时间
-            User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
-                update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
-
-            # 获取缓存用户信息
-            user_data = caches['default'].get(token)
-            user = User.objects.filter(userID=user_data.get('userID', '')).\
-                exclude(status="destroy").only('userID').first()
-            role = user.roles
-            status = user.status
-            if status == 'forbbiden_login':
-                return http_return(400, '此用户被禁止登录')
-
             # 获取登录ip
             loginIp = get_ip_address(request)
             # 登录成功生成登录日志，缓存存入信息
             loginLog = LoginLog(
                 uuid = get_uuid(),
                 ipAddr = loginIp,
-                userUuid = user
+                userUuid = user,
+                userAgent=request.META.get('HTTP_USER_AGENT', ''),
+                isManager=True
             )
             loginLog.save()
 
         except Exception as e:
             logging.error(str(e))
             return http_return(400, '登陆失败')
-        return http_return(200, '登陆成功', {'roles': role})
+        return http_return(200, 'OK', {'roles': role})
     # 缓存中没有数据
     if not user_data:
         api = Api()
@@ -89,49 +91,48 @@ def login(request):
             userID = user_info.get('userId', '')
             if not userID:
                 return http_return(400, '参数错误')
-            user = User.objects.filter(userID=userID).only('userID').first()
-            # 状态 normal  destroy  forbbiden_login  forbbiden_say
-            if user and user.status == 'destroy':
-                return http_return(400, '无此用户')
-            if user and user.status == 'forbbiden_login':
-                return http_return(400, '此用户被禁止登录')
+            user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser'). \
+                exclude(status="destroy").first()
 
-
-            # 当前表中没有此用户信息则在数据库中创建
             if not user:
-                user = User(
-                    uuid=get_uuid(),
-                    tel=user_info.get('phone', ''),
-                    userID=userID,
-                    nickName=user_info.get('wxNickname', ''),
-                    roles="normalUser",
-                    avatar=user_info.get('wxAvatarUrl', ''),
-                    gender=user_info.get('wxSex', 0),
-                    status='normal'
-                )
-                try:
-                    with transaction.atomic():
-                        user.save()
-                except Exception as e:
-                    logging.error(str(e))
-                    return http_return(400, '保存失败')
-            user = User.objects.filter(userID=userID).exclude(status__in=['destroy','forbbiden_login']).first()
-            print(user.uuid)
-            role = user.roles
+                return http_return(400, '没有权限')
+            # 当前表中没有此用户信息则在数据库中创建
+            # if not user:
+            #     user = User(
+            #         uuid=get_uuid(),
+            #         tel=user_info.get('phone', ''),
+            #         userID=userID,
+            #         nickName=user_info.get('wxNickname', ''),
+            #         roles="normalUser",
+            #         avatar=user_info.get('wxAvatarUrl', ''),
+            #         gender=user_info.get('wxSex', 0),
+            #         status='normal'
+            #     )
+            #     try:
+            #         with transaction.atomic():
+            #             user.save()
+            #     except Exception as e:
+            #         logging.error(str(e))
+            #         return http_return(400, '保存失败')
+            # user = User.objects.filter(userID=userID).exclude(status__in=['destroy','forbbiden_login']).first()
+            # print(user.uuid)
+            # role = user.roles
 
             # 写入缓存
-            if not create_cache(user, token):
+            loginIp = get_ip_address(request)
+            # if not create_cache(user, token):
+            if not create_session(user, token, loginIp):
                 return http_return(400, '用户不存在')
             try:
                 with transaction.atomic():
-                    loginLog_uuid = get_uuid()
-                    loginLog = LoginLog(
-                        uuid=loginLog_uuid,
+                    LoginLog.objects.create(
+                        uuid=get_uuid(),
                         ipAddr=user_info.get('loginIp', ''),
-                        userUuid=user
+                        userUuid=user,
+                        userAgent=request.META.get('HTTP_USER_AGENT', ''),
+                        isManager=True
                     )
-                    loginLog.save()
-                    return http_return(200, '登陆成功', {'roles': role})
+                    return http_return(200, '登陆成功', {'roles': 'adminUser'})
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '保存日志失败')

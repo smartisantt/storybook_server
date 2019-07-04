@@ -2341,7 +2341,7 @@ class FeedbackView(ListAPIView):
 
 
 # 客服处理
-@check_identify
+
 def reply(request):
     data = request_body(request, 'POST')
     if not data:

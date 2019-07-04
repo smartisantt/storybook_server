@@ -451,7 +451,7 @@ def check_identify(func):
             api = Api()
             user_info = api.check_token(token)
             if not user_info:
-                return http_return(400, '未获取到用户信息')
+                return http_return(400, '无效token')
 
             # 记录登录ip,存入缓存
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser'). \

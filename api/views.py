@@ -1291,7 +1291,7 @@ def activity_detail(request):
         "nickname": user.nickName if user.nickName else '',
         "status": status,
         "rank": rank,
-        "score": score,
+        "score": round(score, 1),
     }
     return http_return(200, '成功', {"activityInfo": activityInfo, "userInfo": userInfo})
 
@@ -1327,6 +1327,7 @@ def activity_rank(request):
     total, games = page_index(games, page, pageCount)
     activityRankList = []
     for game in games:
+        score = praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes
         activityRankList.append({
             "publisher": {
                 "uuid": game.userUuid.uuid if game.userUuid else '',
@@ -1337,7 +1338,7 @@ def activity_rank(request):
                 "uuid": game.audioUuid.uuid if game.audioUuid else '',
                 "name": game.audioUuid.name if game.audioUuid else '',
             },
-            "score": praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes,
+            "score": round(score, 1),
         })
     return http_return(200, '成功', {"total": total, "list": activityRankList})
 
@@ -1738,5 +1739,3 @@ def advertising_list(request):
         "target": adv.target,
     }
     return http_return(200, '成功', advobj)
-
-

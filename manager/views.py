@@ -4,11 +4,12 @@
 # Create your views here.
 
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import authentication_classes
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 from functools import reduce
 
-
+from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter, \
     AdFilter, FeedbackFilter
@@ -150,6 +151,8 @@ def total_data(request):
     startTimestamp = data.get('startTime', '')
     endTimestamp = data.get('endTime', '')
 
+    if not all([isinstance(startTimestamp, int), isinstance(endTimestamp, int)]):
+        return http_return(400, '时间格式错误')
     if startTimestamp and endTimestamp:
         startTimestamp = int(startTimestamp/1000)
         endTimestamp = int(endTimestamp/1000)
@@ -2338,6 +2341,7 @@ class FeedbackView(ListAPIView):
 
 
 # 客服处理
+@check_identify
 def reply(request):
     data = request_body(request, 'POST')
     if not data:
@@ -2346,6 +2350,9 @@ def reply(request):
     replyInfo = data.get('replyInfo', '')
     if not all([uuid, replyInfo]):
         return http_return(400, '参数错误')
+    adminUserUuid = data['_cache'].get('uuid')
+    if not adminUserUuid:
+        return http_return(400, '没有管理员信息')
 
     feedback = Feedback.objects.filter(uuid=uuid, status=0).first()
     if not feedback:
@@ -2357,7 +2364,14 @@ def reply(request):
             feedback.replyInfo = replyInfo
             feedback.status = 1
             feedback.save()
-            # 关联用户操作记录
+            # 记录哪个管理员回复了什么
+            Operation.objects.create(
+                uuid = get_uuid(),
+                userUuid = adminUserUuid,
+                operation = 'create',
+                objectUuid = uuid,
+                remark = replyInfo
+            )
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))

@@ -172,7 +172,7 @@ def total_data(request):
         # 新增用户人数
         newUsers = User.objects.filter(createTime__range=(t1, t2)).exclude(status='destroy').count()
         # 活跃用户人数
-        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2)).values('userUuid_id').\
+        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).values('userUuid_id').\
             annotate(Count('userUuid_id')).count()
         # 新增音频数
         newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
@@ -281,7 +281,7 @@ def total_data(request):
             graph1 = []
 
         # 活跃用户
-        graph2 = LoginLog.objects.filter(createTime__range=(t1, t2)). \
+        graph2 = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False). \
             extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}). \
             values('time').annotate(userNum=Count('createTime', distinct=True)).values('time', 'userNum')
         if graph2:
@@ -1404,9 +1404,9 @@ def add_ad(request):
     icon = data.get('icon', '')
     type = data.get('type', '')
     target = data.get('target', '')
-    orderNum = data.get('ordernum', '')
-    startTime = data.get('starttime', '')
-    endTime = data.get('endtime', '')
+    orderNum = data.get('orderNum', '')
+    startTime = data.get('startTime', '')
+    endTime = data.get('endTime', '')
     if not all([name, icon, type in range(0, 5), startTime, orderNum, endTime, target]):
         return http_return(400, '参数错误')
     if Ad.objects.filter(name=name, isDelete=False).exists():
@@ -1453,9 +1453,9 @@ def modify_ad(request):
     icon = data.get('icon', '')
     type = data.get('type', '')
     target = data.get('target', '')
-    orderNum = data.get('ordernum', '')
-    startTime = data.get('starttime', '')
-    endTime = data.get('endtime', '')
+    orderNum = data.get('orderNum', '')
+    startTime = data.get('startTime', '')
+    endTime = data.get('endTime', '')
     if not all([uuid, name, icon, type in range(0, 5), startTime, orderNum, endTime, target]):
         return http_return(400, '参数错误')
 
@@ -2227,9 +2227,9 @@ def modify_cycle_banner(request):
     icon = data.get('icon', '')
     type = data.get('type', '')
     target = data.get('target', '')
-    orderNum = data.get('ordernum', '')
-    startTime = data.get('starttime', '')
-    endTime = data.get('endtime', '')
+    orderNum = data.get('orderNum', '')
+    startTime = data.get('startTime', '')
+    endTime = data.get('endTime', '')
     if not all([uuid, name, icon, type in range(0, 5), startTime, orderNum, endTime, target]):
         return http_return(400, '参数错误')
 

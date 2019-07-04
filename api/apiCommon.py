@@ -138,6 +138,14 @@ def check_identify(func):
                 logging.error(str(e))
                 return http_return(400, '日志保存失败')
 
+        selfUuid = user_info.get('uuid')
+        nowDatetime = datetime.datetime.now()
+        selfUser = User.objects.filter(uuid=selfUuid, startTime__lte=nowDatetime, endTime__gte=nowDatetime,
+                                       settingStatus='forbbiden_login').first()
+        if selfUser:
+            caches['api'].delete(token)
+            return http_return(400, '禁止登陆，请联系管理员')
+
         return func(request)
 
     return wrapper
@@ -185,3 +193,30 @@ def save_search(data):
             logging(str(e))
             return False
     return True
+
+
+def forbbiden_say(func):
+    """
+    验证禁言装饰器
+    :param func:
+    :return:
+    """
+
+    def wrapper(request):
+        token = request.META.get('HTTP_TOKEN')
+        try:
+            user_info = caches['api'].get(token)
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '连接redis失败')
+        selfUuid = user_info.get('uuid')
+        nowDatetime = datetime.datetime.now()
+        selfUser = User.objects.filter(uuid=selfUuid, startTime__lte=nowDatetime, endTime__gte=nowDatetime,
+                                       settingStatus='forbbiden_say').first()
+        if selfUser:
+            caches['api'].delete(token)
+            return http_return(400, '禁止操作，请联系管理员')
+
+        return func(request)
+
+    return wrapper

@@ -177,6 +177,7 @@ def recording_bgmusic_list(request):
     return http_return(200, '成功', {"total": total, "list": bgmList})
 
 
+@forbbiden_say
 @check_identify
 def recording_send(request):
     """
@@ -202,6 +203,8 @@ def recording_send(request):
     audioStoryType = False
     if storyUuid:
         story = Story.objects.filter(uuid=storyUuid).first()
+        if not story:
+            return http_return(400, '模板信息不存在')
         audioStoryType = True
     bgm = None
     if bgmUuid:

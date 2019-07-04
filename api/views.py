@@ -7,7 +7,6 @@ from django.db.models import Q
 
 from api.ssoSMS.sms import send_sms
 from common.common import *
-from manager.models import *
 from api.apiCommon import *
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
@@ -1583,8 +1582,11 @@ def personal_history_del(request):
     if not data:
         return http_return(400, '参数错误')
     historyUuidList = data.get('historyUuidList', '')
+    if not historyUuidList:
+        return http_return(400, '参数错误')
     try:
-        Behavior.objects.filter(uuid__in=historyUuidList).delete()
+        with transaction.atomic():
+            Behavior.objects.filter(uuid__in=historyUuidList).delete()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '清空失败')

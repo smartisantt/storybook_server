@@ -178,68 +178,6 @@ def get_weekday_list(start_time, end_time):
 
 
 
-def count_prices(_list, price, date_list, _resource, total_devices, total_price):
-    """
-
-    :param _list: 时间列表
-    :param price: 净价
-    :param date_list: 需要计算的全部时间列表
-    :param _resource: 资源 obj
-    :param total_devices: 设备总数
-    :param total_price: 累计总价
-    :return: 剩余时间列表， 累计总价
-    """
-
-    com_list = list(set(date_list) & set(_list))
-    date_list = list(set(date_list) ^ set(com_list))
-    h_days = len(com_list)
-    total_price += h_days * price * (_resource.holidayNum + 100) / 100 * total_devices
-    return date_list, total_price
-
-
-def first_last_day(now=datetime.datetime.now()):
-    """
-    获取某天的开始和结束时间
-    :param now:
-    :return:
-    """
-    day = now.day
-    year = now.year
-    month = now.month
-    day_begin = '%d-%02d-%02d 00:00:00' % (year, month, day)
-    day_end = '%d-%02d-%02d 23:59:59' % (year, month, day)
-    day_begin = datetime.datetime.strptime(day_begin, "%Y-%m-%d %H:%M:%S")
-    day_end = datetime.datetime.strptime(day_end, "%Y-%m-%d %H:%M:%S")
-    return day_begin, day_end
-
-
-def first_last_day_for_month(myDate=datetime.datetime.now()):
-    """
-    获取本月第一天与最后一天
-    :return:datetime.datetime
-    """
-
-    if myDate and not isinstance(myDate, datetime.datetime):
-        try:
-            dates = myDate.split('-')
-            year = int(dates[0])
-            month = int(dates[1])
-            wday, monthRange = calendar.monthrange(year, month)
-            month_begin = '%d-%02d-01 00:00:00' % (year, month)
-            month_end = '%d-%02d-%02d 23:59:59' % (year, month, monthRange)
-            month_begin = datetime.datetime.strptime(month_begin, "%Y-%m-%d %H:%M:%S")
-            month_end = datetime.datetime.strptime(month_end, "%Y-%m-%d %H:%M:%S")
-        except Exception as e:
-            return myDate, myDate
-    else:
-        if not myDate or not isinstance(myDate, datetime.datetime):
-            myDate = datetime.datetime.now()
-        wday, monthRange = calendar.monthrange(myDate.year, myDate.month)
-        month_begin = '%d-%02d-01 00:00:00' % (myDate.year, myDate.month)
-        month_end = '%d-%02d-%02d 23:59:59' % (myDate.year, myDate.month, monthRange)
-        month_begin = datetime.datetime.strptime(month_begin, "%Y-%m-%d %H:%M:%S")
-        month_end = datetime.datetime.strptime(month_end, "%Y-%m-%d %H:%M:%S")
-    return month_begin, month_end
 
 
 def page_index(myList, page=1, limit=10):
@@ -290,27 +228,6 @@ def http_return(code, msg='', info=None):
     return HttpResponse(json.dumps(data), status=code)
 
 
-def datetime_to_string_object(data):
-    """
-    将传入的对象的数据库datetime类型转成字符串
-    :param data:
-    :return:
-    """
-
-    if isinstance(data, list):
-        for index, _d in enumerate(data):
-            if isinstance(_d, datetime.datetime):
-                data[index] = datetime_to_string(_d)
-            if isinstance(_d, dict):
-                for k, v in _d.items():
-                    if isinstance(v, datetime.datetime):
-                        _d[k] = datetime_to_string(v)
-    if isinstance(data, dict):
-        for k, v in data.items():
-            if isinstance(v, datetime.datetime):
-                data[k] = datetime_to_string(v)
-
-    return data
 
 
 # def check_shop(func):
@@ -357,33 +274,6 @@ def datetime_to_string_object(data):
 #     return wrapper
 
 
-def check_admin_rule(func):
-    """
-    权限校验
-    :param func:
-    :return:
-    """
-
-    def wrapper(request):
-        if version in ['test', 'debug']:
-            pass
-        else:
-            token = request.META.get('HTTP_TOKEN')
-            user_rule = request.path
-            user_info = cache.get(token)
-            if not user_info:
-                return http_return(400, '登录已过期')
-            user_uuid = user_info.get('uuid')
-            if cache.get(user_uuid):
-                return http_return(299, '您的权限发生改变，请重新登录')
-            rule_list = user_info.get('user_rule', [])
-            if user_rule not in rule_list:
-                return http_return(400, '用户无此权限')
-            cache.set(token, user_info, USER_CACHE_OVER_TIME)
-        return func(request)
-
-    return wrapper
-
 
 def create_cache(user_info, token):
     """
@@ -412,42 +302,42 @@ def create_cache(user_info, token):
     return True
 
 
-def request_body(request):
-    """
-    转换request.body
-    :param request:
-    :return:
-    """
-    if not request:
-        return request
-    try:
-        token = request.META.get('HTTP_TOKEN')
-        if not token:
-            return http_return(400, '非法请求')
-        data = {
-            '_cache': cache.get(token)
-        }
-        if request.method == 'POST':
-            if request.body:
-                try:
-                    for key, value in json.loads(request.body).items():
-                        data[key] = value
-                except Exception as e:
-                    logging.error(str(e))
-                    pass
-            if request.POST:
-                for key, value in request.POST.items():
-                    data[key] = value
-        elif request.method == 'GET':
-            for key, value in request.GET.items():
-                data[key] = value
-        else:
-            pass
-
-    except Exception as e:
-        logging.error(str(e))
-        return False
-    return data
+# def request_body(request):
+#     """
+#     转换request.body
+#     :param request:
+#     :return:
+#     """
+#     if not request:
+#         return request
+#     try:
+#         token = request.META.get('HTTP_TOKEN')
+#         if not token:
+#             return http_return(400, '非法请求')
+#         data = {
+#             '_cache': cache.get(token)
+#         }
+#         if request.method == 'POST':
+#             if request.body:
+#                 try:
+#                     for key, value in json.loads(request.body).items():
+#                         data[key] = value
+#                 except Exception as e:
+#                     logging.error(str(e))
+#                     pass
+#             if request.POST:
+#                 for key, value in request.POST.items():
+#                     data[key] = value
+#         elif request.method == 'GET':
+#             for key, value in request.GET.items():
+#                 data[key] = value
+#         else:
+#             pass
+#
+#     except Exception as e:
+#         logging.error(str(e))
+#         return False
+#     return data
 
 
 def request_body_not_token(request):
@@ -597,44 +487,44 @@ def check_identify(func):
     return wrapper
 
 
-def request_body(request, method='GET'):
-    """
-    转换request.body
-    :param request:
-    :return:
-    """
-    if not request:
-        return request
-    if request.method != method:
-        return False
-    try:
-        token = request.META.get('HTTP_TOKEN')
-        if not token:
-            return False
-        data = {
-            '_cache': caches['default'].get(token)
-        }
-        if request.method == 'POST':
-            if request.body:
-                try:
-                    for key, value in json.loads(request.body.decode('utf-8')).items():
-                        data[key] = value
-                except Exception as e:
-                    logging.error(str(e))
-                    pass
-            if request.POST:
-                for key, value in request.POST.items():
-                    data[key] = value
-        elif request.method == 'GET':
-            for key, value in request.GET.items():
-                data[key] = value
-        else:
-            pass
-
-    except Exception as e:
-        logging.error(str(e))
-        return False
-    return data
+# def request_body(request, method='GET'):
+#     """
+#     转换request.body
+#     :param request:
+#     :return:
+#     """
+#     if not request:
+#         return request
+#     if request.method != method:
+#         return False
+#     try:
+#         token = request.META.get('HTTP_TOKEN')
+#         if not token:
+#             return False
+#         data = {
+#             '_cache': caches['default'].get(token)
+#         }
+#         if request.method == 'POST':
+#             if request.body:
+#                 try:
+#                     for key, value in json.loads(request.body.decode('utf-8')).items():
+#                         data[key] = value
+#                 except Exception as e:
+#                     logging.error(str(e))
+#                     pass
+#             if request.POST:
+#                 for key, value in request.POST.items():
+#                     data[key] = value
+#         elif request.method == 'GET':
+#             for key, value in request.GET.items():
+#                 data[key] = value
+#         else:
+#             pass
+#
+#     except Exception as e:
+#         logging.error(str(e))
+#         return False
+#     return data
 
 
 def create_session(user, token, loginIP):

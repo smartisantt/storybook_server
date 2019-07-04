@@ -92,7 +92,7 @@ def check_identify(func):
             api = Api()
             user_info = api.check_token(token)
             if not user_info:
-                return http_return(401, '未获取到用户信息')
+                return http_return(401, '登录失效')
             else:
                 # 记录登录ip,存入缓存
                 loginIP = user_info.get('loginIp', '')

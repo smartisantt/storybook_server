@@ -1012,15 +1012,14 @@ def index_category_result(request):
     if not data:
         return http_return(400, '参数错误')
     categoryStr = data.get('categoryStr', '')
-    if not categoryStr:
-        return http_return(400, '参数错误')
-    categoryList = categoryStr.split('*')
     audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False)
     user = User.objects.filter(status='normal')
-    for cate in categoryList:
-        tagList = cate.split(',')
-        audio = audio.filter(tags__uuid__in=tagList)
-        user = user.filter(useAudioUuid__tags__uuid__in=tagList)
+    if categoryStr:
+        categoryList = categoryStr.split('*')
+        for cate in categoryList:
+            tagList = cate.split(',')
+            audio = audio.filter(tags__uuid__in=tagList)
+            user = user.filter(useAudioUuid__tags__uuid__in=tagList)
     audios = audio.order_by("-createTime").all()[:6]
     users = user.order_by('-updateTime').all()[:6]
     audioStoryList = []
@@ -1078,13 +1077,12 @@ def index_category_audiostory(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     categoryStr = data.get('categoryStr', '')
-    if not categoryStr:
-        return http_return(400, '参数错误')
-    categoryList = categoryStr.split('*')
     audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False)
-    for cate in categoryList:
-        tagList = cate.split(',')
-        audio = audio.filter(tags__uuid__in=tagList)
+    if categoryStr:
+        categoryList = categoryStr.split('*')
+        for cate in categoryList:
+            tagList = cate.split(',')
+            audio = audio.filter(tags__uuid__in=tagList)
     audios = audio.order_by("-createTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = []
@@ -1131,13 +1129,12 @@ def index_category_user(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     categoryStr = data.get('categoryStr', '')
-    if not categoryStr:
-        return http_return(400, '参数错误')
-    categoryList = categoryStr.split('*')
     user = User.objects.filter(status='normal')
-    for cate in categoryList:
-        tagList = cate.split(',')
-        user = user.filter(useAudioUuid__tags__uuid__in=tagList)
+    if categoryStr:
+        categoryList = categoryStr.split('*')
+        for cate in categoryList:
+            tagList = cate.split(',')
+            user = user.filter(useAudioUuid__tags__uuid__in=tagList)
     users = user.order_by('-updateTime').all()
     total, users = page_index(users, page, pageCount)
     userList = []
@@ -1738,3 +1735,12 @@ def advertising_list(request):
         "target": adv.target,
     }
     return http_return(200, '成功', advobj)
+
+
+@check_identify
+def logout(request):
+    """
+    登出系统
+    :param request:
+    :return:
+    """

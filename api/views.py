@@ -1740,10 +1740,3 @@ def advertising_list(request):
     return http_return(200, '成功', advobj)
 
 
-@check_identify
-def logout(request):
-    """
-    登出系统
-    :param request:
-    :return:
-    """

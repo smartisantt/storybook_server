@@ -103,10 +103,10 @@ class LoginLog(BaseModle, models.Model):
 
 class Operation(BaseModle, models.Model):
     """后台人员操作记录表"""
-    userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='oUserUuid', to_field='uuid')
+    userUuid = models.CharField(max_length=64, unique=True)
     operation = models.CharField(max_length=255, null=True)     # create retrieve update delete
     objectUuid = models.CharField(max_length=64, unique=True)
-    remark = models.CharField(max_length=255, null=True)
+    remark = models.CharField(max_length=1024, null=True)
 
     class Meta:
         db_table = "tb_operation_record"

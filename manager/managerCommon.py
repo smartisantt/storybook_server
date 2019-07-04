@@ -410,7 +410,7 @@ def request_body(request, method='GET'):
         if not token:
             return False
         data = {
-            '_cache': caches['api'].get(token)
+            '_cache': caches['default'].get(token)
         }
         if request.method == 'POST':
             if request.body:
@@ -435,53 +435,46 @@ def request_body(request, method='GET'):
     return data
 
 
+
 def check_identify(func):
     """身份认证装饰器"""
     def wrapper(request):
         token = request.META.get('HTTP_TOKEN')
-        user_info = caches['default'].get(token)
+        if not token:
+            return http_return(400, '提供有效的身份认证标识')
+        try:
+            user_info = caches['default'].get(token)
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '连接redis失败')
         if not user_info:
             api = Api()
             user_info = api.check_token(token)
             if not user_info:
-                return http_return(400, '未获取到用户信息')
-            else:
-                user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
-                if not user_data:
-                    user_uuid = get_uuid()
-                    version = Version.objects.filter(status="dafault").first()
-                    user = User(
-                        uuid=user_uuid,
-                        tel=user_info.get('phone', ''),
-                        userID=user_info.get('userId', ''),
-                        nickName=user_info.get('wxNickname', ''),
-                        roles="normalUser",
-                        avatar=user_info.get('wxNickname', ''),
-                        gender=user_info.get('wxSex', None),
-                        versionUuid=version if version else None,
-                        status="normal",
-                    )
-                    try:
-                        with transaction.atomic():
-                            user.save()
-                    except Exception as e:
-                        logging.error(str(e))
-                        return http_return(400, '保存失败')
-                    user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
-                try:
-                    user_data.updateTime = datetime.datetime.now()
-                    user_data.save()
-                    log = LoginLog(
-                        uuid=get_uuid(),
-                        ipAddr=user_info.get('loginIp', ''),
-                        userUuid=user_data,
-                    )
-                    log.save()
-                except Exception as e:
-                    logging.error(str(e))
-                if not create_cache(user_info, token):
-                    return http_return(400, '用户不存在')
+                return http_return(400, '无效token')
 
+            # 记录登录ip,存入缓存
+            user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser'). \
+                exclude(status="destroy").only('userID').first()
+            if not user:
+                return http_return(403, '没有管理员权限')
+
+            loginIp = get_ip_address(request)
+
+            if not create_session(user, token, loginIp):
+                return http_return(400, '写缓存失败')
+            # 如果有登陆出现，则存登录日志
+            try:
+                LoginLog.objects.create(
+                    uuid=get_uuid(),
+                    ipAddr=user_info.get('loginIp', ''),
+                    userUuid=user,
+                    userAgent=request.META.get('HTTP_USER_AGENT', ''),
+                    isManager=True
+                )
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '日志保存失败')
         return func(request)
 
     return wrapper
@@ -537,7 +530,7 @@ def create_session(user, token, loginIP):
         'loginIp': loginIP
     }
     try:
-        caches['default'].set(token, user, USER_CACHE_OVER_TIME)
+        caches['default'].set(token, user, timeout=USER_CACHE_OVER_TIME)
     except Exception as e:
         logging.error(str(e))
         return False

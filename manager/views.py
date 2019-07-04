@@ -4,11 +4,12 @@
 # Create your views here.
 
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import authentication_classes
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 from functools import reduce
 
-
+from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter, \
     AdFilter, FeedbackFilter

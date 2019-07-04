@@ -1269,6 +1269,7 @@ def activity_detail(request):
     # 返回参赛状态，如果参赛再返回排名
     status = False
     rank = None
+    score = None
     game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
     if game:
         status = True
@@ -1283,12 +1284,14 @@ def activity_detail(request):
                            type=1).count() + playTimesNum * x.audioUuid.playTimes,
                        reverse=True)
         rank = games.index(game) + 1
+        score = praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes
     userInfo = {
         "uuid": user.uuid,
         "avatar": user.avatar if user.avatar else '',
         "nickname": user.nickName if user.nickName else '',
         "status": status,
-        "rank": rank if rank else '',
+        "rank": rank,
+        "score": score,
     }
     return http_return(200, '成功', {"activityInfo": activityInfo, "userInfo": userInfo})
 
@@ -1324,9 +1327,6 @@ def activity_rank(request):
     total, games = page_index(games, page, pageCount)
     activityRankList = []
     for game in games:
-        name = game.audioUuid.name
-        if game.audioUuid.audioStoryType:
-            name = game.audioUuid.storyUuid.name
         activityRankList.append({
             "publisher": {
                 "uuid": game.userUuid.uuid if game.userUuid else '',
@@ -1335,9 +1335,9 @@ def activity_rank(request):
             },
             "audio": {
                 "uuid": game.audioUuid.uuid if game.audioUuid else '',
-                "name": name if name else '',
+                "name": game.audioUuid.name if game.audioUuid else '',
             },
-            "score": 0.75 * game.audioUuid.bauUuid.filter(type=1).count() + 0.25 * game.audioUuid.playTimes,
+            "score": praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes,
         })
     return http_return(200, '成功', {"total": total, "list": activityRankList})
 

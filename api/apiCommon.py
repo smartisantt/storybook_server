@@ -281,3 +281,12 @@ def audioList_format(audios,data):
             "commentsCount": '',
         })
     return audioStoryList
+
+
+def paginator(page,pageCount):
+    """
+    插件分页
+    :param page:
+    :param pageCount:
+    :return:
+    """

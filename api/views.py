@@ -7,7 +7,6 @@ from django.db.models import Q
 
 from api.ssoSMS.sms import send_sms
 from common.common import *
-from manager.models import *
 from api.apiCommon import *
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
@@ -1269,6 +1268,7 @@ def activity_detail(request):
     # 返回参赛状态，如果参赛再返回排名
     status = False
     rank = None
+    score = None
     game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
     if game:
         status = True
@@ -1283,12 +1283,14 @@ def activity_detail(request):
                            type=1).count() + playTimesNum * x.audioUuid.playTimes,
                        reverse=True)
         rank = games.index(game) + 1
+        score = praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes
     userInfo = {
         "uuid": user.uuid,
         "avatar": user.avatar if user.avatar else '',
         "nickname": user.nickName if user.nickName else '',
         "status": status,
-        "rank": rank if rank else '',
+        "rank": rank,
+        "score": round(score, 1),
     }
     return http_return(200, '成功', {"activityInfo": activityInfo, "userInfo": userInfo})
 
@@ -1324,9 +1326,7 @@ def activity_rank(request):
     total, games = page_index(games, page, pageCount)
     activityRankList = []
     for game in games:
-        name = game.audioUuid.name
-        if game.audioUuid.audioStoryType:
-            name = game.audioUuid.storyUuid.name
+        score = praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes
         activityRankList.append({
             "publisher": {
                 "uuid": game.userUuid.uuid if game.userUuid else '',
@@ -1335,9 +1335,9 @@ def activity_rank(request):
             },
             "audio": {
                 "uuid": game.audioUuid.uuid if game.audioUuid else '',
-                "name": name if name else '',
+                "name": game.audioUuid.name if game.audioUuid else '',
             },
-            "score": 0.75 * game.audioUuid.bauUuid.filter(type=1).count() + 0.25 * game.audioUuid.playTimes,
+            "score": round(score, 1),
         })
     return http_return(200, '成功', {"total": total, "list": activityRankList})
 
@@ -1582,8 +1582,11 @@ def personal_history_del(request):
     if not data:
         return http_return(400, '参数错误')
     historyUuidList = data.get('historyUuidList', '')
+    if not historyUuidList:
+        return http_return(400, '参数错误')
     try:
-        Behavior.objects.filter(uuid__in=historyUuidList).delete()
+        with transaction.atomic():
+            Behavior.objects.filter(uuid__in=historyUuidList).delete()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '清空失败')
@@ -1738,12 +1741,3 @@ def advertising_list(request):
         "target": adv.target,
     }
     return http_return(200, '成功', advobj)
-
-
-@check_identify
-def logout(request):
-    """
-    登出系统
-    :param request:
-    :return:
-    """

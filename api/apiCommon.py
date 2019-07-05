@@ -87,12 +87,12 @@ def check_identify(func):
             user_info = caches['api'].get(token)
         except Exception as e:
             logging.error(str(e))
-            return http_return(400, '连接redis失败')
+            return http_return(400, '服务器连接redis失败')
         if not user_info:
             api = Api()
             user_info = api.check_token(token)
             if not user_info:
-                return http_return(400, '未获取到用户信息')
+                return http_return(401, '登录失效')
             else:
                 # 记录登录ip,存入缓存
                 loginIP = user_info.get('loginIp', '')
@@ -122,10 +122,10 @@ def check_identify(func):
                             user.save()
                     except Exception as e:
                         logging.error(str(e))
-                        return http_return(400, '保存失败')
+                        return http_return(401, '保存失败')
                     user_data = user
                 if not create_session(user_data, token, loginIP):
-                    return http_return(400, '用户不存在')
+                    return http_return(401, '用户不存在')
             # 如果有登陆出现，则存登录日志
             try:
                 log = LoginLog(
@@ -136,7 +136,7 @@ def check_identify(func):
                 log.save()
             except Exception as e:
                 logging.error(str(e))
-                return http_return(400, '日志保存失败')
+                return http_return(401, '日志保存失败')
 
         selfUuid = user_info.get('uuid')
         nowDatetime = datetime.datetime.now()
@@ -144,7 +144,7 @@ def check_identify(func):
                                        settingStatus='forbbiden_login').first()
         if selfUser:
             caches['api'].delete(token)
-            return http_return(400, '禁止登陆，请联系管理员')
+            return http_return(403, '禁止登陆，请联系管理员')
 
         return func(request)
 
@@ -215,7 +215,7 @@ def forbbiden_say(func):
                                        settingStatus='forbbiden_say').first()
         if selfUser:
             caches['api'].delete(token)
-            return http_return(400, '禁止操作，请联系管理员')
+            return http_return(403, '禁止操作，请联系管理员')
 
         return func(request)
 

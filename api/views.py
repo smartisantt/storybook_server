@@ -805,7 +805,7 @@ def search_all(request):
 @check_identify
 def search_each(request):
     """
-    搜索音频
+    搜索单类
     :param request:
     :return:
     """

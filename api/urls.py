@@ -38,11 +38,10 @@ urlpatterns = [
     path('audiostory/category/detail', views.audiostory_category_detail, name='audiostory_category_detail'),  # 分类展示
     path('audiostory/category/list', views.index_category_list, name='index_category_list'),  # 分类标签展示
     path('audiostory/category/result', views.index_category_result, name='index_category_result'),  # 筛选结果
-    path('audiostory/category/audiostory', views.index_category_audiostory, name='index_category_audiostory'),  # 筛选结果
-    path('audiostory/category/user', views.index_category_user, name='index_category_user'),  # 筛选结果
+    path('audiostory/category/each', views.index_category_each, name='index_category_each'),  # 筛选某一类
 
     path('audiostory/praise', views.audiostory_praise, name='audiostory_praise'),  # 点赞作品
-    path('audiostory/like', views.audiostory_like, name='audiostory_cancel_like'),  # 喜欢作品
+    path('audiostory/collection', views.audiostory_like, name='audiostory_cancel_like'),  # 喜欢作品
 
     path('activity/detail', views.activity_detail, name='activity_detail'),  # 活动详情
     path('activity/ranklist', views.activity_rank, name='activity_rank'),  # 活动排行

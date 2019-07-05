@@ -226,14 +226,14 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
         if audioinfo.audioStoryType == False:
             return audioinfo.name
         else:
-            return audioinfo.storyUuid.name
+            return audioinfo.storyUuid.name if audioinfo.storyUuid else None
 
     @staticmethod
     def get_bgIcon(audioinfo):
         if audioinfo.audioStoryType == False:
             return audioinfo.bgIcon
         else:
-            return audioinfo.storyUuid.faceIcon
+            return audioinfo.storyUuid.faceIcon if audioinfo.storyUuid else None
 
 
     class Meta:

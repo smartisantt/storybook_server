@@ -1290,7 +1290,7 @@ def activity_detail(request):
         "nickname": user.nickName if user.nickName else '',
         "status": status,
         "rank": rank,
-        "score": round(score, 1),
+        "score": score,
     }
     return http_return(200, '成功', {"activityInfo": activityInfo, "userInfo": userInfo})
 
@@ -1337,7 +1337,7 @@ def activity_rank(request):
                 "uuid": game.audioUuid.uuid if game.audioUuid else '',
                 "name": game.audioUuid.name if game.audioUuid else '',
             },
-            "score": round(score, 1),
+            "score": score,
         })
     return http_return(200, '成功', {"total": total, "list": activityRankList})
 

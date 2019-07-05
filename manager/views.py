@@ -9,6 +9,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 from functools import reduce
 
+from api.apiCommon import get_default_name
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter, \
@@ -41,19 +42,23 @@ def login(request):
     """登录模块"""
     # 前端传入token ， 先在缓存查找， 如果没有（调用接口查询），
     token = request.META.get('HTTP_TOKEN')
-    user_data = caches['default'].get(token)
-    # 缓存有数据,则在缓存中拿数据，登录日志添加新数据
+    try:
+        user_data = caches['default'].get(token)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(500, '服务器连接redis失败')
+
+
+    # 登录前更新用户状态
+    currentTime = datetime.now()
+    # 到了生效时间
+    User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal"). \
+        update(status=F("settingStatus"), updateTime=currentTime)
+    # 过了结束时间
+    User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
+        update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
+
     if user_data:
-
-        # 登录前更新用户状态
-        currentTime = datetime.now()
-        # 到了生效时间
-        User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal"). \
-            update(status=F("settingStatus"), updateTime=currentTime)
-        # 过了结束时间
-        User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
-            update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
-
         # 获取缓存用户信息
         user_info = caches['default'].get(token)
         user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
@@ -61,7 +66,7 @@ def login(request):
         role = user.roles
         status = user.status
         if status == 'forbbiden_login':
-            return http_return(400, '此用户被禁止登录')
+            return http_return(403, '此用户被禁止登录')
         try:
             # 获取登录ip
             loginIp = get_ip_address(request)
@@ -77,8 +82,9 @@ def login(request):
 
         except Exception as e:
             logging.error(str(e))
-            return http_return(400, '登陆失败')
-        return http_return(200, 'OK', {'roles': role})
+            return http_return(401, '登陆失败')
+        nickName = user.nickName or get_default_name(user.tel, '')
+        return http_return(200, 'OK', {'nickName':nickName, 'roles': role})
     # 缓存中没有数据
     if not user_data:
         api = Api()
@@ -86,18 +92,18 @@ def login(request):
         user_info = api.check_token(token)
 
         if not user_info:
-            return http_return(400, '未获取到用户信息')
+            return http_return(401, '无效token')
         else:
             # 用户表中是否有该用户
             userID = user_info.get('userId', '')
             if not userID:
-                return http_return(400, '参数错误')
+                return http_return(401, '无效token')
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser'). \
                 exclude(status="destroy").first()
 
             if not user:
-                return http_return(400, '没有权限')
-            # 当前表中没有此用户信息则在数据库中创建
+                return http_return(403, '没有权限')
+            # 当前表中没有此用户信息则不在数据库中创建，你又不是管理员
             # if not user:
             #     user = User(
             #         uuid=get_uuid(),
@@ -121,9 +127,8 @@ def login(request):
 
             # 写入缓存
             loginIp = get_ip_address(request)
-            # if not create_cache(user, token):
             if not create_session(user, token, loginIp):
-                return http_return(400, '用户不存在')
+                return http_return(500, '创建缓存失败')
             try:
                 with transaction.atomic():
                     LoginLog.objects.create(
@@ -133,7 +138,9 @@ def login(request):
                         userAgent=request.META.get('HTTP_USER_AGENT', ''),
                         isManager=True
                     )
-                    return http_return(200, '登陆成功', {'roles': 'adminUser'})
+                    role = user.roles or ''
+                    nickName = user.nickName or get_default_name(user.tel, '')
+                    return http_return(200, 'OK', {'nickName': nickName, 'roles': role})
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '保存日志失败')
@@ -151,167 +158,174 @@ def total_data(request):
     startTimestamp = data.get('startTime', '')
     endTimestamp = data.get('endTime', '')
 
-    if startTimestamp and endTimestamp:
-        startTimestamp = int(startTimestamp/1000)
-        endTimestamp = int(endTimestamp/1000)
-    else:
-        return http_return(400, '参数有误')
+    if not all([isinstance(startTimestamp, int), isinstance(endTimestamp, int)]):
+        return http_return(400, '时间格式错误')
+
     # 小于2019-05-30 00:00:00的时间不合法
     if endTimestamp < startTimestamp or endTimestamp <= 1559145600 or startTimestamp <= 1559145600:
         return http_return(400, '无效时间')
-    if startTimestamp and endTimestamp:
-        # 给定时间查询
+    startTimestamp = startTimestamp/1000
+    endTimestamp = endTimestamp/1000
+    try:
         startTime = datetime.fromtimestamp(startTimestamp)
         endTime = datetime.fromtimestamp(endTimestamp)
-        t1 = datetime(startTime.year, startTime.month, startTime.day)
-        t2 = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-        # 用户总人数
-        totalUsers = User.objects.exclude(status='destroy').count()
-        # 音频总数
-        totalAudioStory = AudioStory.objects.filter(isDelete=False).count()
-        # 专辑总数
-        totalAlbums = Album.objects.filter(isDelete=False).count()
-        # 新增用户人数
-        newUsers = User.objects.filter(createTime__range=(t1, t2)).exclude(status='destroy').count()
-        # 活跃用户人数
-        activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).values('userUuid_id').\
-            annotate(Count('userUuid_id')).count()
-        # 新增音频数
-        newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '时间参数错误')
 
-        # 男性
-        male = User.objects.filter(gender=1).exclude(status='destroy').count()
+    t1 = datetime(startTime.year, startTime.month, startTime.day)
+    t2 = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
 
-        # 女性
-        female = User.objects.filter(gender=2).exclude(status='destroy').count()
+    # if (t2-t1).days > 32:
+    #     return http_return(400, '超出时间范围')
 
-        # 未知
-        unkonwGender = User.objects.filter(gender=0).exclude(status='destroy').count()
+    # 用户总人数
+    totalUsers = User.objects.exclude(status='destroy').count()
+    # 音频总数
+    totalAudioStory = AudioStory.objects.filter(isDelete=False).count()
+    # 专辑总数
+    totalAlbums = Album.objects.filter(isDelete=False).count()
+    # 新增用户人数
+    newUsers = User.objects.filter(createTime__range=(t1, t2)).exclude(status='destroy').count()
+    # 活跃用户人数
+    activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).values('userUuid_id').\
+        annotate(Count('userUuid_id')).count()
+    # 新增音频数
+    newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
 
+    # 男性
+    male = User.objects.filter(gender=1).exclude(status='destroy').count()
 
-        # 模板音频
-        aduioStoryCount = AudioStory.objects.filter(
-            isDelete=False, audioStoryType=1, isUpload=1, createTime__range=(t1, t2)).count()
+    # 女性
+    female = User.objects.filter(gender=2).exclude(status='destroy').count()
 
-        # 自由录制
-        freedomStoryCount = AudioStory.objects.filter(
-            isDelete=False, audioStoryType=0, isUpload=1, createTime__range=(t1, t2)).count()
-
-
-        # 儿歌
-        tags1 = Tag.objects.filter(code="RECORDTYPE", name='儿歌').first()
-        tags1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()     # 儿歌作品数
-        user1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-            values('userUuid_id').annotate(Count('userUuid_id')).count()                                #  录音类型人数，去重
-
-        # result = Tag.objects.filter(code="RECORDTYPE").annotate(Count('tagsAudioStory'))
-
-        # 父母学堂
-        tags2 = Tag.objects.filter(code="RECORDTYPE", name='父母学堂').first()
-        tags2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-        user2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-            values('userUuid_id').annotate(Count('userUuid_id')).count()
-
-        # 国学
-        tags3 = Tag.objects.filter(code="RECORDTYPE", name='国学').first()
-        tags3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-        user3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-            values('userUuid_id').annotate(Count('userUuid_id')).count()
-
-        # 英文
-        tags4 = Tag.objects.filter(code="RECORDTYPE", name='英文').first()
-        tags4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-        user4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)). \
-            values('userUuid_id').annotate(Count('userUuid_id')).count()
-
-        # 其他
-        tags5 = Tag.objects.filter(code="RECORDTYPE", name='其他').first()
-        tags5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-        user5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-            values('userUuid_id').annotate(Count('userUuid_id')).count()
-
-        recordTypePercentage = [
-            {'name': '儿歌', 'tagsNum': tags1Count, 'userNum': user1Count},
-            {'name': '儿歌', 'tagsNum': tags2Count, 'userNum': user2Count},
-            {'name': '国学', 'tagsNum': tags3Count, 'userNum': user3Count},
-            {'name': '英文', 'tagsNum': tags4Count, 'userNum': user4Count},
-            {'name': '其他', 'tagsNum': tags5Count, 'userNum': user5Count}
-        ]
+    # 未知
+    unkonwGender = User.objects.filter(gender=0).exclude(status='destroy').count()
 
 
-        # 活跃用户排行
-        data1_list = []
-        # result = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id'))[:1]
-        res = User.objects.annotate(audioStory_count_by_user = Count("useAudioUuid")).order_by('-audioStory_count_by_user')[:5]
-        for index,item in enumerate(res.values()):
-            data = {
-                'orderNum': index+1,
-                'name': item['nickName'],
-                'recordCount': item['audioStory_count_by_user']
-            }
-            data1_list.append(data)
-        # 热门录制排行
-        data2_list = []
-        res = Story.objects.filter(status="normal", createTime__range=(t1, t2)).order_by('-recordNum')[:5]
-        for index,item in enumerate(res.values()):
-            data = {
-                'orderNum': index + 1 or -1,
-                'name': item['name'] or '',
-                'recordNum': item['recordNum'] or 0
-            }
-            data2_list.append(data)
+    # 模板音频
+    aduioStoryCount = AudioStory.objects.filter(
+        isDelete=False, audioStoryType=1, isUpload=1, createTime__range=(t1, t2)).count()
 
-        # 热门播放排行
-        data3_list = []
-        audioStory = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).order_by('-playTimes')[:5]
-        for index,item in enumerate(audioStory):
-            data = {
-                'orderNum': index + 1,
-                'name': item.storyUuid.name if item.audioStoryType else item.name,
-                'playTimes': item.playTimes
-            }
-            data3_list.append(data)
-
-        # 图表数据--新增用户
-        graph1 = User.objects.filter(createTime__range=(t1, t2)).\
-            extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}).\
-            order_by('time').values('time')\
-            .annotate(userNum=Count('createTime')).values('time', 'userNum')
-        if graph1:
-            graph1 = list(graph1)
-        else:
-            graph1 = []
-
-        # 活跃用户
-        graph2 = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False). \
-            extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}). \
-            values('time').annotate(userNum=Count('createTime', distinct=True)).values('time', 'userNum')
-        if graph2:
-            graph2 = list(graph2)
-        else:
-            graph2 = []
+    # 自由录制
+    freedomStoryCount = AudioStory.objects.filter(
+        isDelete=False, audioStoryType=0, isUpload=1, createTime__range=(t1, t2)).count()
 
 
-        return http_return(200, 'OK',
-                           {
-                               'totalUsers': totalUsers,            # 总用户人数
-                               'totalAudioStory': totalAudioStory,  # 音频总数
-                               'totalAlbums': totalAlbums,          # 总的专辑数
-                               'newUsers': newUsers,                # 新增用户人数
-                               'activityUsers': activityUsers,      # 活跃用户人数
-                               'newAudioStory': newAudioStory,      # 新增音频数
-                               'activityUsersRank': data1_list,     # 活跃用户排行
-                               'male': male,                         # 男性
-                               'female': female,                     # 女性
-                               'unkonwGender': unkonwGender,        # 未知性别
-                               'aduioStoryCount': aduioStoryCount,  # 模板音频数量
-                               'freedomStoryCount': freedomStoryCount,  # 自由录制音频数量
-                               'recordTypePercentage': recordTypePercentage,
-                               'hotRecordRank': data2_list,         # 热门录制排行
-                               'hotPlayAudioStoryRank': data3_list,     # 热门播放排行
-                               'newUserGraph': graph1,              # 新增用户折线图
-                               'activityUserGraph': graph2,         # 活跃用户折线图
-                           })
+    # 儿歌
+    tags1 = Tag.objects.filter(code="RECORDTYPE", name='儿歌').first()
+    tags1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()     # 儿歌作品数
+    user1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+        values('userUuid_id').annotate(Count('userUuid_id')).count()                                #  录音类型人数，去重
+
+    # result = Tag.objects.filter(code="RECORDTYPE").annotate(Count('tagsAudioStory'))
+
+    # 父母学堂
+    tags2 = Tag.objects.filter(code="RECORDTYPE", name='父母学堂').first()
+    tags2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+    user2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+        values('userUuid_id').annotate(Count('userUuid_id')).count()
+
+    # 国学
+    tags3 = Tag.objects.filter(code="RECORDTYPE", name='国学').first()
+    tags3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+    user3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+        values('userUuid_id').annotate(Count('userUuid_id')).count()
+
+    # 英文
+    tags4 = Tag.objects.filter(code="RECORDTYPE", name='英文').first()
+    tags4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+    user4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)). \
+        values('userUuid_id').annotate(Count('userUuid_id')).count()
+
+    # 其他
+    tags5 = Tag.objects.filter(code="RECORDTYPE", name='其他').first()
+    tags5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+    user5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+        values('userUuid_id').annotate(Count('userUuid_id')).count()
+
+    recordTypePercentage = [
+        {'name': '儿歌', 'tagsNum': tags1Count, 'userNum': user1Count},
+        {'name': '儿歌', 'tagsNum': tags2Count, 'userNum': user2Count},
+        {'name': '国学', 'tagsNum': tags3Count, 'userNum': user3Count},
+        {'name': '英文', 'tagsNum': tags4Count, 'userNum': user4Count},
+        {'name': '其他', 'tagsNum': tags5Count, 'userNum': user5Count}
+    ]
+
+
+    # 活跃用户排行
+    data1_list = []
+    # result = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id'))[:1]
+    res = User.objects.annotate(audioStory_count_by_user = Count("useAudioUuid")).order_by('-audioStory_count_by_user')[:5]
+    for index,item in enumerate(res.values()):
+        data = {
+            'orderNum': index+1,
+            'name': item['nickName'],
+            'recordCount': item['audioStory_count_by_user']
+        }
+        data1_list.append(data)
+    # 热门录制排行
+    data2_list = []
+    res = Story.objects.filter(status="normal", createTime__range=(t1, t2)).order_by('-recordNum')[:5]
+    for index,item in enumerate(res.values()):
+        data = {
+            'orderNum': index + 1 or -1,
+            'name': item['name'] or '',
+            'recordNum': item['recordNum'] or 0
+        }
+        data2_list.append(data)
+
+    # 热门播放排行
+    data3_list = []
+    audioStory = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).order_by('-playTimes')[:5]
+    for index,item in enumerate(audioStory):
+        data = {
+            'orderNum': index + 1,
+            'name': item.storyUuid.name if item.audioStoryType else item.name,
+            'playTimes': item.playTimes
+        }
+        data3_list.append(data)
+
+    # 图表数据--新增用户
+    graph1 = User.objects.filter(createTime__range=(t1, t2)).\
+        extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%e')"}).\
+        order_by('time').values('time')\
+        .annotate(userNum=Count('createTime')).values('time', 'userNum')
+    if graph1:
+        graph1 = list(graph1)
+    else:
+        graph1 = []
+
+    # 活跃用户
+    graph2 = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).only('time', 'userUuid_id'). \
+        extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%e')"}). \
+        values('time').annotate(userNum=Count('userUuid_id', distinct=True)).values('time', 'userNum').order_by('time')
+    if graph2:
+        graph2 = list(graph2)
+    else:
+        graph2 = []
+
+
+    return http_return(200, 'OK',
+                       {
+                           'totalUsers': totalUsers,            # 总用户人数
+                           'totalAudioStory': totalAudioStory,  # 音频总数
+                           'totalAlbums': totalAlbums,          # 总的专辑数
+                           'newUsers': newUsers,                # 新增用户人数
+                           'activityUsers': activityUsers,      # 活跃用户人数
+                           'newAudioStory': newAudioStory,      # 新增音频数
+                           'activityUsersRank': data1_list,     # 活跃用户排行
+                           'male': male,                         # 男性
+                           'female': female,                     # 女性
+                           'unkonwGender': unkonwGender,        # 未知性别
+                           'aduioStoryCount': aduioStoryCount,  # 模板音频数量
+                           'freedomStoryCount': freedomStoryCount,  # 自由录制音频数量
+                           'recordTypePercentage': recordTypePercentage,
+                           'hotRecordRank': data2_list,         # 热门录制排行
+                           'hotPlayAudioStoryRank': data3_list,     # 热门播放排行
+                           'newUserGraph': graph1,              # 新增用户折线图
+                           'activityUserGraph': graph2,         # 活跃用户折线图
+                       })
 
 
 """
@@ -611,9 +625,13 @@ class StoryView(ListAPIView):
             startTime = int(startTime)/1000
             endTime = int(endTime)/1000
             if endTime < startTime:
-                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+                raise ParamsException('起始时间不能大于结束时间')
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             return self.queryset.filter(createTime__range=(starttime, endtime))
@@ -804,8 +822,12 @@ class AudioStoryInfoView(ListAPIView):
             endTime = int(endTime)/1000
             if endTime < startTime:
                 raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
@@ -917,8 +939,12 @@ class FreedomAudioStoryInfoView(ListAPIView):
             endTime = int(endTime)/1000
             if endTime < startTime:
                 raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
@@ -967,8 +993,12 @@ class CheckAudioStoryInfoView(ListAPIView):
             endTime = int(endTime)/1000
             if endTime < startTime:
                 raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
@@ -1076,8 +1106,12 @@ class BgmView(ListAPIView):
             endTime = int(endTime)/1000
             if endTime < startTime:
                 raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             return self.queryset.filter(createTime__range=(starttime, endtime))
@@ -1388,8 +1422,12 @@ class AdView(ListAPIView):
             endTime = int(endTime) / 1000
             if endTime < startTime:
                 raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             # starttime = datetime(startTime.year, startTime.month, startTime.day)
             # endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
@@ -1421,12 +1459,17 @@ def add_ad(request):
         return http_return(400, '时间错误')
 
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
-        return http_return(400, '时间错误')
+        return http_return(400, '时间格式错误')
 
-    startTime = int(startTime) / 1000
-    endTime = int(endTime) / 1000
-    startTime = datetime.fromtimestamp(startTime)
-    endTime = datetime.fromtimestamp(endTime)
+    startTime = startTime/1000
+    endTime = endTime/1000
+
+    try:
+        startTime = datetime.fromtimestamp(startTime)
+        endTime = datetime.fromtimestamp(endTime)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '时间格式错误')
 
     try:
         uuid = get_uuid()
@@ -1481,10 +1524,18 @@ def modify_ad(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
-    startTime = int(startTime) / 1000
-    endTime = int(endTime) / 1000
-    startTime = datetime.fromtimestamp(startTime)
-    endTime = datetime.fromtimestamp(endTime)
+    startTime = startTime/ 1000
+    endTime = endTime/ 1000
+
+    try:
+        startTime = datetime.fromtimestamp(startTime)
+        endTime = datetime.fromtimestamp(endTime)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '时间格式错误')
+
+
+
 
     try:
         ad = Ad.objects.filter(uuid=uuid, isDelete=False)
@@ -1573,8 +1624,12 @@ class AllAudioSimpleView(ListAPIView):
             endTime = int(endTime) / 1000
             if endTime < startTime:
                 raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
@@ -1761,8 +1816,12 @@ class UserView(ListAPIView):
             endTime = int(endTime) / 1000
             if endTime < startTime:
                 raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
@@ -1900,8 +1959,12 @@ def forbidden_user(request):
 
     startTimestamp = startTimestamp/1000
     endTimestamp = endTimestamp/1000
-    startTime = datetime.fromtimestamp(startTimestamp)
-    endTime = datetime.fromtimestamp(endTimestamp)
+    try:
+        startTime = datetime.fromtimestamp(startTimestamp)
+        endTime = datetime.fromtimestamp(endTimestamp)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '时间参数错误')
 
     user = User.objects.filter(uuid=uuid).exclude(status="destroy") .first()
     if not user:
@@ -2035,8 +2098,12 @@ class ActivityView(ListAPIView):
             endTime = int(endTime) / 1000
             if endTime < startTime:
                 raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '时间参数错误')
             # starttime = datetime(startTime.year, startTime.month, startTime.day)
             # endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
@@ -2064,10 +2131,15 @@ def create_activity(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
-    startTime = int(startTime) / 1000
-    endTime = int(endTime) / 1000
-    startTime = datetime.fromtimestamp(startTime)
-    endTime = datetime.fromtimestamp(endTime)
+    startTime = startTime/1000
+    endTime = endTime/1000
+
+    try:
+        startTime = datetime.fromtimestamp(startTime)
+        endTime = datetime.fromtimestamp(endTime)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '时间参数错误')
 
     try:
         with transaction.atomic():
@@ -2109,16 +2181,20 @@ def modify_activity(request):
         if Activity.objects.filter(name=name).exists():
             return http_return(400, '重复活动名')
 
-    if startTime > endTime:
-        return http_return(400, '时间错误')
-
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
-    startTime = int(startTime) / 1000
-    endTime = int(endTime) / 1000
-    startTime = datetime.fromtimestamp(startTime)
-    endTime = datetime.fromtimestamp(endTime)
+    if startTime > endTime:
+        return http_return(400, '时间错误')
+
+    startTime = startTime/1000
+    endTime = endTime/1000
+    try:
+        startTime = datetime.fromtimestamp(startTime)
+        endTime = datetime.fromtimestamp(endTime)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '时间错误')
 
     activity = Activity.objects.filter(uuid=uuid).first()
     try:
@@ -2155,12 +2231,18 @@ class CycleBannerView(ListAPIView):
             if not all([startTime.isdigit(), endTime.isdigit()]):
                 raise ParamsException({'code': 400, 'msg': '时间错误'})
 
-            startTime = int(startTime) / 1000
-            endTime = int(endTime) / 1000
             if endTime < startTime:
                 raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+
+            startTime = startTime / 1000
+            endTime = endTime / 1000
+
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             # starttime = datetime(startTime.year, startTime.month, startTime.day)
             # endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
@@ -2194,10 +2276,15 @@ def add_cycle_banner(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
-    startTime = int(startTime) / 1000
-    endTime = int(endTime) / 1000
-    startTime = datetime.fromtimestamp(startTime)
-    endTime = datetime.fromtimestamp(endTime)
+    startTime = startTime/1000
+    endTime = endTime/1000
+
+    try:
+        startTime = datetime.fromtimestamp(startTime)
+        endTime = datetime.fromtimestamp(endTime)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '时间参数错误')
 
     try:
         uuid = get_uuid()
@@ -2255,10 +2342,16 @@ def modify_cycle_banner(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
-    startTime = int(startTime) / 1000
-    endTime = int(endTime) / 1000
-    startTime = datetime.fromtimestamp(startTime)
-    endTime = datetime.fromtimestamp(endTime)
+    startTime = startTime/1000
+    endTime = endTime/1000
+
+    try:
+        startTime = datetime.fromtimestamp(startTime)
+        endTime = datetime.fromtimestamp(endTime)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '时间错误')
+
 
     try:
         cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False)
@@ -2330,8 +2423,12 @@ class FeedbackView(ListAPIView):
             endTime = int(endTime)/1000
             if endTime < startTime:
                 raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
-            startTime = datetime.fromtimestamp(startTime)
-            endTime = datetime.fromtimestamp(endTime)
+            try:
+                startTime = datetime.fromtimestamp(startTime)
+                endTime = datetime.fromtimestamp(endTime)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('时间参数错误')
             starttime = datetime(startTime.year, startTime.month, startTime.day)
             endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
             return self.queryset.filter(createTime__range=(starttime, endtime))

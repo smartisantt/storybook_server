@@ -201,6 +201,9 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
     bgmInfo = serializers.SerializerMethodField()
     userInfo = serializers.SerializerMethodField()
     storyInfo = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    bgIcon = serializers.SerializerMethodField()
+
 
     @staticmethod
     def get_tagsInfo(audioinfo):
@@ -217,6 +220,21 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_storyInfo(audioinfo):
         return StorySerializer(audioinfo.storyUuid).data
+
+    @staticmethod
+    def get_name(audioinfo):
+        if audioinfo.audioStoryType == False:
+            return audioinfo.name
+        else:
+            return audioinfo.storyUuid.name
+
+    @staticmethod
+    def get_bgIcon(audioinfo):
+        if audioinfo.audioStoryType == False:
+            return audioinfo.bgIcon
+        else:
+            return audioinfo.storyUuid.faceIcon
+
 
     class Meta:
         model = AudioStory

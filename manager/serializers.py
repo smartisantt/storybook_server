@@ -30,6 +30,33 @@ class StorySimpleSerializer(serializers.ModelSerializer):
 
 
 
+class TagsSerialzer(serializers.ModelSerializer):
+
+    childTagsNum = serializers.SerializerMethodField()
+    childTagList = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_childTagsNum(tag):
+        return Tag.objects.filter(parent=tag, isDelete=False).count()
+
+    @staticmethod
+    def get_childTagList(tag):
+        queryset = Tag.objects.filter(parent=tag)
+        return TagsChildSerialzer(queryset, many=True).data
+
+    class Meta:
+        model = Tag
+        fields = ('uuid', 'sortNum', 'name', 'icon', 'childTagList', 'childTagsNum')
+
+
+
+class TagsChildSerialzer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Tag
+        fields = ('uuid', 'sortNum', 'name')
+
+
 class TagsSimpleSerialzer(serializers.ModelSerializer):
 
     class Meta:
@@ -174,6 +201,9 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
     bgmInfo = serializers.SerializerMethodField()
     userInfo = serializers.SerializerMethodField()
     storyInfo = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    bgIcon = serializers.SerializerMethodField()
+
 
     @staticmethod
     def get_tagsInfo(audioinfo):
@@ -190,6 +220,21 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_storyInfo(audioinfo):
         return StorySerializer(audioinfo.storyUuid).data
+
+    @staticmethod
+    def get_name(audioinfo):
+        if audioinfo.audioStoryType == False:
+            return audioinfo.name
+        else:
+            return audioinfo.storyUuid.name
+
+    @staticmethod
+    def get_bgIcon(audioinfo):
+        if audioinfo.audioStoryType == False:
+            return audioinfo.bgIcon
+        else:
+            return audioinfo.storyUuid.faceIcon
+
 
     class Meta:
         model = AudioStory

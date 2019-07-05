@@ -32,8 +32,7 @@ urlpatterns = [
     path('index/more', views.index_more, name='index_more'),  # 展示更多
 
     path('search/all', views.search_all, name='search_all'),  # 搜索
-    path('search/audiostory', views.search_audio, name='search_audio'),  # 搜索模板音频
-    path('search/user', views.search_user, name='search_user'),  # 搜索主播
+    path('search/each', views.search_each, name='search_each'),  # 搜索某一类
     path('search/hotkeyword', views.search_hot, name='search_hot'),  # 热搜词
 
     path('audiostory/category/detail', views.audiostory_category_detail, name='audiostory_category_detail'),  # 分类展示

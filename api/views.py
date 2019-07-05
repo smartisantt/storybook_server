@@ -785,16 +785,25 @@ def search_all(request):
             "audioCount": audioCount,
             "followersCount": followers,
         })
-    audio = {
+    searchAudioStory = {
         "filter": [
-            {"label": ""}
-        ]
+            {"label": "最多播放", "value": "rank"},
+            {"label": "最新上传", "value": "latest"}
+        ],
+        "list": audioList,
     }
-    return http_return(200, '成功', {"audioStoryList": audioList, "userList": userList})
+    searchUser = {
+        "filter": [
+            {"label": "最多粉丝", "value": "followersCount"},
+            {"label": "最多音频", "value": "audioStoryCount"}
+        ],
+        "list": userList,
+    }
+    return http_return(200, '成功', {"searchAudioStory": searchAudioStory, "searchUser": searchUser})
 
 
 @check_identify
-def search_audio(request):
+def search_each(request):
     """
     搜索音频
     :param request:
@@ -804,7 +813,8 @@ def search_audio(request):
     if not data:
         return http_return(400, '参数错误')
     keyword = data.get('keyword')
-    sort = data.get('sort', '')  # createTime palyCount
+    filterValue = data.get('filterValue', '')  # rank latest followersCount audioStoryCount
+    type = data.get('type', '')  # audioStory publisher
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
@@ -815,54 +825,51 @@ def search_audio(request):
         return http_return(400, '参数错误')
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
-    audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
-    audio = audio.filter(Q(storyUuid__name__contains=keyword) | Q(name__contains=keyword)).order_by("-createTime")
-    if sort:
-        audio = audio.order_by("-" + sort)
-    audios = audio.all()
-    total, audios = page_index(audios, page, pageCount)
-    resultList = audioList_format(audios, data)
-
-    return http_return(200, '成功', {"list": resultList, "total": total})
-
-
-@check_identify
-def search_user(request):
-    """
-    搜索历史
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
+    if type == "audioStory":
+        audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
+        audio = audio.filter(Q(storyUuid__name__contains=keyword) | Q(name__contains=keyword))
+        if filterValue == 'rank':
+            audio = audio.order_by("-playTimes")
+        elif filterValue == 'latest':
+            audio = audio.order_by("-createTime")
+        else:
+            return http_return(400, '参数错误')
+        audios = audio.all()
+        total, audios = page_index(audios, page, pageCount)
+        resultList = audioList_format(audios, data)
+        filter = [
+            {"label": "最多播放", "value": "rank"},
+            {"label": "最新上传", "value": "latest"}
+        ]
+    elif type == "publisher":
+        user = User.objects.filter(roles='normalUser')
+        users = user.filter(nickName__contains=keyword).order_by("-createTime").all()
+        if filterValue == 'audioStoyrCount':
+            users = sorted(user, key=lambda x: x.useAudioUuid.filter(isDelete=False).count(), reverse=True)
+        elif filterValue == 'followersCount':
+            users = sorted(users, key=lambda x: len(x.get_followers()), reverse=True)
+        else:
+            return http_return(400, '参数错误')
+        total, users = page_index(users, page, pageCount)
+        resultList = []
+        for u in users:
+            audioCount = u.useAudioUuid.filter(isDelete=False).count()
+            followers = len(u.get_followers())
+            resultList.append({
+                "uuid": u.uuid,
+                "avatar": u.avatar if u.avatar else '',
+                "nickname": u.nickName if u.nickName else '',
+                "city": u.city if u.city else '',
+                "audioStoryCount": audioCount,
+                "followersCount": followers,
+            })
+        filter = [
+            {"label": "最多粉丝", "value": "followersCount"},
+            {"label": "最多音频", "value": "audioStoyrCount"}
+        ]
+    else:
         return http_return(400, '参数错误')
-    keyword = data.get('keyword')
-    page = data.get('page', '')
-    pageCount = data.get('pageCount', '')
-    selfUuid = data['_cache']['uuid']
-    selfUser = User.objects.filter(uuid=selfUuid).first()
-    if not selfUser:
-        return http_return(400, '未获取到用户信息')
-    if not keyword:
-        return http_return(400, '参数错误')
-    if not save_search(data):
-        return http_return(400, '存储搜索记录失败')
-    user = User.objects.filter(roles='normalUser')
-    users = user.filter(nickName__contains=keyword).order_by("-createTime").all()
-    total, users = page_index(users, page, pageCount)
-    userList = []
-    for u in users:
-        audioCount = u.useAudioUuid.filter(isDelete=False).count()
-        followers = len(u.get_followers())
-        userList.append({
-            "uuid": u.uuid,
-            "avatar": u.avatar if u.avatar else '',
-            "nickname": u.nickName if u.nickName else '',
-            "city": u.city if u.city else '',
-            "audioStoryCount": audioCount,
-            "followersCount": followers,
-        })
-    return http_return(200, '成功', {"total": total, "list": userList})
+    return http_return(200, '成功', {"list": resultList, "total": total, "filter": filter})
 
 
 @check_identify
@@ -908,7 +915,7 @@ def audiostory_category_detail(request):
     else:
         return http_return(400, '参数错误')
     total, audios = page_index(audios, page, pageCount)
-    audioStoryList = audioList_format(audios,data)
+    audioStoryList = audioList_format(audios, data)
     return http_return(200, '成功', {"total": total, "list": audioStoryList})
 
 

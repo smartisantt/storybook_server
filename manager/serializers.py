@@ -30,6 +30,33 @@ class StorySimpleSerializer(serializers.ModelSerializer):
 
 
 
+class TagsSerialzer(serializers.ModelSerializer):
+
+    childTagsNum = serializers.SerializerMethodField()
+    childTagList = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_childTagsNum(tag):
+        return Tag.objects.filter(parent=tag, isDelete=False).count()
+
+    @staticmethod
+    def get_childTagList(tag):
+        queryset = Tag.objects.filter(parent=tag)
+        return TagsChildSerialzer(queryset, many=True).data
+
+    class Meta:
+        model = Tag
+        fields = ('uuid', 'sortNum', 'name', 'icon', 'childTagList', 'childTagsNum')
+
+
+
+class TagsChildSerialzer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Tag
+        fields = ('uuid', 'sortNum', 'name')
+
+
 class TagsSimpleSerialzer(serializers.ModelSerializer):
 
     class Meta:

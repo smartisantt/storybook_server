@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Create your views here.
-
+from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import authentication_classes
 from rest_framework.filters import OrderingFilter
@@ -19,7 +19,8 @@ from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer
+    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, \
+    TagsSerialzer
 from storybook_sever.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime
@@ -143,6 +144,7 @@ def login(request):
 """
 首页数据
 """
+@cache_page(timeout=100)
 def total_data(request):
     data = request_body(request, 'POST')
     if not data:
@@ -276,7 +278,7 @@ def total_data(request):
 
         # 图表数据--新增用户
         graph1 = User.objects.filter(createTime__range=(t1, t2)).\
-            extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}).\
+            extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%e')"}).\
             order_by('time').values('time')\
             .annotate(userNum=Count('createTime')).values('time', 'userNum')
         if graph1:
@@ -286,7 +288,7 @@ def total_data(request):
 
         # 活跃用户
         graph2 = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False). \
-            extra(select={"time": "DATE_FORMAT(createTime,'%%Y-%%m-%%e')"}). \
+            extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%e')"}). \
             values('time').annotate(userNum=Count('createTime', distinct=True)).values('time', 'userNum')
         if graph2:
             graph2 = list(graph2)
@@ -319,6 +321,12 @@ def total_data(request):
 """
 内容分类
 """
+class TagView(ListAPIView):
+    queryset = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True, isDelete=False).\
+        order_by('sortNum')
+    serializer_class = TagsSerialzer
+
+
 def show_all_tags(request):
     """发布故事标签选择列表"""
     data = request_body(request)
@@ -2340,9 +2348,9 @@ class FeedbackView(ListAPIView):
         return self.queryset
 
 
-# 客服处理
 
 def reply(request):
+    """后台回复"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')

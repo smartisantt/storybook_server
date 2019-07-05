@@ -35,7 +35,6 @@ urlpatterns = [
     path('search/each', views.search_each, name='search_each'),  # 搜索某一类
     path('search/hotkeyword', views.search_hot, name='search_hot'),  # 热搜词
 
-    path('audiostory/category/detail', views.audiostory_category_detail, name='audiostory_category_detail'),  # 分类展示
     path('audiostory/category/list', views.index_category_list, name='index_category_list'),  # 分类标签展示
     path('audiostory/category/result', views.index_category_result, name='index_category_result'),  # 筛选结果
     path('audiostory/category/each', views.index_category_each, name='index_category_each'),  # 筛选某一类

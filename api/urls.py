@@ -25,14 +25,14 @@ urlpatterns = [
 
     path('audiostory/list', views.audio_list, name='audio_list'),  # 所有故事列表
     path('audiostory/play', views.audio_play, name='audio_play'),  # 播放故事
+    path('audiostory/otherAudiostory', views.audio_other, name='audio_other'),  # 主播精选
 
     path('index/banner', views.index_banner, name='index_banner'),  # 首页轮播图
     path('index/list', views.index_list, name='index_list'),  # 首页展示列表
     path('index/more', views.index_more, name='index_more'),  # 展示更多
 
     path('search/all', views.search_all, name='search_all'),  # 搜索
-    path('search/audiostory', views.search_audio, name='search_audio'),  # 搜索模板音频
-    path('search/user', views.search_user, name='search_user'),  # 搜索主播
+    path('search/each', views.search_each, name='search_each'),  # 搜索某一类
     path('search/hotkeyword', views.search_hot, name='search_hot'),  # 热搜词
 
     path('audiostory/category/detail', views.audiostory_category_detail, name='audiostory_category_detail'),  # 分类展示

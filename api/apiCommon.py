@@ -10,7 +10,7 @@ import string
 from django.core.cache import cache, caches
 from django.db import transaction
 
-from common.common import http_return, get_uuid
+from common.common import http_return, get_uuid, datetime_to_unix
 from manager.models import *
 from storybook_sever import api
 from storybook_sever.api import Api
@@ -220,3 +220,64 @@ def forbbiden_say(func):
         return func(request)
 
     return wrapper
+
+
+def audioList_format(audios,data):
+    """
+    处理返回格式化
+    :param audios:
+    :return:
+    """
+    selfUuid = data['_cache']['uuid']
+    audioStoryList = []
+    for audio in audios:
+        checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=1).first()
+        checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=3).first()
+        story = None
+        if audio.audioStoryType:
+            story = {
+                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
+                "name": audio.storyUuid.name if audio.storyUuid else '',
+                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
+                "content": audio.storyUuid.content if audio.storyUuid else '',
+                "intro": audio.storyUuid.intro if audio.storyUuid else ''
+            }
+        tagList = []
+        for tag in audio.tags.all():
+            tagList.append({
+                'uuid': tag.uuid,
+                'name': tag.name if tag.name else '',
+                "icon": tag.icon if tag.icon else '',
+            })
+        audioStoryList.append({
+            "uuid": audio.uuid,
+            "name": audio.name if audio.name else '',
+            "icon": audio.bgIcon if audio.bgIcon else '',
+            "audioVolume": audio.userVolume,
+            "createTime": datetime_to_unix(audio.createTime),
+            "playCount": audio.playTimes,
+            "story": story,
+            "audio": {
+                "url": audio.voiceUrl,
+                "duration": audio.duration,
+            },
+            "bgm": {
+                "uuid": audio.bgm.uuid if audio.bgm else '',
+                "url": audio.bgm.url if audio.bgm else '',
+                "name": audio.bgm.name if audio.bgm else '',
+                "duration":audio.bgm.duration if audio.bgm else '',
+            },
+            "publisher": {
+                "uuid": audio.userUuid.uuid if audio.userUuid else '',
+                "nickname": audio.userUuid.nickName if audio.userUuid else '',
+                "avatar": audio.userUuid.avatar if audio.userUuid else '',
+                "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else '',
+                "city": audio.userUuid.city if audio.userUuid else ''
+            },
+            "isPraise": True if checkPraise else False,
+            "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
+            "isCollection": True if checkLike else False,
+            "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
+            "commentsCount": '',
+        })
+    return audioStoryList

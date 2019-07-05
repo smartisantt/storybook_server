@@ -1050,6 +1050,7 @@ def index_category_each(request):
                 "uuid": u.uuid,
                 "avatar": u.avatar if u.avatar else '',
                 "nickname": u.nickName if u.nickName else '',
+                "city": u.city if u.city else '',
                 "audioStoryCount": audioCount,
                 "followersCount": followers,
             })

@@ -50,7 +50,7 @@ class CustomAuthentication(BaseAuthentication):
             api = Api()
             user_info = api.check_token(token)
             if not user_info:
-                raise AuthenticationFailed('禁止登录')
+                raise AuthenticationFailed(detail='禁止登录')
 
 
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\

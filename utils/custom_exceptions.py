@@ -5,6 +5,7 @@ def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if response is not None:
+        # response.data['detail'].code
         response.data['code'] = response.data.get('code') or response.status_code
         # response.data['msg'] = response.data.get('msg') or list(response.data.values())[0]
         if response.data.get('msg'):

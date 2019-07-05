@@ -251,6 +251,7 @@ def audioList_format(audios,data):
             })
         audioStoryList.append({
             "uuid": audio.uuid,
+            "remarks": audio.remarks if audio.remarks else '',
             "name": audio.name if audio.name else '',
             "icon": audio.bgIcon if audio.bgIcon else '',
             "audioVolume": audio.userVolume,

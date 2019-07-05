@@ -662,89 +662,28 @@ def index_more(request):
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # rank:最热 latest:最新
     # MOD1每日一读  MOD2抢先听  MOD3热门推荐 MOD4猜你喜欢
+    audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False)
     if type in [1, 2, 3]:
         typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
-        audioStoryList = []
-        module = Module.objects.filter(type=typeDict[type], isDelete=False)
+        audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False)
         if type == '1':
-            module = module.filter(audioUuid__audioStoryType=True)
-        if sort == "latest":
-            module = module.order_by("orderNum", '-createTime')
-        elif sort == "rank":
-            module = module.order_by("orderNum", '-audioUuid__playTimes')
-        else:
-            return http_return(400, '参数错误')
-        modules = module.all()
-        total, modules = page_index(modules, page, pageCount)
-        if modules:
-            for module in modules:
-                story = None
-                if module.audioUuid.audioStoryType:
-                    story = {
-                        "uuid": module.audioUuid.storyUuid.uuid if module.audioUuid.storyUuid else '',
-                        "name": module.audioUuid.storyUuid.name if module.audioUuid.storyUuid else '',
-                        "icon": module.audioUuid.storyUuid.faceIcon if module.audioUuid.storyUuid else '',
-                        "content": module.audioUuid.storyUuid.content if module.audioUuid.storyUuid else '',
-                        "intro": module.audioUuid.storyUuid.intro if module.audioUuid.storyUuid else ''
-                    }
-                tagList = []
-                for tag in module.audioUuid.tags.all():
-                    tagList.append({
-                        'uuid': tag.uuid,
-                        'name': tag.name if tag.name else '',
-                        'icon': tag.icon if tag.icon else '',
-                    })
-                audioStoryList.append({
-                    "uuid": module.audioUuid.uuid,
-                    "name": module.audioUuid.name if module.audioUuid.name else '',
-                    "icon": module.audioUuid.bgIcon if module.audioUuid.bgIcon else '',
-                    "remarks": module.audioUuid.remarks if module.audioUuid.remarks else '',
-                    "playCount": module.audioUuid.playTimes,
-                    "createTime": datetime_to_unix(module.audioUuid.createTime),
-                    "tagList": tagList,
-                    "story": story,
-                })
+            audio = audio.filter(audioStoryType=True)
     elif type == 4:
-        audioStoryList = []
-        audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
-            isDelete=False)
-        if sort == "latest":
-            audios = audio.order_by('-createTime').all()
-        elif sort == "rank":
-            audios = audio.order_by('-playTimes').all()
-        else:
-            return http_return(400, '参数错误')
-        total, audios = page_index(audios, page, pageCount)
-        if audios:
-            for audio in audios:
-                story = None
-                if audio.audioStoryType:
-                    story = {
-                        "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                        "name": audio.storyUuid.name if audio.storyUuid else '',
-                        "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                        "content": audio.storyUuid.content if audio.storyUuid else '',
-                        "intro": audio.storyUuid.intro if audio.storyUuid else ''
-                    }
-                tagList = []
-                for tag in audio.tags.all():
-                    tagList.append({
-                        'uuid': tag.uuid,
-                        'name': tag.name if tag.name else '',
-                        'icon': tag.icon if tag.icon else '',
-                    })
-                audioStoryList.append({
-                    "uuid": audio.uuid,
-                    "name": audio.name if audio.name else '',
-                    "icon": audio.bgIcon if audio.bgIcon else '',
-                    "remarks": audio.remarks if audio.remarks else '',
-                    "playCount": audio.playTimes,
-                    "createTime": datetime_to_unix(audio.createTime),
-                    "tagList": tagList,
-                    "story": story,
-                })
+        pass
+    elif type in [5, 6, 7, 8]:
+        classList = {5: "绘本", 6: "故事", 7: "英语", 8: "国学"}
+        audio = audio.filter(tags__name=classList[type])
     else:
         return http_return(400, '参数错误')
+    if sort == "latest":
+        audio = audio.order_by('-createTime')
+    elif sort == "rank":
+        audio = audio.order_by('-playTimes')
+    else:
+        return http_return(400, '参数错误')
+    audios = audio.all()
+    total, audios = page_index(audios, page, pageCount)
+    audioStoryList = audioList_format(audios, data)
     return http_return(200, '成功', {"total": total, "list": audioStoryList})
 
 
@@ -888,35 +827,6 @@ def search_hot(request):
         hotSearchList.append(hot.keyword)
     hotSearch = ','.join(hotSearchList)
     return http_return(200, "成功", {"hotSearch": hotSearch})
-
-
-@check_identify
-def audiostory_category_detail(request):
-    """
-    首页分类显示
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    className = data.get('className', None)
-    sort = data.get('sort')  # rank:最热 latest:最新
-    page = data.get('page', '')
-    pageCount = data.get('pageCount', '')
-    if not className or className not in ['绘本', '故事', '英语', '国学']:
-        return http_return(400, '参数错误')
-    audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False)
-    audio = audio.filter(tags__name=className)
-    if sort == "latest":
-        audios = audio.order_by("-createTime").all()
-    elif sort == "rank":
-        audios = audio.order_by("-playTimes").all()
-    else:
-        return http_return(400, '参数错误')
-    total, audios = page_index(audios, page, pageCount)
-    audioStoryList = audioList_format(audios, data)
-    return http_return(200, '成功', {"total": total, "list": audioStoryList})
 
 
 @check_identify
@@ -1394,34 +1304,7 @@ def personal_audiostory(request):
     audio = AudioStory.objects.filter(isDelete=False, userUuid__uuid=selfUuid)
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
-    audioStoryList = []
-    for audio in audios:
-        story = None
-        if audio.audioStoryType:
-            story = {
-                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                "name": audio.storyUuid.name if audio.storyUuid else '',
-                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                "content": audio.storyUuid.content if audio.storyUuid else '',
-                "intro": audio.storyUuid.intro if audio.storyUuid else ''
-            }
-        tagList = []
-        for tag in audio.tags.all():
-            tagList.append({
-                'uuid': tag.uuid,
-                'name': tag.name if tag.name else '',
-                "icon": tag.icon if tag.icon else '',
-            })
-        audioStoryList.append({
-            "uuid": audio.uuid,
-            "duration": audio.duration,
-            "icon": audio.bgIcon if audio.bgIcon else '',
-            "name": audio.name if audio.name else '',
-            "palyCount": audio.playTimes,
-            "createTime": datetime_to_unix(audio.createTime),
-            "tagList": tagList,
-            "story": story,
-        })
+    audioStoryList = audioList_format(audios, data)
     return http_return(200, '成功', {"list": audioStoryList, "total": total})
 
 

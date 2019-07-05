@@ -286,14 +286,14 @@ def total_data(request):
         }
         data3_list.append(data)
 
-    begin = t1
-    end = t2
-    d = begin
-    graphList = []
-    delta = timedelta(days=1)
-    while d <= end:
-        graphList.append({'time':d.strftime("%m-%d"), 'userNum':0})
-        d += delta
+    # begin = t1
+    # end = t2
+    # d = begin
+    # graphList = []
+    # delta = timedelta(days=1)
+    # while d <= end:
+    #     graphList.append({'time':d.strftime("%m-%d"), 'userNum':0})
+    #     d += delta
 
 
     # 图表数据--新增用户
@@ -303,29 +303,37 @@ def total_data(request):
         .annotate(userNum=Count('createTime')).values('time', 'userNum')
     if graph1:
         graph1 = list(graph1)
-        res1 = graphList[:]
-        for item in graph1:
-            res1.remove({'time':item['time'], 'userNum':0})
-        res1.extend(graph1)
-        res1 = sorted(res1, key=lambda s: s['time'], reverse=False)
     else:
-        res1 = graphList
+        graph1 = []
+    # if graph1:
+    #     graph1 = list(graph1)
+    #     res1 = graphList[:]
+    #     for item in graph1:
+    #         res1.remove({'time':item['time'], 'userNum':0})
+    #     res1.extend(graph1)
+    #     res1 = sorted(res1, key=lambda s: s['time'], reverse=False)
+    # else:
+    #     res1 = graphList
 
     # 活跃用户
     graph2 = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).\
         only('time', 'userUuid_id'). \
-        extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%e')"}). \
+        extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%d')"}). \
         values('time').annotate(userNum=Count('userUuid_id', distinct=True)).\
         values('time', 'userNum').order_by('time')
     if graph2:
         graph2 = list(graph2)
-        res2 = graphList[:]
-        for item in graph2:
-            res2.remove({'time': item['time'], 'userNum': 0})
-        res2.extend(graph2)
-        res2 = sorted(res2, key=lambda s: s['time'], reverse=False)
     else:
-        res2 = graphList
+        graph2 = []
+    # if graph2:
+    #     graph2 = list(graph2)
+    #     res2 = graphList[:]
+    #     for item in graph2:
+    #         res2.remove({'time': item['time'], 'userNum': 0})
+    #     res2.extend(graph2)
+    #     res2 = sorted(res2, key=lambda s: s['time'], reverse=False)
+    # else:
+    #     res2 = graphList
 
 
     return http_return(200, 'OK',
@@ -345,8 +353,8 @@ def total_data(request):
                            'recordTypePercentage': recordTypePercentage,
                            'hotRecordRank': data2_list,         # 热门录制排行
                            'hotPlayAudioStoryRank': data3_list,     # 热门播放排行
-                           'newUserGraph': res1,              # 新增用户折线图
-                           'activityUserGraph': res2,         # 活跃用户折线图
+                           'newUserGraph': graph1,              # 新增用户折线图
+                           'activityUserGraph': graph2,         # 活跃用户折线图
                        })
 
 

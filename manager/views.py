@@ -158,23 +158,12 @@ def total_data(request):
     startTimestamp = data.get('startTime', '')
     endTimestamp = data.get('endTime', '')
 
-    if not all([isinstance(startTimestamp, int), isinstance(endTimestamp, int)]):
-        return http_return(400, '时间格式错误')
-
-    # 小于2019-05-30 00:00:00的时间不合法
-    if endTimestamp < startTimestamp or endTimestamp <= 1559145600 or startTimestamp <= 1559145600:
-        return http_return(400, '无效时间')
-    startTimestamp = startTimestamp/1000
-    endTimestamp = endTimestamp/1000
     try:
-        startTime = datetime.fromtimestamp(startTimestamp)
-        endTime = datetime.fromtimestamp(endTimestamp)
+        t1,t2 = timestamp2datetime(startTimestamp, endTimestamp)
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '时间参数错误')
+        return http_return(e.status_code, e.detail)
 
-    t1 = datetime(startTime.year, startTime.month, startTime.day)
-    t2 = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
 
     if (t2-t1).days > 31:
         return http_return(400, '超出时间范围')
@@ -211,46 +200,61 @@ def total_data(request):
     freedomStoryCount = AudioStory.objects.filter(
         isDelete=False, audioStoryType=0, isUpload=1, createTime__range=(t1, t2)).count()
 
+    tagNameList = ['儿歌', '父母学堂', '国学', '英文', '其他']
+    tagsNumList = []
+    userNumList = []
+    for tagName in tagNameList:
+        tag = Tag.objects.filter(code="RECORDTYPE", name=tagName).first()
+        tagCount = tag.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+        tagsNumList.append(tagCount)
+        userCount = tag.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)). \
+            values('userUuid_id').annotate(Count('userUuid_id')).count()
+        userNumList.append(userCount)
 
-    # 儿歌
-    tags1 = Tag.objects.filter(code="RECORDTYPE", name='儿歌').first()
-    tags1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()     # 儿歌作品数
-    user1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-        values('userUuid_id').annotate(Count('userUuid_id')).count()                                #  录音类型人数，去重
-
-    # result = Tag.objects.filter(code="RECORDTYPE").annotate(Count('tagsAudioStory'))
-
-    # 父母学堂
-    tags2 = Tag.objects.filter(code="RECORDTYPE", name='父母学堂').first()
-    tags2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-    user2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-        values('userUuid_id').annotate(Count('userUuid_id')).count()
-
-    # 国学
-    tags3 = Tag.objects.filter(code="RECORDTYPE", name='国学').first()
-    tags3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-    user3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-        values('userUuid_id').annotate(Count('userUuid_id')).count()
-
-    # 英文
-    tags4 = Tag.objects.filter(code="RECORDTYPE", name='英文').first()
-    tags4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-    user4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)). \
-        values('userUuid_id').annotate(Count('userUuid_id')).count()
-
-    # 其他
-    tags5 = Tag.objects.filter(code="RECORDTYPE", name='其他').first()
-    tags5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-    user5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-        values('userUuid_id').annotate(Count('userUuid_id')).count()
-
-    recordTypePercentage = [
-        {'name': '儿歌', 'tagsNum': tags1Count, 'userNum': user1Count},
-        {'name': '儿歌', 'tagsNum': tags2Count, 'userNum': user2Count},
-        {'name': '国学', 'tagsNum': tags3Count, 'userNum': user3Count},
-        {'name': '英文', 'tagsNum': tags4Count, 'userNum': user4Count},
-        {'name': '其他', 'tagsNum': tags5Count, 'userNum': user5Count}
-    ]
+    recordTypePercentage = [{'name': name, 'tagsNum': tagsNum, 'userNum': userNum}
+                            for name in tagNameList
+                            for tagsNum in tagsNumList
+                            for userNum in userNumList
+                            ]
+    # # 儿歌
+    # tags1 = Tag.objects.filter(code="RECORDTYPE", name='儿歌').first()
+    # tags1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()     # 儿歌作品数
+    # user1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+    #     values('userUuid_id').annotate(Count('userUuid_id')).count()                                #  录音类型人数，去重
+    #
+    # # result = Tag.objects.filter(code="RECORDTYPE").annotate(Count('tagsAudioStory'))
+    #
+    # # 父母学堂
+    # tags2 = Tag.objects.filter(code="RECORDTYPE", name='父母学堂').first()
+    # tags2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+    # user2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+    #     values('userUuid_id').annotate(Count('userUuid_id')).count()
+    #
+    # # 国学
+    # tags3 = Tag.objects.filter(code="RECORDTYPE", name='国学').first()
+    # tags3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+    # user3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+    #     values('userUuid_id').annotate(Count('userUuid_id')).count()
+    #
+    # # 英文
+    # tags4 = Tag.objects.filter(code="RECORDTYPE", name='英文').first()
+    # tags4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+    # user4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)). \
+    #     values('userUuid_id').annotate(Count('userUuid_id')).count()
+    #
+    # # 其他
+    # tags5 = Tag.objects.filter(code="RECORDTYPE", name='其他').first()
+    # tags5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
+    # user5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
+    #     values('userUuid_id').annotate(Count('userUuid_id')).count()
+    #
+    # recordTypePercentage = [
+    #     {'name': '儿歌', 'tagsNum': tags1Count, 'userNum': user1Count},
+    #     {'name': '儿歌', 'tagsNum': tags2Count, 'userNum': user2Count},
+    #     {'name': '国学', 'tagsNum': tags3Count, 'userNum': user3Count},
+    #     {'name': '英文', 'tagsNum': tags4Count, 'userNum': user4Count},
+    #     {'name': '其他', 'tagsNum': tags5Count, 'userNum': user5Count}
+    # ]
 
 
     # 活跃用户排行
@@ -642,29 +646,22 @@ class StoryView(ListAPIView):
     queryset = Story.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
     serializer_class = StorySerializer
     filter_class = StoryFilter
+    pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
-        if (startTime and not endTime) or  (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
-            startTime = int(startTime)/1000
-            endTime = int(endTime)/1000
-            if endTime < startTime:
-                raise ParamsException('起始时间不能大于结束时间')
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            starttime = datetime(startTime.year, startTime.month, startTime.day)
-            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            return self.queryset.filter(createTime__range=(starttime, endtime))
+                raise ParamsException(e.detail)
+
         return self.queryset
 
 
@@ -674,7 +671,7 @@ class StorySimpleView(ListAPIView):
     queryset = Story.objects.filter(status="normal")
     serializer_class = StorySimpleSerializer
     filter_class = StoryFilter
-    pagination_class = None
+    pagination_class = MyPagination
 
 
 def add_story(request):
@@ -834,33 +831,25 @@ class AudioStoryInfoView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
         # id = self.request.query_params.get('id', '')                # 故事ID
         nickName = self.request.query_params.get('nickName', '')    # 用户名
         name = self.request.query_params.get('name', '')    # 模板名
         tag = self.request.query_params.get('tag', '')      # 类型标签
         # type = self.request.query_params.get('type', '')      # 录制形式
-        if (startTime and not endTime) or  (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
 
-            startTime = int(startTime)/1000
-            endTime = int(endTime)/1000
-            if endTime < startTime:
-                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            starttime = datetime(startTime.year, startTime.month, startTime.day)
-            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+                raise ParamsException(e.detail)
+
         if nickName:
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
         if name:
@@ -951,33 +940,26 @@ class FreedomAudioStoryInfoView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
         # id = self.request.query_params.get('id', '')                # 故事ID
         nickName = self.request.query_params.get('nickName', '')    # 用户名
         # name = self.request.query_params.get('name', '')    # 模板名
         tag = self.request.query_params.get('tag', '')      # 类型标签
         # type = self.request.query_params.get('type', '')      # 录制形式
-        if (startTime and not endTime) or  (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
 
-            startTime = int(startTime)/1000
-            endTime = int(endTime)/1000
-            if endTime < startTime:
-                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            starttime = datetime(startTime.year, startTime.month, startTime.day)
-            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+                raise ParamsException(e.detail)
+
+
         if nickName:
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
@@ -1003,8 +985,8 @@ class CheckAudioStoryInfoView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
         # id = self.request.query_params.get('id', '')                # 故事ID
         nickName = self.request.query_params.get('nickName', '')    # 用户名
@@ -1013,25 +995,16 @@ class CheckAudioStoryInfoView(ListAPIView):
         # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 免检（后台上传的作品）
         # checkstatus = self.request.query_params.get('checkstatus', '')      # 类型标签
 
-        if (startTime and not endTime) or  (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
-
-            startTime = int(startTime)/1000
-            endTime = int(endTime)/1000
-            if endTime < startTime:
-                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            starttime = datetime(startTime.year, startTime.month, startTime.day)
-            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+                raise ParamsException(e.detail)
+
         if nickName:
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
@@ -1123,28 +1096,19 @@ class BgmView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
-        if (startTime and not endTime) or  (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
-
-            startTime = int(startTime)/1000
-            endTime = int(endTime)/1000
-            if endTime < startTime:
-                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            starttime = datetime(startTime.year, startTime.month, startTime.day)
-            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            return self.queryset.filter(createTime__range=(starttime, endtime))
+                raise ParamsException(e.detail)
+
         return self.queryset
 
 
@@ -1439,28 +1403,19 @@ class AdView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
-        if (startTime and not endTime) or (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
-
-            startTime = int(startTime) / 1000
-            endTime = int(endTime) / 1000
-            if endTime < startTime:
-                raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
+                return self.queryset.filter(startTime__gte=starttime, endTime__lte=endtime)
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            # starttime = datetime(startTime.year, startTime.month, startTime.day)
-            # endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
+                raise ParamsException(e.detail)
+
         return self.queryset
 
 
@@ -1636,33 +1591,24 @@ class AllAudioSimpleView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
         nickName = self.request.query_params.get('nickName', '')  # 用户名
         name = self.request.query_params.get('name', '')  # 作品名
 
         # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 免检（后台上传的作品）
 
-        if (startTime and not endTime) or (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
-
-            startTime = int(startTime) / 1000
-            endTime = int(endTime) / 1000
-            if endTime < startTime:
-                raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            starttime = datetime(startTime.year, startTime.month, startTime.day)
-            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+                raise ParamsException(e.detail)
+
         if nickName:
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
@@ -1833,28 +1779,19 @@ class UserView(ListAPIView):
         # 过了结束时间
         User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]).\
             update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
-        if (startTime and not endTime) or (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
-
-            startTime = int(startTime) / 1000
-            endTime = int(endTime) / 1000
-            if endTime < startTime:
-                raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            starttime = datetime(startTime.year, startTime.month, startTime.day)
-            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+                raise ParamsException(e.detail)
+
         return self.queryset
 
 
@@ -2115,28 +2052,19 @@ class ActivityView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
-        if (startTime and not endTime) or (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
-
-            startTime = int(startTime) / 1000
-            endTime = int(endTime) / 1000
-            if endTime < startTime:
-                raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
+                return self.queryset.filter(startTime__gte=starttime, endTime__lte=endtime)
             except Exception as e:
                 logging.error(str(e))
-                return http_return(400, '时间参数错误')
-            # starttime = datetime(startTime.year, startTime.month, startTime.day)
-            # endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
+                raise ParamsException(e.detail)
+
         return self.queryset
 
 
@@ -2252,30 +2180,19 @@ class CycleBannerView(ListAPIView):
 
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
-        if (startTime and not endTime) or (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
-
-            if endTime < startTime:
-                raise ParamsException({'code': 400, 'msg': '结束时间早于结束时间'})
-
-            startTime = startTime / 1000
-            endTime = endTime / 1000
-
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
+                return self.queryset.filter(startTime__gte=starttime, endTime__lte=endtime)
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            # starttime = datetime(startTime.year, startTime.month, startTime.day)
-            # endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            return self.queryset.filter(startTime__gt=startTime, endTime__lt=endTime)
+                raise ParamsException(e.detail)
+
         return self.queryset
 
 
@@ -2441,27 +2358,18 @@ class FeedbackView(ListAPIView):
     pagination_class = MyPagination
 
     def get_queryset(self):
-        startTime = self.request.query_params.get('starttime', '')
-        endTime = self.request.query_params.get('endtime', '')
-        if (startTime and not endTime) or  (not startTime and endTime):
-            raise ParamsException({'code': 400, 'msg': '时间错误'})
-        if startTime and endTime:
-            if not all([startTime.isdigit(), endTime.isdigit()]):
-                raise ParamsException({'code': 400, 'msg': '时间错误'})
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
 
-            startTime = int(startTime)/1000
-            endTime = int(endTime)/1000
-            if endTime < startTime:
-                raise ParamsException({'code':400, 'msg':'结束时间早于结束时间'})
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
             try:
-                startTime = datetime.fromtimestamp(startTime)
-                endTime = datetime.fromtimestamp(endTime)
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
-                raise ParamsException('时间参数错误')
-            starttime = datetime(startTime.year, startTime.month, startTime.day)
-            endtime = datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
-            return self.queryset.filter(createTime__range=(starttime, endtime))
+                raise ParamsException(e.detail)
         return self.queryset
 
 

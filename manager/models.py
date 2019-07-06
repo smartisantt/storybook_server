@@ -324,7 +324,7 @@ class Behavior(BaseModle, models.Model):
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='busUuid', to_field='uuid', null=True)
     audioUuid = models.ForeignKey(AudioStory, on_delete=models.CASCADE, related_name='bauUuid', to_field='uuid',
                                   null=True)
-    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录
+    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录 5:最近录过
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.CharField(max_length=256, null=True)
 

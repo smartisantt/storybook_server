@@ -242,6 +242,21 @@ def recording_send(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '发布失败')
+    # 记录历史
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    try:
+        with transaction.atomic():
+            Behavior.objects.create(
+                uuid=get_uuid(),
+                userUuid=selfUser,
+                audioUuid=audio,
+                type=5,
+            )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '保存记录失败')
     return http_return(200, '发布成功')
 
 
@@ -922,7 +937,7 @@ def audiostory_praise(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type','')
+    type = data.get('type', '')
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
@@ -935,7 +950,7 @@ def audiostory_praise(request):
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '取消点赞失败')
-        return http_return(200,'取消点赞成功')
+        return http_return(200, '取消点赞成功')
     else:
         if not behav:
             audio = AudioStory.objects.filter(uuid=uuid).first()
@@ -969,7 +984,7 @@ def audiostory_collection(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type','')
+    type = data.get('type', '')
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
@@ -982,7 +997,7 @@ def audiostory_collection(request):
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '取消收藏失败')
-        return http_return(200,'取消收藏成功')
+        return http_return(200, '取消收藏成功')
     else:
         if not behav:
             audio = AudioStory.objects.filter(uuid=uuid).first()
@@ -1541,3 +1556,29 @@ def audio_other_version(request):
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)
     return http_return(200, '成功', {"total": total, "list": audioList})
+
+
+@check_identify
+def recording_stroy_recent(request):
+    """
+    最近录制
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    selfUuid = data['_cache']['uuid']
+    if uuid:
+        selfUuid = uuid
+    behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=5)
+    behavs = behav.order_by("-updateTime").all()
+    total, behavs = page_index(behavs, page, pageCount)
+    audios = []
+    for behav in behavs:
+        audios.append(behav.audioUuid)
+    audioStoryList = audioList_format(audios, data)
+    return http_return(200, '成功', {"list": audioStoryList, "total": total})

@@ -1327,6 +1327,9 @@ def personal_history_list(request):
     palyHistoryList = []
     for behav in behavs:
         audio = behav.audioUuid
+        selfUuid = data['_cache']['uuid']
+        checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=1).first()
+        checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=3).first()
         story = None
         if audio.audioStoryType:
             story = {
@@ -1343,19 +1346,41 @@ def personal_history_list(request):
                 'name': tag.name if tag.name else '',
                 "icon": tag.icon if tag.icon else '',
             })
-        audio = {
+        audioStory = {
             "uuid": audio.uuid,
-            "duration": audio.duration,
-            "icon": audio.bgIcon if audio.bgIcon else '',
+            "remarks": audio.remarks if audio.remarks else '',
             "name": audio.name if audio.name else '',
-            "palyCount": audio.playTimes,
+            "icon": audio.bgIcon if audio.bgIcon else '',
+            "audioVolume": audio.userVolume,
             "createTime": datetime_to_unix(audio.createTime),
-            "tagList": tagList,
+            "playCount": audio.playTimes,
             "story": story,
+            "audio": {
+                "url": audio.voiceUrl,
+                "duration": audio.duration,
+            },
+            "bgm": {
+                "uuid": audio.bgm.uuid if audio.bgm else '',
+                "url": audio.bgm.url if audio.bgm else '',
+                "name": audio.bgm.name if audio.bgm else '',
+                "duration": audio.bgm.duration if audio.bgm else '',
+            },
+            "publisher": {
+                "uuid": audio.userUuid.uuid if audio.userUuid else '',
+                "nickname": audio.userUuid.nickName if audio.userUuid else '',
+                "avatar": audio.userUuid.avatar if audio.userUuid else '',
+                "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else '',
+                "city": audio.userUuid.city if audio.userUuid else ''
+            },
+            "isPraise": True if checkPraise else False,
+            "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
+            "isCollection": True if checkLike else False,
+            "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
+            "commentsCount": '',
         }
         palyHistoryList.append({
             "uuid": behav.uuid,
-            "audio": audio,
+            "audioStory": audioStory,
         })
     return http_return(200, '成功', {"list": palyHistoryList, "total": total})
 
@@ -1400,8 +1425,8 @@ def personal_change(request):
     if avatar:
         update_data['avatar'] = avatar
     if nickname:
-        if len(nickname) < 2 or len(nickname) > 20:
-            return http_return(400, '用户名长度为2-20位,请重新输入')
+        if len(nickname) < 2 or len(nickname) > 10:
+            return http_return(400, '用户名长度为2-10位,请重新输入')
         update_data['nickName'] = nickname
     if intro:
         update_data['intro'] = intro
@@ -1532,3 +1557,28 @@ def advertising_list(request):
         "target": adv.target,
     }
     return http_return(200, '成功', advobj)
+
+
+@check_identify
+def audio_other_version(request):
+    """
+    其他主播版本
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    if not audio:
+        return http_return(400, '模板音频不存在')
+    if not audio.audioStoryType:
+        return http_return(400, '自由录制作品没有其他主播版本')
+    otheraudio = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(storyUuid__uuid=audio.storyUuid.uuid)
+    otheraudios = otheraudio.order_by("-createTime").all()
+    total, otheraudios = page_index(otheraudios, page, pageCount)
+    audioList = audioList_format(otheraudios, data)
+    return http_return(200, '成功', {"total": total, "list": audioList})

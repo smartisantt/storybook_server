@@ -237,49 +237,6 @@ class User(BaseModle, models.Model):
     class Meta:
         db_table = 'tb_user'
 
-    def get_follows(self):
-        '''
-        follows  我关注的人
-        :return:
-        '''
-        user_list = []
-        for follows_user in self.follows.all():
-            user_list.append(follows_user.followers)
-        return user_list
-
-    def get_followers(self):
-        '''
-        followed 关注我的人
-        :return:
-        '''
-        user_list = []
-        for followers_user in self.followers.all():
-            user_list.append(followers_user.follows)
-        return user_list
-
-    def set_follows(self, uuid):
-        '''
-        follow some user use uuid
-        :param id:
-        :return:
-        '''
-        try:
-            user = User.objects.get(uuid=uuid)
-        except Exception as e:
-            logging.error(str(e))
-            return False
-        # 这是关注的逻辑
-        friendship = FriendShip()
-        friendship.follows = self
-        friendship.followers = user
-        try:
-            with transaction.atomic():
-                friendship.save()
-        except Exception as e:
-            logging.error(str(e))
-            return False
-        return True
-
 
 class Version(BaseModle, models.Model):
     """

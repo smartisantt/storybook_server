@@ -2341,8 +2341,9 @@ class FeedbackView(ListAPIView):
         return self.queryset
 
 
-# 客服处理
+
 def reply(request):
+    """后台回复"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -2350,18 +2351,29 @@ def reply(request):
     replyInfo = data.get('replyInfo', '')
     if not all([uuid, replyInfo]):
         return http_return(400, '参数错误')
+    adminUserUuid = data['_cache'].get('uuid')
+    if not adminUserUuid:
+        return http_return(400, '没有管理员信息')
 
-    feedback = Feedback.objects.filter(uuid=uuid, status=0).first()
+    # 后台可以多次回复
+    feedback = Feedback.objects.filter(uuid=uuid).first()
     if not feedback:
         return http_return(400, '没有对象')
-
 
     try:
         with transaction.atomic():
             feedback.replyInfo = replyInfo
             feedback.status = 1
+            feedback.isRead = False
             feedback.save()
-            # 关联用户操作记录
+            # 记录哪个管理员回复了什么
+            Operation.objects.create(
+                uuid=get_uuid(),
+                userUuid=adminUserUuid,
+                operation='create',
+                objectUuid=uuid,
+                remark=replyInfo
+            )
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))

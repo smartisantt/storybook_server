@@ -95,7 +95,7 @@ class LoginLog(BaseModle, models.Model):
     devCode = models.CharField(max_length=256, verbose_name='设备编号', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='longinLogUuid', to_field='uuid')
     userAgent = models.CharField(max_length=256, verbose_name='登录平台', null=True)
-    isManager = models.BooleanField(default=False)      # 0 客户端登录  1 是后台管理端
+    isManager = models.BooleanField(default=False)  # 0 客户端登录  1 是后台管理端
 
     class Meta:
         db_table = 'tb_login_log'
@@ -104,7 +104,7 @@ class LoginLog(BaseModle, models.Model):
 class Operation(BaseModle, models.Model):
     """后台人员操作记录表"""
     userUuid = models.CharField(max_length=64, unique=True)
-    operation = models.CharField(max_length=255, null=True)     # create retrieve update delete
+    operation = models.CharField(max_length=255, null=True)  # create retrieve update delete
     objectUuid = models.CharField(max_length=64, unique=True)
     remark = models.CharField(max_length=1024, null=True)
 
@@ -142,9 +142,8 @@ class GameInfo(BaseModle, models.Model):
 
 class FriendShip(BaseModle, models.Model):
     """当前用户和其他用户关系表"""
-    follows = models.ForeignKey('User', on_delete=models.CASCADE, related_name='follows')
-    followers = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followers')
-    status = models.BooleanField(default=False)  # 状态，是否取消0/关注1
+    follows = models.ForeignKey('User', on_delete=models.CASCADE, related_name='follows', to_field='uuid')#被关注的人
+    followers = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followers', to_field='uuid')#关注的人
 
     class Meta:
         db_table = 'tb_friend'
@@ -236,49 +235,6 @@ class User(BaseModle, models.Model):
 
     class Meta:
         db_table = 'tb_user'
-
-    def get_follows(self):
-        '''
-        follows  我关注的人
-        :return:
-        '''
-        user_list = []
-        for follows_user in self.follows.all():
-            user_list.append(follows_user.followers)
-        return user_list
-
-    def get_followers(self):
-        '''
-        followed 关注我的人
-        :return:
-        '''
-        user_list = []
-        for followers_user in self.followers.all():
-            user_list.append(followers_user.follows)
-        return user_list
-
-    def set_follows(self, uuid):
-        '''
-        follow some user use uuid
-        :param id:
-        :return:
-        '''
-        try:
-            user = User.objects.get(uuid=uuid)
-        except Exception as e:
-            logging.error(str(e))
-            return False
-        # 这是关注的逻辑
-        friendship = FriendShip()
-        friendship.follows = self
-        friendship.followers = user
-        try:
-            with transaction.atomic():
-                friendship.save()
-        except Exception as e:
-            logging.error(str(e))
-            return False
-        return True
 
 
 class Version(BaseModle, models.Model):

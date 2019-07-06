@@ -284,6 +284,28 @@ def audioList_format(audios,data):
     return audioStoryList
 
 
+
+def userList_format(users):
+    """
+    格式返回用户列表
+    :param users:
+    :return:
+    """
+    resultList = []
+    for u in users:
+        audioCount = u.useAudioUuid.filter(isDelete=False).count()
+        followers = FriendShip.objects.filter(follows__uuid=u.uuid).count()
+        resultList.append({
+            "uuid": u.uuid,
+            "avatar": u.avatar if u.avatar else '',
+            "nickname": u.nickName if u.nickName else '',
+            "city": u.city if u.city else '',
+            "audioStoryCount": audioCount,
+            "followersCount": followers,
+        })
+    return resultList
+
+
 def paginator(page,pageCount):
     """
     插件分页

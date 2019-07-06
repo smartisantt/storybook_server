@@ -1727,6 +1727,10 @@ class UserView(ListAPIView):
     serializer_class = UserDetailSerializer
     filter_class = UserFilter
     pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime', )
+    ordering_fields = ('id', 'createTime')
+
 
     def get_queryset(self):
         # 首先更新用户禁言禁止登录状态

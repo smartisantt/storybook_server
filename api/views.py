@@ -1557,3 +1557,25 @@ def advertising_list(request):
         "target": adv.target,
     }
     return http_return(200, '成功', advobj)
+
+@check_identify
+def audio_other_version(request):
+    """
+    其他主播版本
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    if not audio:
+        return http_return(400, '模板音频不存在')
+    otheraudio = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(storyUuid__uuid=audio.storyUuid.uuid)
+    otheraudios = otheraudio.order_by("-createTime").all()
+    total, otheraudios = page_index(otheraudios, page, pageCount)
+    audioList = audioList_format(otheraudios, data)
+    return http_return(200, '成功', {"total": total, "list": audioList})

@@ -23,6 +23,7 @@ from django.core.cache import cache, caches
 from manager.models import User, Version, LoginLog
 from storybook_sever.api import Api
 from storybook_sever.config import *
+from utils.errors import ParamsException
 
 
 def random_string(size=6, chars=string.ascii_uppercase + string.digits):
@@ -228,7 +229,61 @@ def http_return(code, msg='', info=None):
     return HttpResponse(json.dumps(data), status=code)
 
 
+def timestamp2datetime(startTimestamp, endTimestamp, convert=True):
+    """
+    毫秒级时间戳转为datetime格式
+    :param startTimestamp: 开始时间戳
+    :param endTimestamp: 结束时间戳
+    :param convert: 是否处理时间的时分秒，默认转换
+    :return: 返回的datetime元祖
+    """
+    if not all([startTimestamp, endTimestamp]):
+        raise ParamsException('时间不能为空')
 
+    # 如果是字符串
+    if isinstance(startTimestamp, str):
+        if startTimestamp.isdigit():
+            try:
+                startTimestamp = int(startTimestamp)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('开始时间格式错误')
+        else:
+            raise ParamsException('开始时间格式错误')
+    if isinstance(endTimestamp, str):
+        if endTimestamp.isdigit():
+            try:
+                endTimestamp = int(endTimestamp)
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException('结束时间格式错误')
+        else:
+            raise ParamsException('结束时间格式错误')
+
+    if not all([isinstance(startTimestamp, int), isinstance(endTimestamp, int)]):
+        raise ParamsException('时间格式错误')
+
+    if endTimestamp < startTimestamp:
+        raise ParamsException('结束时间小于开始时间')
+
+    startTimestamp = startTimestamp / 1000
+    endTimestamp = endTimestamp / 1000
+
+    # 结束小于2019-05-30 00:00:00的时间不合法
+    if endTimestamp <= 1559145600:
+        raise ParamsException('此时间没有数据')
+
+
+    try:
+        startTime = datetime.datetime.fromtimestamp(startTimestamp)
+        endTime = datetime.datetime.fromtimestamp(endTimestamp)
+    except Exception as e:
+        logging.error(str(e))
+        raise ParamsException('时间格式错误')
+    if convert:
+        startTime = datetime.datetime(startTime.year, startTime.month, startTime.day)
+        endTime = datetime.datetime(endTime.year, endTime.month, endTime.day, 23, 59, 59, 999999)
+    return startTime, endTime
 
 # def check_shop(func):
 #     """

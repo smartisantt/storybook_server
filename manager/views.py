@@ -1757,7 +1757,25 @@ class UserView(ListAPIView):
         return self.queryset
 
 
+
+
+def check_add_user(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    userID = data.get('userID', '')
+
+    if not userID:
+        return http_return(400, '参数错误')
+
+    user = User.objects.filter(userID=userID).exclude(status='destroy').first()
+    if user:
+        return http_return(400, '重复注册')
+
+
+
 # 添加用户
+# TODO:测试
 def add_user(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1766,21 +1784,49 @@ def add_user(request):
     nickName = data.get('nickName', '')
     city = data.get('city', '')
     roles = data.get('roles', '')
-    userID = data.get('userID', '')
-    # 可选参数
     gender = data.get('gender', '')
-    intro = data.get('intro', '')
-    avatar = data.get('avatar', '')
-    if not all([tel, nickName, city, roles in ['normalUser','adminUser'], userID]):
+    pwd = data.get('pwd', '')
+
+
+    if not all([tel, nickName, city, roles in ['normalUser','adminUser'], pwd]):
         return http_return(400, '参数错误')
+
+    if 5<len(str(pwd))<40:
+        return http_return(400, '密码长度错误')
+
+    if 1 < len(str(city)) < 40:
+        return http_return(400, '城市长度错误')
+
+    if 1<len(str(nickName))<11:
+        return http_return(400, '昵称长度错误')
+
+    if not isinstance(tel, str):
+        tel = str(tel)
+
+    if not re.match("^1[35678]\d{9}$", tel):
+        return http_return(400, '手机号码错误')
 
     user = User.objects.filter(tel=tel).exclude(status='destroy').first()
     if user:
-        return http_return(400, '重复手机号')
+        return http_return(400, '此手机号已经注册')
 
-    user = User.objects.filter(userID=userID).exclude(status='destroy').first()
-    if user:
-        return http_return(400, '重复注册')
+
+    # /api/sso/user/byphone 读取用户列表(手机号用户)
+    api = Api()
+    userID = ''
+    userInfo = api.search_user_byphone(tel)
+    if userInfo == -1:
+        return http_return(400, '接口通信错误')
+    if userInfo:
+        userID = userInfo['userId']
+    else:
+        # /api/sso/createbyuserpasswd 管理员创建一个账号密码
+        userInfo = api.create_user(tel, pwd)
+        if userInfo:
+            userID = userInfo
+        else:
+            return http_return(400, '接口通信错误')
+
 
     # user = User.objects.filter(nickName=nickName).exclude(status='destroy').first()
     # if user:
@@ -1794,8 +1840,6 @@ def add_user(request):
                 userID = userID,
                 nickName = nickName,
                 tel = tel,
-                intro = intro,
-                avatar = avatar,
                 gender = gender or 0,  # 性别 0未知  1男  2女
                 status = "normal",
                 roles = roles,

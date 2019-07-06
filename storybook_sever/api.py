@@ -18,6 +18,8 @@ class Api(object):
         self.sts_token_url = '/api/oss/sts'
         self.create_user_url = '/api/sso/createbyuserpasswd'
 
+        self.search_user_byphone_url = '/api/sso/user/byphone'
+
         if version == 'ali_test':
             self.comm_host = 'https://castest.hbbclub.com/'
             self.create_user_host = 'https://castest.hbbclub.com/'
@@ -57,7 +59,8 @@ class Api(object):
             if re.status_code == 200:
                 return re.status_code, re.json().get('data').get('userId', '')
             else:
-                return re.status_code, re.json().get('msg')
+                # return re.status_code, re.json().get('msg')
+                return False
         except Exception as e:
             logging.error(e)
             return False
@@ -82,11 +85,24 @@ class Api(object):
             logging.error(e)
             return {}
 
+    def search_user_byphone(self, tel):
+        url = f'{self.comm_host}{self.search_user_byphone_url}?phone={tel}'
+
+        re = requests.get(url)
+        try:
+            if re.status_code == 200:
+                if re.json()['data'].get('data'):
+                    return re.json()['data'].get('data')[0]
+            return False
+        except Exception as e:
+            logging.error(e)
+            return -1
 
 
 if __name__ == '__main__':
     api = Api()
-    if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
-        print ('111')
+    api.search_user_byphone('15928140429')
+    # if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
+    #     print ('111')
     # api.create_user('18683367392', '123456')
-    print(api.get_sts_token('0F4741AEF563F5894577912CADB2B5F3'))
+    # print(api.get_sts_token('0F4741AEF563F5894577912CADB2B5F3'))

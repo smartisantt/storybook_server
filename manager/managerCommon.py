@@ -439,7 +439,7 @@ def match_tel(tel):
     :param tel:
     :return:
     """
-    if re.match(r'1[3,4,5,7,8,9]\d{9}', tel):
+    if re.match("^1[35678]\d{9}$", tel):
         return True
     return False
 

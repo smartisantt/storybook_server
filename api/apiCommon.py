@@ -242,6 +242,14 @@ def audioList_format(audios,data):
                 "content": audio.storyUuid.content if audio.storyUuid else '',
                 "intro": audio.storyUuid.intro if audio.storyUuid else ''
             }
+        bgm = None
+        if audio.bgm:
+            bgm = {
+                "uuid": audio.bgm.uuid if audio.bgm.uuid else '',
+                "url": audio.bgm.url if audio.bgm.url else '',
+                "name": audio.bgm.name if audio.bgm.name else '',
+                "duration":audio.bgm.duration if audio.bgm.duration else '',
+            }
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
@@ -262,12 +270,7 @@ def audioList_format(audios,data):
                 "url": audio.voiceUrl,
                 "duration": audio.duration,
             },
-            "bgm": {
-                "uuid": audio.bgm.uuid if audio.bgm else '',
-                "url": audio.bgm.url if audio.bgm else '',
-                "name": audio.bgm.name if audio.bgm else '',
-                "duration":audio.bgm.duration if audio.bgm else '',
-            },
+            "bgm": bgm,
             "publisher": {
                 "uuid": audio.userUuid.uuid if audio.userUuid else '',
                 "nickname": audio.userUuid.nickName if audio.userUuid else '',

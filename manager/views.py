@@ -2347,18 +2347,23 @@ def reply(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
+    feedbackUuid = data.get('uuid', '')
     replyInfo = data.get('replyInfo', '')
-    if not all([uuid, replyInfo]):
+    if not all([feedbackUuid, replyInfo]):
         return http_return(400, '参数错误')
     adminUserUuid = data['_cache'].get('uuid')
     if not adminUserUuid:
         return http_return(400, '没有管理员信息')
 
     # 后台可以多次回复
-    feedback = Feedback.objects.filter(uuid=uuid).first()
+    feedback = Feedback.objects.filter(uuid=feedbackUuid).first()
     if not feedback:
         return http_return(400, '没有对象')
+
+    if feedback.status == 1:
+        oldReplyInfo = feedback.replyInfo
+        if oldReplyInfo == replyInfo:
+            return http_return(400, '两次回复消息一样')
 
     try:
         with transaction.atomic():
@@ -2367,11 +2372,12 @@ def reply(request):
             feedback.isRead = False
             feedback.save()
             # 记录哪个管理员回复了什么
+            operationUuid = get_uuid()
             Operation.objects.create(
-                uuid=get_uuid(),
-                userUuid=adminUserUuid,
+                uuid=operationUuid,
+                adminUserUuid=adminUserUuid,
                 operation='create',
-                objectUuid=uuid,
+                objectUuid=feedbackUuid,
                 remark=replyInfo
             )
             return http_return(200, 'OK')

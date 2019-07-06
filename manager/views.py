@@ -1727,6 +1727,10 @@ class UserView(ListAPIView):
     serializer_class = UserDetailSerializer
     filter_class = UserFilter
     pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime', )
+    ordering_fields = ('id', 'createTime')
+
 
     def get_queryset(self):
         # 首先更新用户禁言禁止登录状态
@@ -2337,27 +2341,45 @@ class FeedbackView(ListAPIView):
         return self.queryset
 
 
-# 客服处理
+
 def reply(request):
+    """后台回复"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
+    feedbackUuid = data.get('uuid', '')
     replyInfo = data.get('replyInfo', '')
-    if not all([uuid, replyInfo]):
+    if not all([feedbackUuid, replyInfo]):
         return http_return(400, '参数错误')
+    adminUserUuid = data['_cache'].get('uuid')
+    if not adminUserUuid:
+        return http_return(400, '没有管理员信息')
 
-    feedback = Feedback.objects.filter(uuid=uuid, status=0).first()
+    # 后台可以多次回复
+    feedback = Feedback.objects.filter(uuid=feedbackUuid).first()
     if not feedback:
         return http_return(400, '没有对象')
 
+    if feedback.status == 1:
+        oldReplyInfo = feedback.replyInfo
+        if oldReplyInfo == replyInfo:
+            return http_return(400, '两次回复消息一样')
 
     try:
         with transaction.atomic():
             feedback.replyInfo = replyInfo
             feedback.status = 1
+            feedback.isRead = False
             feedback.save()
-            # 关联用户操作记录
+            # 记录哪个管理员回复了什么
+            operationUuid = get_uuid()
+            Operation.objects.create(
+                uuid=operationUuid,
+                adminUserUuid=adminUserUuid,
+                operation='create',
+                objectUuid=feedbackUuid,
+                remark=replyInfo
+            )
             return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))

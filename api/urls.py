@@ -41,7 +41,7 @@ urlpatterns = [
     path('audiostory/category/each', views.index_category_each, name='index_category_each'),  # 筛选某一类
 
     path('audiostory/praise', views.audiostory_praise, name='audiostory_praise'),  # 点赞作品
-    path('audiostory/collection', views.audiostory_like, name='audiostory_cancel_like'),  # 喜欢作品
+    path('audiostory/collection', views.audiostory_collection, name='audiostory_cancel_collection'),  # 收藏作品
 
     path('activity/detail', views.activity_detail, name='activity_detail'),  # 活动详情
     path('activity/ranklist', views.activity_rank, name='activity_rank'),  # 活动排行

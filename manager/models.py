@@ -103,9 +103,9 @@ class LoginLog(BaseModle, models.Model):
 
 class Operation(BaseModle, models.Model):
     """后台人员操作记录表"""
-    userUuid = models.CharField(max_length=64, unique=True)
+    adminUserUuid = models.CharField(max_length=64, null=True)
     operation = models.CharField(max_length=255, null=True)     # create retrieve update delete
-    objectUuid = models.CharField(max_length=64, unique=True)
+    objectUuid = models.CharField(max_length=64, null=True)
     remark = models.CharField(max_length=1024, null=True)
 
     class Meta:

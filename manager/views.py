@@ -212,50 +212,8 @@ def total_data(request):
         userNumList.append(userCount)
 
     recordTypePercentage = [{'name': name, 'tagsNum': tagsNum, 'userNum': userNum}
-                            for name in tagNameList
-                            for tagsNum in tagsNumList
-                            for userNum in userNumList
+                            for name,tagsNum,userNum in zip(tagNameList, tagsNumList, userNumList)
                             ]
-    # # 儿歌
-    # tags1 = Tag.objects.filter(code="RECORDTYPE", name='儿歌').first()
-    # tags1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()     # 儿歌作品数
-    # user1Count =  tags1.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-    #     values('userUuid_id').annotate(Count('userUuid_id')).count()                                #  录音类型人数，去重
-    #
-    # # result = Tag.objects.filter(code="RECORDTYPE").annotate(Count('tagsAudioStory'))
-    #
-    # # 父母学堂
-    # tags2 = Tag.objects.filter(code="RECORDTYPE", name='父母学堂').first()
-    # tags2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-    # user2Count = tags2.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-    #     values('userUuid_id').annotate(Count('userUuid_id')).count()
-    #
-    # # 国学
-    # tags3 = Tag.objects.filter(code="RECORDTYPE", name='国学').first()
-    # tags3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-    # user3Count = tags3.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-    #     values('userUuid_id').annotate(Count('userUuid_id')).count()
-    #
-    # # 英文
-    # tags4 = Tag.objects.filter(code="RECORDTYPE", name='英文').first()
-    # tags4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-    # user4Count = tags4.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)). \
-    #     values('userUuid_id').annotate(Count('userUuid_id')).count()
-    #
-    # # 其他
-    # tags5 = Tag.objects.filter(code="RECORDTYPE", name='其他').first()
-    # tags5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
-    # user5Count = tags5.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).\
-    #     values('userUuid_id').annotate(Count('userUuid_id')).count()
-    #
-    # recordTypePercentage = [
-    #     {'name': '儿歌', 'tagsNum': tags1Count, 'userNum': user1Count},
-    #     {'name': '儿歌', 'tagsNum': tags2Count, 'userNum': user2Count},
-    #     {'name': '国学', 'tagsNum': tags3Count, 'userNum': user3Count},
-    #     {'name': '英文', 'tagsNum': tags4Count, 'userNum': user4Count},
-    #     {'name': '其他', 'tagsNum': tags5Count, 'userNum': user5Count}
-    # ]
-
 
     # 活跃用户排行
     data1_list = []
@@ -2015,9 +1973,15 @@ def activity_rank(request):
     act = Activity.objects.filter(uuid=activityUuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
+    config = ActivityConfig.objects.filter(status=0).first()
+    if not config:
+        return http_return(400, '未获取到参数配置')
+    praiseNum = config.praiseNum / 100
+    playTimesNum = config.playTimesNum / 100
     games = GameInfo.objects.filter(activityUuid__uuid=activityUuid).all()
     games = sorted(games,
-                   key=lambda x: 0.75 * x.audioUuid.bauUuid.filter(type=1).count() + 0.25 * x.audioUuid.playTimes,
+                   key=lambda x: praiseNum * x.audioUuid.bauUuid.filter(
+                       type=1).count() + playTimesNum * x.audioUuid.playTimes,
                    reverse=True)
     total, games = page_index(games, page, page_size)
     activityRankList = []
@@ -2039,7 +2003,7 @@ def activity_rank(request):
                 "voiceUrl": game.audioUuid.voiceUrl or '',
                 "name": name or '',
             },
-            "score": 0.75 * game.audioUuid.bauUuid.filter(type=1).count() + 0.25 * game.audioUuid.playTimes,
+            "score": praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes,
         })
     return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
 

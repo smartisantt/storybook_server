@@ -1346,7 +1346,7 @@ def personal_history_list(request):
                 'name': tag.name if tag.name else '',
                 "icon": tag.icon if tag.icon else '',
             })
-        audioStory={
+        audioStory = {
             "uuid": audio.uuid,
             "remarks": audio.remarks if audio.remarks else '',
             "name": audio.name if audio.name else '',
@@ -1558,6 +1558,7 @@ def advertising_list(request):
     }
     return http_return(200, '成功', advobj)
 
+
 @check_identify
 def audio_other_version(request):
     """
@@ -1574,6 +1575,8 @@ def audio_other_version(request):
     audio = AudioStory.objects.filter(uuid=uuid).first()
     if not audio:
         return http_return(400, '模板音频不存在')
+    if not audio.audioStoryType:
+        return http_return(400, '自由录制作品没有其他主播版本')
     otheraudio = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(storyUuid__uuid=audio.storyUuid.uuid)
     otheraudios = otheraudio.order_by("-createTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)

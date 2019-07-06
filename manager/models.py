@@ -237,49 +237,6 @@ class User(BaseModle, models.Model):
     class Meta:
         db_table = 'tb_user'
 
-    def get_follows(self):
-        '''
-        follows  我关注的人
-        :return:
-        '''
-        user_list = []
-        for follows_user in self.follows.all():
-            user_list.append(follows_user.followers)
-        return user_list
-
-    def get_followers(self):
-        '''
-        followed 关注我的人
-        :return:
-        '''
-        user_list = []
-        for followers_user in self.followers.all():
-            user_list.append(followers_user.follows)
-        return user_list
-
-    def set_follows(self, uuid):
-        '''
-        follow some user use uuid
-        :param id:
-        :return:
-        '''
-        try:
-            user = User.objects.get(uuid=uuid)
-        except Exception as e:
-            logging.error(str(e))
-            return False
-        # 这是关注的逻辑
-        friendship = FriendShip()
-        friendship.follows = self
-        friendship.followers = user
-        try:
-            with transaction.atomic():
-                friendship.save()
-        except Exception as e:
-            logging.error(str(e))
-            return False
-        return True
-
 
 class Version(BaseModle, models.Model):
     """
@@ -367,7 +324,7 @@ class Behavior(BaseModle, models.Model):
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='busUuid', to_field='uuid', null=True)
     audioUuid = models.ForeignKey(AudioStory, on_delete=models.CASCADE, related_name='bauUuid', to_field='uuid',
                                   null=True)
-    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录
+    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录 5:最近录过
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.CharField(max_length=256, null=True)
 

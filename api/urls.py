@@ -14,6 +14,7 @@ urlpatterns = [
     path('recording/index', views.recording_index_list, name='recording_index_list'),  # 用户故事列表
     path('recording/banner', views.recording_banner, name='recording_banner'),  # 用户首页轮播图
     path('recording/info', views.recording_stroy_detail, name='recording_stroy_detail'),  # 故事详情（录制页面）
+    path('recording/recent', views.recording_stroy_recent, name='recording_stroy_recent'),  # 最近录过
     path('recording/bgmusic', views.recording_bgmusic_list, name='recording_bgmusic_list'),  # 背景音乐列表
     path('recording/add', views.recording_send, name='recording_send'),  # 故事发布
     path('recording/taglist', views.recording_tag_list, name='recording_tag_list'),  # 故事发布标签列表
@@ -41,7 +42,7 @@ urlpatterns = [
     path('audiostory/category/each', views.index_category_each, name='index_category_each'),  # 筛选某一类
 
     path('audiostory/praise', views.audiostory_praise, name='audiostory_praise'),  # 点赞作品
-    path('audiostory/collection', views.audiostory_like, name='audiostory_cancel_like'),  # 喜欢作品
+    path('audiostory/collection', views.audiostory_collection, name='audiostory_cancel_collection'),  # 收藏作品
 
     path('activity/detail', views.activity_detail, name='activity_detail'),  # 活动详情
     path('activity/ranklist', views.activity_rank, name='activity_rank'),  # 活动排行

@@ -242,6 +242,14 @@ def audioList_format(audios,data):
                 "content": audio.storyUuid.content if audio.storyUuid else '',
                 "intro": audio.storyUuid.intro if audio.storyUuid else ''
             }
+        bgm = None
+        if audio.bgm:
+            bgm = {
+                "uuid": audio.bgm.uuid if audio.bgm.uuid else '',
+                "url": audio.bgm.url if audio.bgm.url else '',
+                "name": audio.bgm.name if audio.bgm.name else '',
+                "duration":audio.bgm.duration if audio.bgm.duration else '',
+            }
         tagList = []
         for tag in audio.tags.all():
             tagList.append({
@@ -262,12 +270,7 @@ def audioList_format(audios,data):
                 "url": audio.voiceUrl,
                 "duration": audio.duration,
             },
-            "bgm": {
-                "uuid": audio.bgm.uuid if audio.bgm else '',
-                "url": audio.bgm.url if audio.bgm else '',
-                "name": audio.bgm.name if audio.bgm else '',
-                "duration":audio.bgm.duration if audio.bgm else '',
-            },
+            "bgm": bgm,
             "publisher": {
                 "uuid": audio.userUuid.uuid if audio.userUuid else '',
                 "nickname": audio.userUuid.nickName if audio.userUuid else '',
@@ -279,9 +282,31 @@ def audioList_format(audios,data):
             "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
             "isCollection": True if checkLike else False,
             "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
-            "commentsCount": '',
+            "commentsCount": 0,
         })
     return audioStoryList
+
+
+
+def userList_format(users):
+    """
+    格式返回用户列表
+    :param users:
+    :return:
+    """
+    resultList = []
+    for u in users:
+        audioCount = u.useAudioUuid.filter(isDelete=False).count()
+        followers = FriendShip.objects.filter(follows__uuid=u.uuid).count()
+        resultList.append({
+            "uuid": u.uuid,
+            "avatar": u.avatar if u.avatar else '',
+            "nickname": u.nickName if u.nickName else '',
+            "city": u.city if u.city else '',
+            "audioStoryCount": audioCount,
+            "followersCount": followers,
+        })
+    return resultList
 
 
 def paginator(page,pageCount):

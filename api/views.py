@@ -208,7 +208,9 @@ def recording_send(request):
     bgm = None
     if bgmUuid:
         bgm = Bgm.objects.filter(uuid=bgmUuid).first()
-    if not all([audioUrl, audioVolume, type, storyTagUuidList, audioDuration, name, icon]):
+    if not all([audioUrl, audioVolume, storyTagUuidList, audioDuration, name, icon]):
+        return http_return(400, '参数错误')
+    if type not in [0, 1]:
         return http_return(400, '参数错误')
     tags = []
     for tagUuid in storyTagUuidList:

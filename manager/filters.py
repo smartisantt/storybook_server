@@ -120,10 +120,10 @@ class GameInfoFilter(django_filters.FilterSet):
 class ActivityFilter(django_filters.FilterSet):
 
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
-    status = django_filters.CharFilter(method='filter_by_status')
+    stage = django_filters.CharFilter(method='filter_by_stage')
 
     @staticmethod
-    def filter_by_status(queryset, name, value):
+    def filter_by_stage(queryset, name, value):
         currentTime = datetime.now()
 
         if value == "past":
@@ -132,6 +132,8 @@ class ActivityFilter(django_filters.FilterSet):
             return queryset.filter(startTime__lt=currentTime, endTime__gt=currentTime)
         elif value == "future":
             return queryset.filter(startTime__gt=currentTime)
+        else:
+            return queryset
 
 
 

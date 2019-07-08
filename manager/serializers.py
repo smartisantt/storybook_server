@@ -1,4 +1,7 @@
 
+from datetime import datetime
+
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -343,14 +346,29 @@ class GameInfoSerializer(serializers.ModelSerializer):
 class ActivitySerializer(serializers.ModelSerializer):
 
     count = serializers.SerializerMethodField()
+    # 返回当前活动处于哪个阶段 未开始，进行中，已结束
+    stage = serializers.SerializerMethodField()
 
     @staticmethod
     def get_count(activity):
         return activity.activityRankUuid.count()
 
+    @staticmethod
+    def get_stage(activity):
+        # currentTime = datetime.now()
+        currentTime =timezone.now()
+
+        if activity.endTime<currentTime:
+            return "past"
+        elif activity.startTime<=currentTime<=activity.endTime:
+            return "now"
+        elif currentTime<activity.startTime:
+            return "future"
+
+
     class Meta:
         model = Activity
-        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon")
+        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon", "stage")
 
 
 

@@ -57,13 +57,13 @@ class Api(object):
 
         try:
             if re.status_code == 200:
-                return re.status_code, re.json().get('data').get('userId', '')
+                return re.json().get('data').get('userId', '')
             else:
-                # return re.status_code, re.json().get('msg')
+                # return re.json().get('msg')
                 return False
         except Exception as e:
             logging.error(e)
-            return False
+            return -1
 
     def get_sts_token(self, token):
         """
@@ -101,8 +101,8 @@ class Api(object):
 
 if __name__ == '__main__':
     api = Api()
-    api.search_user_byphone('15928140429')
-    # if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
-    #     print ('111')
-    # api.create_user('18683367392', '123456')
+    api.search_user_byphone('15928140420')
+    if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
+        print ('111')
+    api.create_user('18683367398', '123456')
     # print(api.get_sts_token('0F4741AEF563F5894577912CADB2B5F3'))

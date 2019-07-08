@@ -1775,40 +1775,40 @@ def check_add_user(request):
 
 
 # 添加用户
-# TODO:测试
 def add_user(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
     tel = data.get('tel', '')
-    nickName = data.get('nickName', '')
-    city = data.get('city', '')
-    roles = data.get('roles', '')
-    gender = data.get('gender', '')
-    pwd = data.get('pwd', '')
-
-
-    if not all([tel, nickName, city, roles in ['normalUser','adminUser'], pwd]):
-        return http_return(400, '参数错误')
-
-    if 5<len(str(pwd))<40:
-        return http_return(400, '密码长度错误')
-
-    if 1 < len(str(city)) < 40:
-        return http_return(400, '城市长度错误')
-
-    if 1<len(str(nickName))<11:
-        return http_return(400, '昵称长度错误')
-
-    if not isinstance(tel, str):
-        tel = str(tel)
-
+    if not tel:
+        return http_return(400, '手机号不能为空')
     if not re.match("^1[35678]\d{9}$", tel):
         return http_return(400, '手机号码错误')
 
     user = User.objects.filter(tel=tel).exclude(status='destroy').first()
     if user:
         return http_return(400, '此手机号已经注册')
+
+    nickName = data.get('nickName', '')
+    city = data.get('city', '')
+    roles = data.get('roles', '')
+    gender = data.get('gender', '')
+    pwd = data.get('pwd', '')
+
+    if not all([nickName, city, roles in ['normalUser','adminUser'], pwd]):
+        return http_return(400, '参数错误')
+
+    if not 5<len(str(pwd))<40:
+        return http_return(400, '密码长度错误')
+
+    if not 1<len(str(city))<40:
+        return http_return(400, '城市长度错误')
+
+    if not 1<len(str(nickName))<11:
+        return http_return(400, '昵称长度错误')
+
+    if not isinstance(tel, str):
+        tel = str(tel)
 
 
     # /api/sso/user/byphone 读取用户列表(手机号用户)
@@ -1819,13 +1819,16 @@ def add_user(request):
         return http_return(400, '接口通信错误')
     if userInfo:
         userID = userInfo['userId']
+
     else:
         # /api/sso/createbyuserpasswd 管理员创建一个账号密码
         userInfo = api.create_user(tel, pwd)
+        if userInfo == -1:
+            return http_return(400, '接口通信错误')
         if userInfo:
             userID = userInfo
         else:
-            return http_return(400, '接口通信错误')
+            return http_return(400, '创建用户失败')
 
 
     # user = User.objects.filter(nickName=nickName).exclude(status='destroy').first()
@@ -1838,7 +1841,8 @@ def add_user(request):
             User.objects.create(
                 uuid = uuid,
                 userID = userID,
-                nickName = nickName,
+                nickName = nickName or tel,
+                avatar = 'https://static.tm51.com/avatar/default/header/10067.jpg',
                 tel = tel,
                 gender = gender or 0,  # 性别 0未知  1男  2女
                 status = "normal",

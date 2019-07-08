@@ -12,7 +12,6 @@ urlpatterns = [
     path('identify/code', views.identify_code, name='identify'),  # 获取验证码
     path('check/identifycode', views.check_identify_code, name='check_identify_code'),  # 核对验证码
     path('recording/index', views.recording_index_list, name='recording_index_list'),  # 用户故事列表
-    path('recording/banner', views.recording_banner, name='recording_banner'),  # 用户首页轮播图
     path('recording/info', views.recording_stroy_detail, name='recording_stroy_detail'),  # 故事详情（录制页面）
     path('recording/recent', views.recording_stroy_recent, name='recording_stroy_recent'),  # 最近录过
     path('recording/bgmusic', views.recording_bgmusic_list, name='recording_bgmusic_list'),  # 背景音乐列表

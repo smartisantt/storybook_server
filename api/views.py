@@ -750,11 +750,11 @@ def index_category_result(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    categoryStr = data.get('categoryStr', '')
+    keyword = data.get('keyword', '')
     audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
     user = User.objects.filter(status='normal')
-    if categoryStr:
-        categoryList = categoryStr.split('*')
+    if keyword:
+        categoryList = keyword.split('*')
         for cate in categoryList:
             tagList = cate.split(',')
             audio = audio.filter(tags__uuid__in=tagList)
@@ -776,7 +776,7 @@ def index_category_each(request):
     if not data:
         return http_return(400, '参数错误')
     type = data.get('type', '')  # audioStory publisher
-    categoryStr = data.get('categoryStr', '')
+    keyword = data.get('keyword', '')
     filterValue = data.get('filterValue', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
@@ -788,8 +788,8 @@ def index_category_each(request):
         return http_return(400, '存储搜索记录失败')
     if type == "audioStory":
         audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
-        if categoryStr:
-            categoryList = categoryStr.split('*')
+        if keyword:
+            categoryList = keyword.split('*')
             for cate in categoryList:
                 tagList = cate.split(',')
                 audio = audio.filter(tags__uuid__in=tagList)
@@ -806,8 +806,8 @@ def index_category_each(request):
         ]
     elif type == "publisher":
         user = User.objects.filter(status='normal')
-        if categoryStr:
-            categoryList = categoryStr.split('*')
+        if keyword:
+            categoryList = keyword.split('*')
             for cate in categoryList:
                 tagList = cate.split(',')
                 user = user.filter(useAudioUuid__tags__uuid__in=tagList)

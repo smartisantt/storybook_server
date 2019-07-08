@@ -291,9 +291,9 @@ class AudioStory(BaseModle, models.Model):
     """
     isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
     voiceUrl = models.CharField(max_length=255, null=True)  # 用户的声音
-    userVolume = models.FloatField(null=True)  # 用户音量
+    userVolume = models.FloatField(default=1.0)  # 用户音量
     bgm = models.ForeignKey('Bgm', on_delete=models.CASCADE, related_name='bgmaudiosUuid', to_field='uuid', null=True)
-    bgmVolume = models.FloatField(null=True)  # 背景音乐音量
+    bgmVolume = models.FloatField(default=1.0)  # 背景音乐音量
     type = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
     audioStoryType = models.BooleanField(default=True)  # 1模板录制 0 自由音频
     playTimes = models.IntegerField(null=True)  # 播放次数

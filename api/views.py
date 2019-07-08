@@ -1072,34 +1072,7 @@ def activity_audiostory_list(request):
     audio = audio.filter(createTime__gte=startTime, createTime__lte=endTime)
     audios = audio.exclude(uuid__in=activityUuidList).order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
-    audioStoryList = []
-    for audio in audios:
-        story = None
-        if audio.audioStoryType:
-            story = {
-                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                "name": audio.storyUuid.name if audio.storyUuid else '',
-                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                "content": audio.storyUuid.content if audio.storyUuid else '',
-                "intro": audio.storyUuid.intro if audio.storyUuid else ''
-            }
-        tagList = []
-        for tag in audio.tags.all():
-            tagList.append({
-                'uuid': tag.uuid,
-                'name': tag.name if tag.name else '',
-                "icon": tag.icon if tag.icon else '',
-            })
-        audioStoryList.append({
-            "uuid": audio.uuid,
-            "duration": audio.duration,
-            "icon": audio.bgIcon if audio.bgIcon else '',
-            "name": audio.name if audio.name else '',
-            "palyCount": audio.playTimes,
-            "createTime": datetime_to_unix(audio.createTime),
-            "tagList": tagList,
-            "story": story,
-        })
+    audioStoryList = audioList_format(audio, data)
     return http_return(200, '成功', {"list": audioStoryList, "total": total})
 
 

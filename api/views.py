@@ -342,7 +342,7 @@ def user_audio_list(request):
     if not user:
         return http_return(400, '用户信息不存在')
     audios = AudioStory.objects.exclude(checkStatus="unCheck").exclude(checkStatus="checkFail").filter(
-        userUuid__uuid=uuid, isDelete=False).order_by("-createTime").all()
+        userUuid__uuid=uuid, isDelete=False).order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioList = audioList_format(audios, data)
     return http_return(200, '成功', {"total": total, "list": audioList})
@@ -465,7 +465,7 @@ def audio_other(request):
     user = User.objects.filter(useAudioUuid__uuid=uuid).first()
     otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
         isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=user.uuid, isDelete=False)
-    otheraudios = otheraudio.order_by("-createTime").all()
+    otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)
     return http_return(200, '成功', {"total": total, "list": audioList})
@@ -630,8 +630,8 @@ def search_all(request):
         return http_return(400, '存储搜索记录失败')
     audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
     user = User.objects.filter(roles='normalUser')
-    audios = audio.filter(name__contains=keyword).order_by("-createTime").all()[:6]
-    users = user.filter(nickName__contains=keyword).order_by("-createTime").all()[:6]
+    audios = audio.filter(name__contains=keyword).order_by("-updateTime").all()[:6]
+    users = user.filter(nickName__contains=keyword).order_by("-updateTime").all()[:6]
     searchAudioStory, searchUser = result_all(audios, users, data)
     return http_return(200, '成功', {"searchAudioStory": searchAudioStory, "searchUser": searchUser})
 
@@ -665,7 +665,7 @@ def search_each(request):
         if filterValue == 'rank':
             audio = audio.order_by("-playTimes")
         else:
-            audio = audio.order_by("-createTime")
+            audio = audio.order_by("-updateTime")
         audios = audio.all()
         total, audios = page_index(audios, page, pageCount)
         resultList = audioList_format(audios, data)
@@ -759,7 +759,7 @@ def index_category_result(request):
             tagList = cate.split(',')
             audio = audio.filter(tags__uuid__in=tagList)
             user = user.filter(useAudioUuid__tags__uuid__in=tagList)
-    audios = audio.order_by("-createTime").all()[:6]
+    audios = audio.order_by("-updateTime").all()[:6]
     users = user.order_by('-updateTime').all()[:6]
     searchAudioStory, searchUser = result_all(audios, users, data)
     return http_return(200, '成功', {"searchAudioStory": searchAudioStory, "searchUser": searchUser})
@@ -796,7 +796,7 @@ def index_category_each(request):
         if filterValue == 'rank':
             audio = audio.order_by("-playTimes")
         else:
-            audio = audio.order_by("-createTime")
+            audio = audio.order_by("-updateTime")
         audios = audio.all()
         total, audios = page_index(audios, page, pageCount)
         resultList = audioList_format(audios, data)
@@ -1383,7 +1383,7 @@ def audio_other_version(request):
         return http_return(400, '自由录制作品没有其他主播版本')
     otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
         isDelete=False).filter(storyUuid__uuid=audio.storyUuid.uuid)
-    otheraudios = otheraudio.order_by("-createTime").all()
+    otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)
     return http_return(200, '成功', {"total": total, "list": audioList})

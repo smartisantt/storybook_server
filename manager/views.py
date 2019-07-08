@@ -847,9 +847,10 @@ def add_audio_story(request):
     remarks = data.get('remarks', '')
     duration = data.get('duration', '')
     url = data.get('url', '')
+    type = data.get('type', '')         # 录制形式 0宝宝录制 1爸妈录制
     tagsUuidList = data.get('tagsuuidlist', '')
 
-    if not all([storyUuid, userUuid, remarks, url, duration, tagsUuidList]):
+    if not all([storyUuid, userUuid, remarks, url, duration, tagsUuidList, type in [0, 1]]):
         return http_return(400, '参数不能为空')
 
     story = Story.objects.filter(uuid=storyUuid).first()
@@ -879,6 +880,9 @@ def add_audio_story(request):
             voiceUrl=url,
             playTimes=0,
             audioStoryType=1, # 1模板录制 0 自由音频
+            type=type,
+            name= story.name,
+            bgIcon= story.faceIcon,
             storyUuid=story,
             remarks=remarks,
             duration=duration,
@@ -901,6 +905,11 @@ class FreedomAudioStoryInfoView(ListAPIView):
     serializer_class = FreedomAudioStoryInfoSerializer
     filter_class = FreedomAudioStoryInfoFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')

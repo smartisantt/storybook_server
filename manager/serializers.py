@@ -64,7 +64,7 @@ class TagsSimpleSerialzer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        exclude = ("parent", "isDelete", "isUsing")
+        exclude = ("parent", "isDelete", "isUsing", "createTime", "updateTime")
 
 class BgmSimpleSerializer(serializers.ModelSerializer):
 

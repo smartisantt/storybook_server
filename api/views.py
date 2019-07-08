@@ -777,7 +777,7 @@ def index_category_each(request):
         return http_return(400, '参数错误')
     type = data.get('type', '')  # audioStory publisher
     categoryStr = data.get('categoryStr', '')
-    filterValue = data.get('filterValue','')
+    filterValue = data.get('filterValue', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']

@@ -462,7 +462,7 @@ def audio_play(request):
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数错误')
-    audio = AudioStory.objects.filter(uuid=uuid, checkStatus='check', isDelete=False).first()
+    audio = AudioStory.objects.exclude(checkStatus="unCheck").exclude(checkStatus="checkFail").filter(uuid=uuid, isDelete=False).first()
     if not audio:
         return http_return(400, '故事信息不存在')
     # 更新播放次数

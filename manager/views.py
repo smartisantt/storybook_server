@@ -782,11 +782,16 @@ class AudioStoryInfoView(ListAPIView):
     queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),
                                          Q(checkStatus='check')|Q(checkStatus='exemption'))\
         .select_related('bgm', 'userUuid')\
-        .prefetch_related('tags').order_by('-createTime')
+        .prefetch_related('tags')
 
     serializer_class = AudioStoryInfoSerializer
     filter_class = AudioStoryInfoFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
@@ -814,7 +819,7 @@ class AudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(
                 storyUuid__in=Story.objects.filter(name__icontains=name).all())
         if tag:
-            tag_info = Tag.objects.filter(name=tag).first()
+            tag_info = Tag.objects.filter(uuid=tag, isDelete=False).first()
             if tag_info:
                 self.queryset = self.queryset.filter(tags__id=tag_info.id)
             else:
@@ -922,7 +927,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
         if tag:
-            tag_info = Tag.objects.filter(name=tag).first()
+            tag_info = Tag.objects.filter(uuid=tag, isDelete=False).first()
             if tag_info:
                 self.queryset = self.queryset.filter(tags__id=tag_info.id)
             else:

@@ -525,7 +525,7 @@ def index_list(request):
             })
     # 抢先听
     firstList = []
-    firsts = Module.objects.filter(type='MOD2', isDelete=False).order_by("orderNum").all()[:4]
+    firsts = Module.objects.filter(type='MOD2', isDelete=False).order_by("orderNum").all()[:6]
     if firsts:
         for first in firsts:
             firstList.append({

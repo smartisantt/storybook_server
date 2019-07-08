@@ -26,6 +26,7 @@ class MyJsonRenderer(JSONRenderer):
             # 表示程序是正常运行的，需自己组装code和msg参数
             code = 200
             msg = 'OK'
+            # renderer_context['response'].status_code = 200
             res = {
                 'code': code,
                 'msg': msg,

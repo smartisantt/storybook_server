@@ -287,6 +287,7 @@ def audioList_format(audios, data):
             "isCollection": True if checkLike else False,
             "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
             "commentsCount": 0,
+            "tagList": tagList,
         })
     return audioStoryList
 

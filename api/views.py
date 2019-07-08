@@ -302,7 +302,7 @@ def user_center(request):
         "name": user.nickName if user.nickName else '',
         "avatar": user.avatar if user.avatar else '',
         "id": user.id,
-        "isFollower": True if follow else False,
+        "isFollow": True if follow else False,
         "intro": user.intro if user.intro else '',
         "followersCount": FriendShip.objects.filter(follows__uuid=uuid).count(),
         "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count()

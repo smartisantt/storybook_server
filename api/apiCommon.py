@@ -102,7 +102,7 @@ def check_identify(func):
                     version = Version.objects.filter(status="dafault").first()
                     defaultIcon = user_info.get('wxAvatarUrl', '')
                     if defaultIcon == '':
-                        defaultIcon = 'beijing.aliyuncs.com/5cefaceb16d3fc77d6bf8095.jpeg'
+                        defaultIcon = 'https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=818232364,2649168470&fm=26&gp=0.jpg'
                     defaultName = user_info.get('wxNickname', '')
                     if defaultName == '':
                         defaultName = get_default_name(user_info.get('phone', ''))

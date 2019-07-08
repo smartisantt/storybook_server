@@ -417,7 +417,8 @@ def audio_play(request):
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数错误')
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False).filter(uuid=uuid).first()
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(uuid=uuid).first()
     if not audio:
         return http_return(400, '故事信息不存在')
     # 更新播放次数
@@ -442,60 +443,9 @@ def audio_play(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存记录失败')
-    checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=1).first()
-    checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=3).first()
-    story = None
-    if audio.audioStoryType:
-        story = {
-            "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-            "name": audio.storyUuid.name if audio.storyUuid else '',
-            "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-            "content": audio.storyUuid.content if audio.storyUuid else '',
-            "intro": audio.storyUuid.intro if audio.storyUuid else ''
-        }
-    bgm = None
-    if audio.bgm:
-        bgm = {
-            "uuid": audio.bgm.uuid if audio.bgm.uuid else '',
-            "url": audio.bgm.url if audio.bgm.url else '',
-            "name": audio.bgm.name if audio.bgm.name else '',
-            "duration": audio.bgm.duration if audio.bgm.duration else '',
-        }
-    tagList = []
-    for tag in audio.tags.all():
-        tagList.append({
-            'uuid': tag.uuid,
-            'name': tag.name if tag.name else '',
-            "icon": tag.icon if tag.icon else '',
-        })
-    playDict = {
-        "uuid": audio.uuid,
-        "remarks": audio.remarks if audio.remarks else '',
-        "name": audio.name if audio.name else '',
-        "icon": audio.bgIcon if audio.bgIcon else '',
-        "audioVolume": audio.userVolume if audio.userVolume else 1.0,
-        "bgmVolume": audio.bgmVolume if audio.bgmVolume else 1.0,
-        "createTime": datetime_to_unix(audio.createTime),
-        "playCount": audio.playTimes,
-        "story": story,
-        "audio": {
-            "url": audio.voiceUrl,
-            "duration": audio.duration,
-        },
-        "bgm": bgm,
-        "publisher": {
-            "uuid": audio.userUuid.uuid if audio.userUuid else '',
-            "nickname": audio.userUuid.nickName if audio.userUuid else '',
-            "avatar": audio.userUuid.avatar if audio.userUuid else '',
-            "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else '',
-            "city": audio.userUuid.city if audio.userUuid else ''
-        },
-        "isPraise": True if checkPraise else False,
-        "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
-        "isCollection": True if checkLike else False,
-        "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
-        "commentsCount": 0,
-    }
+    audios = []
+    audios.append(audio)
+    playDict = audioList_format(audios, data)[0]
     return http_return(200, '成功', playDict)
 
 
@@ -513,7 +463,8 @@ def audio_other(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     user = User.objects.filter(useAudioUuid__uuid=uuid).first()
-    otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=user.uuid, isDelete=False)
+    otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=user.uuid, isDelete=False)
     otheraudios = otheraudio.order_by("-createTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)
@@ -600,7 +551,8 @@ def index_list(request):
             })
     # 猜你喜欢
     likeList = []
-    audios = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False).filter(
+    audios = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(
         isDelete=False).order_by("-playTimes").all()[:6]
     if audios:
         for audio in audios:
@@ -1108,7 +1060,8 @@ def activity_audiostory_list(request):
     games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
     for game in games:
         activityUuidList.append(game.audioUuid.uuid)
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False).filter(
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(
         userUuid__uuid=data['_cache']['uuid'])
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
@@ -1238,7 +1191,8 @@ def personal_audiostory(request):
     selfUuid = data['_cache']['uuid']
     if uuid:
         selfUuid = uuid
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False).filter(userUuid__uuid=selfUuid)
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(userUuid__uuid=selfUuid)
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
@@ -1517,7 +1471,8 @@ def audio_other_version(request):
         return http_return(400, '模板音频不存在')
     if not audio.audioStoryType:
         return http_return(400, '自由录制作品没有其他主播版本')
-    otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False).filter(storyUuid__uuid=audio.storyUuid.uuid)
+    otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(storyUuid__uuid=audio.storyUuid.uuid)
     otheraudios = otheraudio.order_by("-createTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)

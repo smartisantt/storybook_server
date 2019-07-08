@@ -219,7 +219,7 @@ def forbbiden_say(func):
     return wrapper
 
 
-def audioList_format(audios,data):
+def audioList_format(audios, data):
     """
     处理返回格式化
     :param audios:
@@ -231,21 +231,23 @@ def audioList_format(audios,data):
         checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=1).first()
         checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=3).first()
         story = None
-        if audio.audioStoryType:
+        if audio.storyUuid:
+            storyObj = audio.storyUuid
             story = {
-                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                "name": audio.storyUuid.name if audio.storyUuid else '',
-                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                "content": audio.storyUuid.content if audio.storyUuid else '',
-                "intro": audio.storyUuid.intro if audio.storyUuid else ''
+                "uuid": storyObj.uuid if storyObj.uuid else '',
+                "name": storyObj.name if storyObj.name else '',
+                "icon": storyObj.faceIcon if storyObj.faceIcon else '',
+                "content": storyObj.content if storyObj.content else '',
+                "intro": storyObj.intro if storyObj.intro else ''
             }
         bgm = None
         if audio.bgm:
+            bgmObj = audio.bgm
             bgm = {
-                "uuid": audio.bgm.uuid if audio.bgm.uuid else '',
-                "url": audio.bgm.url if audio.bgm.url else '',
-                "name": audio.bgm.name if audio.bgm.name else '',
-                "duration":audio.bgm.duration if audio.bgm.duration else '',
+                "uuid": bgmObj.uuid if bgmObj.uuid else '',
+                "url": bgmObj.url if bgmObj.url else '',
+                "name": bgmObj.name if bgmObj.name else '',
+                "duration": bgmObj.duration if bgmObj.duration else 0,
             }
         tagList = []
         for tag in audio.tags.all():
@@ -254,6 +256,16 @@ def audioList_format(audios,data):
                 'name': tag.name if tag.name else '',
                 "icon": tag.icon if tag.icon else '',
             })
+        publisher = None
+        if audio.userUuid:
+            user = audio.userUuid
+            publisher = {
+                "uuid": user.uuid if user.uuid else '',
+                "nickname": user.nickName if user.nickName else '',
+                "avatar": user.avatar if user.avatar else '',
+                "createTime": datetime_to_unix(user.createTime) if user.createTime else 0,
+                "city": user.city if user.city else ''
+            }
         audioStoryList.append({
             "uuid": audio.uuid,
             "remarks": audio.remarks if audio.remarks else '',
@@ -261,21 +273,15 @@ def audioList_format(audios,data):
             "icon": audio.bgIcon if audio.bgIcon else '',
             "audioVolume": audio.userVolume if audio.userVolume else 1.0,
             "bgmVolume": audio.bgmVolume if audio.bgmVolume else 1.0,
-            "createTime": datetime_to_unix(audio.createTime),
-            "playCount": audio.playTimes,
+            "createTime": datetime_to_unix(audio.createTime) if audio.createTime else 0,
+            "playCount": audio.playTimes if audio.playTimes else 0,
             "story": story,
             "audio": {
-                "url": audio.voiceUrl,
-                "duration": audio.duration,
+                "url": audio.voiceUrl if audio.voiceUrl else '',
+                "duration": audio.duration if audio.duration else 0,
             },
             "bgm": bgm,
-            "publisher": {
-                "uuid": audio.userUuid.uuid if audio.userUuid else '',
-                "nickname": audio.userUuid.nickName if audio.userUuid else '',
-                "avatar": audio.userUuid.avatar if audio.userUuid else '',
-                "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else '',
-                "city": audio.userUuid.city if audio.userUuid else ''
-            },
+            "publisher": publisher,
             "isPraise": True if checkPraise else False,
             "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
             "isCollection": True if checkLike else False,
@@ -283,7 +289,6 @@ def audioList_format(audios,data):
             "commentsCount": 0,
         })
     return audioStoryList
-
 
 
 def userList_format(users):
@@ -307,7 +312,7 @@ def userList_format(users):
     return resultList
 
 
-def paginator(page,pageCount):
+def paginator(page, pageCount):
     """
     插件分页
     :param page:

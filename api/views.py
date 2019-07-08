@@ -441,7 +441,9 @@ def audio_play(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存记录失败')
-    story = ''
+    checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=1).first()
+    checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=3).first()
+    story = None
     if audio.audioStoryType:
         story = {
             "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
@@ -450,10 +452,24 @@ def audio_play(request):
             "content": audio.storyUuid.content if audio.storyUuid else '',
             "intro": audio.storyUuid.intro if audio.storyUuid else ''
         }
-    checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=1).first()
-    checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=3).first()
+    bgm = None
+    if audio.bgm:
+        bgm = {
+            "uuid": audio.bgm.uuid if audio.bgm.uuid else '',
+            "url": audio.bgm.url if audio.bgm.url else '',
+            "name": audio.bgm.name if audio.bgm.name else '',
+            "duration": audio.bgm.duration if audio.bgm.duration else '',
+        }
+    tagList = []
+    for tag in audio.tags.all():
+        tagList.append({
+            'uuid': tag.uuid,
+            'name': tag.name if tag.name else '',
+            "icon": tag.icon if tag.icon else '',
+        })
     playDict = {
         "uuid": audio.uuid,
+        "remarks": audio.remarks if audio.remarks else '',
         "name": audio.name if audio.name else '',
         "icon": audio.bgIcon if audio.bgIcon else '',
         "audioVolume": audio.userVolume if audio.userVolume else 1.0,
@@ -465,12 +481,7 @@ def audio_play(request):
             "url": audio.voiceUrl,
             "duration": audio.duration,
         },
-        "bgm": {
-            "uuid": audio.bgm.uuid if audio.bgm else '',
-            "url": audio.bgm.url if audio.bgm else '',
-            "name": audio.bgm.name if audio.bgm else '',
-            "duration": audio.bgm.duration if audio.bgm else '',
-        },
+        "bgm": bgm,
         "publisher": {
             "uuid": audio.userUuid.uuid if audio.userUuid else '',
             "nickname": audio.userUuid.nickName if audio.userUuid else '',
@@ -482,7 +493,7 @@ def audio_play(request):
         "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
         "isCollection": True if checkLike else False,
         "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
-        "commentsCount": '',
+        "commentsCount": 0,
     }
     return http_return(200, '成功', playDict)
 

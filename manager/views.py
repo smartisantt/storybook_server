@@ -602,6 +602,9 @@ class StoryView(ListAPIView):
     serializer_class = StorySerializer
     filter_class = StoryFilter
     pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime', 'recordNum')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
@@ -1753,21 +1756,6 @@ class UserView(ListAPIView):
 
         return self.queryset
 
-
-
-
-def check_add_user(request):
-    data = request_body(request, 'POST')
-    if not data:
-        return http_return(400, '参数错误')
-    userID = data.get('userID', '')
-
-    if not userID:
-        return http_return(400, '参数错误')
-
-    user = User.objects.filter(userID=userID).exclude(status='destroy').first()
-    if user:
-        return http_return(400, '重复注册')
 
 
 

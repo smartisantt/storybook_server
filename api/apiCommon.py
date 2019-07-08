@@ -7,8 +7,9 @@ import re
 import string
 
 from django.core.cache import caches
+from django.db.models import Q
 
-from common.common import http_return, get_uuid, datetime_to_unix
+from common.common import http_return, get_uuid, datetime_to_unix, page_index
 from manager.models import *
 from common.api import Api
 from storybook_sever.config import USER_SESSION_OVER_TIME
@@ -311,6 +312,33 @@ def userList_format(users):
             "followersCount": followers,
         })
     return resultList
+
+
+def result_all(audios,users,data):
+    """
+    返回搜索和分类筛选结果
+    :param audios:
+    :param users:
+    :param data:
+    :return:
+    """
+    audioList = audioList_format(audios, data)
+    userList = userList_format(users)
+    searchAudioStory = {
+        "filter": [
+            {"label": "最多播放", "value": "rank"},
+            {"label": "最新上传", "value": "latest"}
+        ],
+        "list": audioList,
+    }
+    searchUser = {
+        "filter": [
+            {"label": "最多粉丝", "value": "followersCount"},
+            {"label": "最多音频", "value": "audioStoryCount"}
+        ],
+        "list": userList,
+    }
+    return searchAudioStory,searchUser
 
 
 def paginator(page, pageCount):

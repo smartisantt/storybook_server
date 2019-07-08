@@ -881,6 +881,8 @@ def add_audio_story(request):
             playTimes=0,
             audioStoryType=1, # 1模板录制 0 自由音频
             type=type,
+            name= story.name,
+            bgIcon= story.faceIcon,
             storyUuid=story,
             remarks=remarks,
             duration=duration,
@@ -903,6 +905,11 @@ class FreedomAudioStoryInfoView(ListAPIView):
     serializer_class = FreedomAudioStoryInfoSerializer
     filter_class = FreedomAudioStoryInfoFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')

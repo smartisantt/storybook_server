@@ -4,15 +4,12 @@
 # Create your views here.
 
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.decorators import authentication_classes
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
-from functools import reduce
 
 from api.apiCommon import get_default_name
-from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, GameInfoFilter, ActivityFilter, CycleBannerFilter, \
+    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, ActivityFilter, CycleBannerFilter, \
     AdFilter, FeedbackFilter
 from manager.models import *
 from manager.managerCommon import *
@@ -20,10 +17,10 @@ from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, GameInfoSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer
-from storybook_sever.api import Api
+    AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer
+from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
-from datetime import datetime, timedelta
+from datetime import datetime
 from utils.errors import ParamsException
 
 
@@ -1842,7 +1839,7 @@ def add_user(request):
                 uuid = uuid,
                 userID = userID,
                 nickName = nickName or tel,
-                avatar = 'https://static.tm51.com/avatar/default/header/10067.jpg',
+                avatar = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file110598494460.jpg',
                 tel = tel,
                 gender = gender or 0,  # 性别 0未知  1男  2女
                 status = "normal",

@@ -86,7 +86,8 @@ class Api(object):
             return {}
 
     def search_user_byphone(self, tel):
-        url = f'{self.comm_host}{self.search_user_byphone_url}?phone={tel}'
+        # url = f'{self.comm_host}{self.search_user_byphone_url}?phone={tel}'
+        url = '{0}{1}?phone={2}'.format(self.comm_host,self.search_user_byphone_url,tel)
 
         re = requests.get(url)
         try:

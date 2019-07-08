@@ -5,23 +5,16 @@ import random
 import re
 import uuid
 import datetime
-import calendar
 import json
 import logging
 import string
 import time
 
-import base64
-
-
-from django.db import connection
-
 from django.http import HttpResponse
-from django.db import transaction
 from django.core.cache import cache, caches
 
-from manager.models import User, Version, LoginLog
-from storybook_sever.api import Api
+from manager.models import User, LoginLog
+from common.api import Api
 from storybook_sever.config import *
 from utils.errors import ParamsException
 

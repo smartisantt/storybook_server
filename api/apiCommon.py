@@ -2,18 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import datetime
-import logging
 import random
 import re
 import string
 
-from django.core.cache import cache, caches
-from django.db import transaction
+from django.core.cache import caches
 
 from common.common import http_return, get_uuid, datetime_to_unix
 from manager.models import *
-from storybook_sever import api
-from storybook_sever.api import Api
+from common.api import Api
 from storybook_sever.config import USER_SESSION_OVER_TIME
 
 

@@ -1,13 +1,12 @@
 import logging
 
 from django.core.cache import caches
-from django.db import transaction
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from manager.managerCommon import http_return, get_uuid, get_ip_address, create_session
+from manager.managerCommon import get_uuid, get_ip_address, create_session
 from manager.models import User, LoginLog
-from storybook_sever.api import Api
+from common.api import Api
 
 
 

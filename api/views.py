@@ -1112,18 +1112,24 @@ def personal_index(request):
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
     selfUuid = data['_cache']['uuid']
+    follow = False
     if uuid:
         selfUuid = uuid
+        follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
     user = User.objects.filter(uuid=selfUuid).first()
-    userInfo = {
+    userDict = {
         "uuid": user.uuid,
         "nickname": user.nickName if user.nickName else '',
-        "city": user.city if user.city else '',
         "avatar": user.avatar if user.avatar else '',
+        "id": user.id,
+        "city": user.city if user.city else '',
+        "isFollow": True if follow else False,
+        "intro": user.intro if user.intro else '',
         "createTime": datetime_to_unix(user.createTime),
-        "intro": user.intro,
+        "followersCount": FriendShip.objects.filter(follows__uuid=uuid).count(),
+        "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count()
     }
-    return http_return(200, '成功', userInfo)
+    return http_return(200, '成功', userDict)
 
 
 @check_identify

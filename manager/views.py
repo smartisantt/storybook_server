@@ -4,11 +4,14 @@
 # Create your views here.
 
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import authentication
+from rest_framework.decorators import authentication_classes, api_view
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 
 from api.apiCommon import get_default_name
+from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, ActivityFilter, CycleBannerFilter, \
     AdFilter, FeedbackFilter
@@ -148,6 +151,8 @@ def login(request):
 """
 首页数据
 """
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def total_data(request):
     data = request_body(request, 'POST')
     if not data:
@@ -318,9 +323,9 @@ def total_data(request):
                        })
 
 
-"""
-内容分类
-"""
+
+@api_view(['GET'])
+@authentication_classes((CustomAuthentication, ))
 def show_all_tags(request):
     """发布故事标签选择列表"""
     data = request_body(request)
@@ -352,6 +357,8 @@ def show_all_tags(request):
     return http_return(200, '成功', {"total": total, "tagList": tagList})
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_tags(request):
     """添加分类（一级标签）"""
     data = request_body(request, "POST")
@@ -393,6 +400,8 @@ def add_tags(request):
         return http_return(400, '添加分类失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def modify_tags(request):
     """修改一级标签"""
     data = request_body(request, "POST")
@@ -441,6 +450,8 @@ def modify_tags(request):
         return http_return(400, '修改分类失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def stop_tags(request):
     """停用/恢复一级标签"""
     data = request_body(request, "POST")
@@ -463,6 +474,8 @@ def stop_tags(request):
         return http_return(400, '保存分类失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def del_tags(request):
     """删除一级标签 或者 二级标签"""
     data = request_body(request, "POST")
@@ -484,6 +497,8 @@ def del_tags(request):
         return http_return(400, '删除分类失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_child_tags(request):
     """添加子标签"""
     data = request_body(request, "POST")
@@ -533,6 +548,8 @@ def add_child_tags(request):
         return http_return(400, '保存失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def modify_child_tags(request):
     """修改子标签"""
     data = request_body(request, "POST")
@@ -637,13 +654,15 @@ class StoryView(ListAPIView):
 
 
 class StorySimpleView(ListAPIView):
-    """"""
+    """所有模板的模板名"""
     queryset = Story.objects.filter(status="normal")
     serializer_class = StorySimpleSerializer
     filter_class = StoryFilter
     pagination_class = MyPagination
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_story(request):
     """添加模板"""
     data = request_body(request, "POST")
@@ -687,6 +706,8 @@ def add_story(request):
 
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def modify_story(request):
     """修改模板"""
     data = request_body(request, "POST")
@@ -732,7 +753,9 @@ def modify_story(request):
         logging.error(str(e))
         return http_return(400, '添加模板失败')
 
-# 改变模板状态
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def change_story_status(request):
     """停用模板 恢复模板"""
     data = request_body(request, "POST")
@@ -763,7 +786,8 @@ def change_story_status(request):
         return http_return(400, '改变模板状态失败')
 
 
-# """"删除模板"""
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def del_story(request):
     """删除模板"""
     data = request_body(request, "POST")
@@ -849,8 +873,10 @@ class UserSearchView(ListAPIView):
 
 
 
-"""添加音频"""
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_audio_story(request):
+    """添加音频"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1006,8 +1032,11 @@ class CheckAudioStoryInfoView(ListAPIView):
         return self.queryset
 
 
-# 审核通过和审核不通过
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def check_audio(request):
+    """审核通过和审核不通过"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1032,8 +1061,10 @@ def check_audio(request):
 
 
 
-# 配置标签
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def config_tags(request):
+    """配置标签"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1104,7 +1135,9 @@ class BgmView(ListAPIView):
         return self.queryset
 
 
-# 添加背景音乐
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_bgm(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1141,8 +1174,8 @@ def add_bgm(request):
 
 
 
-
-# 编辑音乐（音乐名，音频文件）
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def modify_bgm(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1188,6 +1221,8 @@ def modify_bgm(request):
         return http_return(400, '修改失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def change_order(request):
     """改变音乐排序"""
     data = request_body(request, 'POST')
@@ -1228,6 +1263,8 @@ def change_order(request):
         return http_return(400, '修改失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def forbid_bgm(request):
     """停用/恢复背景音乐"""
     data = request_body(request, 'POST')
@@ -1257,6 +1294,9 @@ def forbid_bgm(request):
         return http_return(400, '修改失败')
 
 
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def del_audioStory(request):
     """删除模板音频 或者 自由音频"""
     data = request_body(request, 'POST')
@@ -1279,6 +1319,8 @@ def del_audioStory(request):
         return http_return(400, '删除失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def del_bgm(request):
     """删除背景音乐"""
     data = request_body(request, 'POST')
@@ -1313,7 +1355,9 @@ class HotSearchView(ListAPIView):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering = ('-isTop', '-searchNum')
 
-# 添加关键词
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_keyword(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1339,7 +1383,9 @@ def add_keyword(request):
         return http_return(400, '添加失败')
 
 
-# 置顶 取消置顶
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def top_keyword(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1365,7 +1411,8 @@ def top_keyword(request):
         return http_return(400, '置顶失败')
 
 
-# 删除关键词
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def del_keyword(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1412,7 +1459,8 @@ class AdView(ListAPIView):
 
 
 
-# 添加
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_ad(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1465,7 +1513,9 @@ def add_ad(request):
         logging.error(str(e))
         return http_return(400, '添加失败')
 
-# 编辑
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def modify_ad(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1533,8 +1583,10 @@ def modify_ad(request):
 
 
 
-# 删除
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def del_ad(request):
+    # 删除
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1616,7 +1668,8 @@ class AllAudioSimpleView(ListAPIView):
 
 
 
-
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_story_into_module(request):
     """新增"""
     data = request_body(request, 'POST')
@@ -1652,7 +1705,8 @@ def add_story_into_module(request):
         return http_return(400, '添加失败')
 
 
-# 替换
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def change_story_in_module(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1689,7 +1743,8 @@ def change_story_in_module(request):
 
 
 
-# 删除
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def del_story_in_module(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1714,7 +1769,8 @@ def del_story_in_module(request):
         return http_return(400, '删除失败')
 
 
-
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def change_module_order(request):
     """模块排序"""
     data = request_body(request, 'POST')
@@ -1794,6 +1850,8 @@ class UserView(ListAPIView):
 
 
 # 添加用户
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_user(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1875,9 +1933,8 @@ def add_user(request):
 
 
 
-
-
-# 编辑
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def modify_user(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1905,8 +1962,10 @@ def modify_user(request):
 
 
 
-# 删除
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def del_user(request):
+    # 删除
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1929,8 +1988,10 @@ def del_user(request):
         return http_return(400, '删除失败')
 
 
-# 禁用
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def forbidden_user(request):
+    # 禁用
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1979,8 +2040,10 @@ def forbidden_user(request):
 
 
 
-# 恢复
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def cancel_forbid(request):
+    # 恢复
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -2027,12 +2090,11 @@ def cancel_forbid(request):
 #         self.queryset.order_by()
 #         return self.queryset
 
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def activity_rank(request):
-    """
-    活动排行
-    :param request:
-    :return:
-    """
+    """活动排行"""
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
@@ -2107,17 +2169,19 @@ class ActivityView(ListAPIView):
         return self.queryset
 
 
-# 创建活动
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def create_activity(request):
+    # 创建活动
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
     name = data.get('name', '')
     intro = data.get('intro', '')
-    icon = data.get('icon', '')
     startTime = data.get('starttime', '')
     endTime = data.get('endtime', '')
-    if not all([name, intro, icon, startTime, endTime]):
+    icon = data.get('icon', '')         # 非必填
+    if not all([name, intro, startTime, endTime]):
         return http_return(400, '参数错误')
     if Activity.objects.filter(name=name).exists():
         return http_return(400, '重复活动名')
@@ -2146,8 +2210,8 @@ def create_activity(request):
                 name = name,
                 startTime = startTime,
                 endTime = endTime,
-                icon = icon,
                 intro = intro,
+                icon = icon,
                 status = "normal"
             )
             return http_return(200, 'OK')
@@ -2157,7 +2221,8 @@ def create_activity(request):
 
 
 
-# 修改活动
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def modify_activity(request):
     data = request_body(request, 'POST')
     if not data:
@@ -2236,8 +2301,10 @@ class CycleBannerView(ListAPIView):
 
 
 
-# 添加轮播图
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def add_cycle_banner(request):
+    # 添加轮播图
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -2292,8 +2359,10 @@ def add_cycle_banner(request):
 
 
 
-# 修改轮播图
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def modify_cycle_banner(request):
+    # 修改轮播图
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -2358,8 +2427,10 @@ def modify_cycle_banner(request):
         return http_return(400, '修改失败')
 
 
-# 停用/恢复/删除
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def change_cycle_banner_status(request):
+    # 停用/恢复/删除
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -2412,7 +2483,8 @@ class FeedbackView(ListAPIView):
         return self.queryset
 
 
-
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
 def reply(request):
     """后台回复"""
     data = request_body(request, 'POST')

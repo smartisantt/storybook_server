@@ -111,6 +111,6 @@ urlpatterns = [
 ]
 
 # router = SimpleRouter()
-# router.register('/template/templatestories', TemplateStoryView)
+# router.register('feedback', Feedback2View)
 #
 # urlpatterns += router.urls

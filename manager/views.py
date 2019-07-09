@@ -4,8 +4,8 @@
 # Create your views here.
 
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import authentication
-from rest_framework.decorators import authentication_classes, api_view
+from rest_framework import authentication, viewsets, mixins
+from rest_framework.decorators import authentication_classes, api_view, action
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -422,21 +422,22 @@ def modify_tags(request):
         return http_return(400, '没有对象')
     mySortNum = tag.sortNum
     myName = tag.name
-    icon = tag.icon
+
 
     if sortNum != mySortNum:
-        tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+        tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=True).first()
         if tag:
             return http_return(400, '重复序号')
 
     if name != myName:
-        tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+        tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id__isnull=True).first()
         if tag:
             return http_return(400, '重复标签')
     tag = Tag.objects.filter(uuid=uuid).first()
     try:
         with transaction.atomic():
             tag.sortNum = sortNum
+            tag.icon = icon
             tag.name = name
             tag.save()
             return http_return(200, 'OK', {
@@ -669,7 +670,7 @@ def add_story(request):
     if not data:
         return http_return(400, '参数错误')
     faceIcon = data.get('faceIcon', '')
-    listIcon = data.get('listIcon', '')
+    listIcon = data.get('listIcon', '') # 非必填
     name = data.get('name', '')
     intro = data.get('intro', '')
     content = data.get('content', '')
@@ -677,7 +678,7 @@ def add_story(request):
     isTop = data.get('isTop', '')
 
     # all 都为True 才返回True
-    if not all([name, faceIcon, listIcon, content, intro, isRecommd, isTop]):
+    if not all([name, faceIcon, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
     story = Story.objects.filter(name=name).exclude(status = 'destroy').first()
@@ -715,7 +716,7 @@ def modify_story(request):
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
     faceIcon = data.get('faceIcon', '')
-    listIcon = data.get('listIcon', '')
+    listIcon = data.get('listIcon', '') # 非必填
     name = data.get('name', '')
     intro = data.get('intro', '')
     content = data.get('content', '')
@@ -723,7 +724,7 @@ def modify_story(request):
     isTop = data.get('isTop', '')
 
     # all 都为True 才返回True
-    if not all([faceIcon, listIcon, name, content, intro, isRecommd, isTop]):
+    if not all([faceIcon, name, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
     story = Story.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
@@ -2457,6 +2458,24 @@ def change_cycle_banner_status(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
+
+
+
+# class Feedback2View(viewsets.GenericViewSet,
+#                      mixins.CreateModelMixin):
+#     queryset = Feedback.objects.all()
+#     serializer_class = FeedbackSerializer
+#     filter_class = FeedbackFilter
+#     pagination_class = MyPagination
+#
+#     @action(methods=('POST', ), detail=False, serializer_class=Feedback2Serializer)
+#     def reply2(self, request):
+#         serializers = self.get_serializer(data=request.data)
+#         result = serializers.is_valid(raise_exception=True)
+#         if not result:
+#             raise ParamsException('参数有误')
+#         serializers.reply2_data(serializers.data)
+#         return Response({'code':200, 'msg':'OK'})
 
 
 

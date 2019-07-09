@@ -421,6 +421,35 @@ class FeedbackSerializer(serializers.ModelSerializer):
         exclude = ("userUuid", )
 
 
+# class Feedback2Serializer(serializers.Serializer):
+#     # 校验数据
+#     uuid = serializers.CharField(required=True)
+#     replyInfo = serializers.CharField(required=True,
+#                                       error_messages={'required':"replyInfo不能为空"})
+#
+#     def validate(self, attrs):
+#         feedback = Feedback.objects.filter(uuid=attrs.get('uuid')).first()
+#         if not Feedback.objects.filter(uuid=attrs.get('uuid')).exists():
+#             raise ValidationError('无效的uuid')
+#
+#         if feedback.status == 1:
+#             oldReplyInfo = feedback.replyInfo
+#             if oldReplyInfo == attrs.get('replyInfo'):
+#                 raise ValidationError('两次回复消息一样')
+#         return attrs
+
+
+    def reply2_data(self, validate_data):
+        feedback = Feedback.objects.filter(uuid=validate_data['uuid']).first()
+        feedback.replyInfo = validate_data['replyInfo']
+        feedback.status = 1
+        feedback.isRead = False
+        feedback.save()
+        return True
+
+
+
+
 
 
 

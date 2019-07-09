@@ -2091,7 +2091,7 @@ def cancel_forbid(request):
 #         return self.queryset
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 @authentication_classes((CustomAuthentication, ))
 def activity_rank(request):
     """活动排行"""

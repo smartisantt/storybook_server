@@ -290,6 +290,7 @@ class AudioStory(BaseModle, models.Model):
     作品表自由录制和模板作品
     """
     isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
+    mixAudioUrl = models.CharField(max_length=255, null=True)   # 合成音频url
     voiceUrl = models.CharField(max_length=255, null=True)  # 用户的声音
     userVolume = models.FloatField(default=1.0)  # 用户音量
     bgm = models.ForeignKey('Bgm', on_delete=models.CASCADE, related_name='bgmaudiosUuid', to_field='uuid', null=True)

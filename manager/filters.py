@@ -62,10 +62,11 @@ class UserSearchFilter(django_filters.FilterSet):
 class CheckAudioStoryInfoFilter(django_filters.FilterSet):
     # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption(后台上传的免审核）
     checkstatus = django_filters.CharFilter(field_name='checkStatus')
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
 
     class Meta:
         model = AudioStory
-        fields = ('id', 'checkStatus')
+        fields = ('id', 'checkStatus', 'name')
 
 
 class BgmFilter(django_filters.FilterSet):

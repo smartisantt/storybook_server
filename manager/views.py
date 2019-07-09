@@ -21,7 +21,8 @@ from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer
+    AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
+    TagsSerialzer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime, timedelta
@@ -357,6 +358,14 @@ def show_all_tags(request):
     return http_return(200, '成功', {"total": total, "tagList": tagList})
 
 
+
+class AllTagView(ListAPIView):
+    queryset = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True, isDelete=False)
+    serializer_class = TagsSerialzer
+
+
+
+
 @api_view(['POST'])
 @authentication_classes((CustomAuthentication, ))
 def add_tags(request):
@@ -387,11 +396,11 @@ def add_tags(request):
         with transaction.atomic():
             uuid = get_uuid()
             tag = Tag(
-                uuid = uuid,
-                code = 'SEARCHSORT',
-                name = name,
-                icon = icon,
-                sortNum = sortNum,
+                uuid=uuid,
+                code='SEARCHSORT',
+                name=name,
+                icon=icon,
+                sortNum=sortNum
             )
             tag.save()
             return http_return(200, 'OK')
@@ -422,8 +431,6 @@ def modify_tags(request):
         return http_return(400, '没有对象')
     mySortNum = tag.sortNum
     myName = tag.name
-
-
     if sortNum != mySortNum:
         tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=True).first()
         if tag:
@@ -449,6 +456,7 @@ def modify_tags(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改分类失败')
+
 
 
 @api_view(['POST'])
@@ -1944,11 +1952,24 @@ def modify_user(request):
     nickName = data.get('nickName', '')
     city = data.get('city', '')
     roles = data.get('roles', '')
-    if not all([uuid, nickName, city, roles]):
+    pwd = data.get('pwd', '')
+    if not all([uuid, nickName, city, roles in ['normalUser','adminUser'], pwd]):
         return http_return(400, '参数错误')
+
+    if not 5<len(str(pwd))<40:
+        return http_return(400, '密码长度错误')
+
+    if not 1<len(str(city))<40:
+        return http_return(400, '城市长度错误')
+
+    if not 1<len(str(nickName))<11:
+        return http_return(400, '昵称长度错误')
+
     user = User.objects.filter(uuid=uuid).first()
     if not user:
         return http_return(400, '没有用户')
+    # 调用接口 管理员在后台修改其他用户密码
+
     try:
         with transaction.atomic():
             user.roles = roles

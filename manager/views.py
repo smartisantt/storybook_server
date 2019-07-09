@@ -6,6 +6,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
 
 from api.apiCommon import get_default_name
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
@@ -17,7 +18,7 @@ from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer
+    AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime
@@ -168,7 +169,7 @@ def total_data(request):
     # 用户总人数
     totalUsers = User.objects.exclude(status='destroy').count()
     # 音频总数
-    totalAudioStory = AudioStory.objects.filter(isDelete=False).count()
+    totalAudioStory = AudioStory.objects.filter(isDelete=False, isUpload=1).count()
     # 专辑总数
     totalAlbums = Album.objects.filter(isDelete=False).count()
     # 新增用户人数
@@ -177,7 +178,7 @@ def total_data(request):
     activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).values('userUuid_id').\
         annotate(Count('userUuid_id')).count()
     # 新增音频数
-    newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2)).count()
+    newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2), isUpload=1).count()
 
     # 男性
     male = User.objects.filter(gender=1).exclude(status='destroy').count()
@@ -236,7 +237,7 @@ def total_data(request):
 
     # 热门播放排行
     data3_list = []
-    audioStory = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).order_by('-playTimes')[:5]
+    audioStory = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2), isUpload=1).order_by('-playTimes')[:5]
     for index,item in enumerate(audioStory):
         data = {
             'orderNum': index + 1,
@@ -583,9 +584,20 @@ def modify_child_tags(request):
         return http_return(400, '修改分类失败')
 
 
+
+
 # 获取类型标签下的所有字标签
 class TypeTagView(ListAPIView):
     queryset = Tag.objects.filter(code='SEARCHSORT', parent__name='类型', isDelete=False).\
+        only('id', 'name', 'sortNum', 'uuid').all()
+    serializer_class = TagsSimpleSerialzer
+    pagination_class = MyPagination
+
+
+
+# 获取所有子标签
+class ChildTagView(ListAPIView):
+    queryset = Tag.objects.filter(code='SEARCHSORT', parent_id__isnull=False, isDelete=False).\
         only('id', 'name', 'sortNum', 'uuid').all()
     serializer_class = TagsSimpleSerialzer
     pagination_class = MyPagination
@@ -779,7 +791,7 @@ def del_story(request):
 
 # """模板音频"""
 class AudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),
+    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),Q(isUpload=1),
                                          Q(checkStatus='check')|Q(checkStatus='exemption'))\
         .select_related('bgm', 'userUuid')\
         .prefetch_related('tags')
@@ -897,7 +909,7 @@ def add_audio_story(request):
 
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
-    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0),
+    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0), Q(isUpload=1),
                                          Q(checkStatus='check')|Q(checkStatus='exemption')) \
         .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
@@ -948,13 +960,17 @@ class FreedomAudioStoryInfoView(ListAPIView):
 
 # 内容审核
 class CheckAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False )\
+    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1 )\
         .select_related('bgm', 'userUuid')\
         .prefetch_related('tags').order_by('-createTime')
 
     serializer_class = CheckAudioStoryInfoSerializer
     filter_class = CheckAudioStoryInfoFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
@@ -1066,6 +1082,10 @@ class BgmView(ListAPIView):
     serializer_class = BgmSerializer
     filter_class = BgmFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
@@ -1557,7 +1577,7 @@ class ModuleView(ListAPIView):
 # 显示所有作品的简单信息
 class AllAudioSimpleView(ListAPIView):
     queryset = AudioStory.objects.filter(
-        Q(isDelete=False),Q(checkStatus='check')|Q(checkStatus='exemption')).order_by('-createTime')
+        Q(isDelete=False),Q(isUpload=1),Q(checkStatus='check')|Q(checkStatus='exemption')).order_by('-createTime')
     serializer_class = AudioStorySimpleSerializer
     filter_class = CheckAudioStoryInfoFilter
     pagination_class = MyPagination
@@ -1607,7 +1627,7 @@ def add_story_into_module(request):
     if not all([type in ['MOD1', 'MOD2', 'MOD3'], audioUuid]):
         return http_return(400, '参数错误')
 
-    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),
+    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),Q(isUpload=1),
                                            Q(checkStatus='check')|Q(checkStatus='exemption')).first()
     if not audioStory:
         return http_return(400, '没有对象')
@@ -1647,7 +1667,7 @@ def change_story_in_module(request):
     if not module:
         return http_return(400, '没有对象')
 
-    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),
+    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),Q(isUpload=1),
                                          Q(checkStatus='check')|Q(checkStatus='exemption')).first()
     if not audioStory:
         return http_return(400, '没有对象')
@@ -2065,6 +2085,10 @@ class ActivityView(ListAPIView):
     serializer_class = ActivitySerializer
     filter_class = ActivityFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')

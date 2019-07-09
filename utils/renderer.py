@@ -5,14 +5,6 @@ from rest_framework.renderers import JSONRenderer
 class MyJsonRenderer(JSONRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        """
-            data转化为：
-            {
-                'code': 200,
-                'msg': '请求成功'，
-                'data': data
-            }
-        """
         try:
             # 如果运行try中的内容，则表示code和msg是我们自己返回的数据
             # 表示程序出现问题，需自己返回响应数据
@@ -26,7 +18,7 @@ class MyJsonRenderer(JSONRenderer):
             # 表示程序是正常运行的，需自己组装code和msg参数
             code = 200
             msg = 'OK'
-            # renderer_context['response'].status_code = 200
+            renderer_context['response'].status_code = 200
             res = {
                 'code': code,
                 'msg': msg,

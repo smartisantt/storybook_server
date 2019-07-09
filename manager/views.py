@@ -2462,10 +2462,14 @@ def change_cycle_banner_status(request):
 
 # 反馈管理列表
 class FeedbackView(ListAPIView):
-    queryset = Feedback.objects.all().order_by("-createTime")
+    queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
     filter_class = FeedbackFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')

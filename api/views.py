@@ -701,12 +701,9 @@ def search_hot(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    hots = HotSearch.objects.filter(isDelete=False).order_by("-isTop", "-searchNum").all()[:10]
-    hotSearchList = []
-    for hot in hots:
-        hotSearchList.append(hot.keyword)
-    hotSearch = ','.join(hotSearchList)
-    return http_return(200, "成功", {"hotSearch": hotSearch})
+    hots = HotSearch.objects.filter(isDelete=False).order_by("-isTop", "-searchNum").values_list('keyword',flat=True)
+    hotSearchList = list(hots)[:10]
+    return http_return(200, "成功", hotSearchList)
 
 
 @check_identify

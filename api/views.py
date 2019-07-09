@@ -702,8 +702,8 @@ def search_hot(request):
     if not data:
         return http_return(400, '参数错误')
     hots = HotSearch.objects.filter(isDelete=False).order_by("-isTop", "-searchNum").values_list('keyword',flat=True)
-    hotSearchList = ','.join(list(hots)[:10])
-    return http_return(200, "成功", hotSearchList)
+    resStr = ','.join(list(hots)[:10])
+    return http_return(200, "成功", resStr)
 
 
 @check_identify
@@ -1423,5 +1423,5 @@ def search_word_like(request):
     keyword = data.get('keyword', '')
     user = User.objects.filter(nickName__contains=keyword).values_list('nickName', flat=True)
     audio = AudioStory.objects.filter(name__contains=keyword).values_list('name', flat=True)
-    resList = ','.join(list(user)[:5] + list(audio)[:5])
-    return http_return(200, '成功', resList)
+    resStr = ','.join(list(user)[:5] + list(audio)[:5])
+    return http_return(200, '成功', resStr)

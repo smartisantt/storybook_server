@@ -7,6 +7,7 @@ import re
 import string
 
 from django.core.cache import caches
+from django.core.paginator import Paginator
 from django.db.models import Q
 
 from common.common import http_return, get_uuid, datetime_to_unix, page_index
@@ -88,8 +89,7 @@ def check_identify(func):
             return http_return(400, '服务器连接redis失败')
         if not user_info:
             api = Api()
-            user_info = api.check_token(token)
-            if not user_info:
+            if not api.check_token(token):
                 return http_return(401, '登录失效')
             else:
                 # 记录登录ip,存入缓存
@@ -314,7 +314,7 @@ def userList_format(users):
     return resultList
 
 
-def result_all(audios,users,data):
+def result_all(audios, users, data):
     """
     返回搜索和分类筛选结果
     :param audios:
@@ -338,13 +338,21 @@ def result_all(audios,users,data):
         ],
         "list": userList,
     }
-    return searchAudioStory,searchUser
+    return searchAudioStory, searchUser
 
 
-def paginator(page, pageCount):
+def paginator(myList, page, pageCount=10):
     """
     插件分页
     :param page:
     :param pageCount:
     :return:
     """
+    try:
+        pageObj = Paginator(myList, pageCount)
+        total = pageObj.count
+        res_data = pageObj.page(page)
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    return total, res_data

@@ -16,7 +16,7 @@ urlpatterns = [
     path('admin/', views.admin, name='admin'),
     path('login/', views.login, name='login'),
     path('home/totaldata/', views.total_data, name='total_data'),
-    path('tags/alltags/', views.show_all_tags, name='show_all_tags'),
+    # path('tags/alltags/', views.show_all_tags, name='show_all_tags'),  # 改用drf做
     path('tags/addtags/', views.add_tags, name='add_tags'),
     path('tags/modifytags/', views.modify_tags, name='modify_tags'),
     path('tags/deltags/', views.del_tags, name='del_tags'),
@@ -26,7 +26,7 @@ urlpatterns = [
     # 所有分类标签的字标签
     path('tags/typetags/', TypeTagView.as_view()),
     path('tags/allchildtags/', ChildTagView.as_view()),
-    path('tags/myalltags/', AllTagView.as_view()),
+    path('tags/alltags/', AllTagView.as_view()),
 
 
 

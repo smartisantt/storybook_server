@@ -324,45 +324,20 @@ def total_data(request):
                        })
 
 
-
-@api_view(['GET'])
-@authentication_classes((CustomAuthentication, ))
-def show_all_tags(request):
-    """发布故事标签选择列表"""
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    tags = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True, isDelete=False).\
-        all().order_by('sortNum')
-
-    tagList = []
-    for tag in tags:
-        childTagList= []
-        for child_tag in tag.child_tag.only('uuid', 'sortNum', 'name'):
-            if child_tag.isDelete == False:
-                childTagList.append({
-                    "uuid": child_tag.uuid,
-                    "name": child_tag.name,
-                    "sortNum": child_tag.sortNum,
-                })
-        tagList.append({
-            "uuid": tag.uuid,
-            "name": tag.name,
-            "sortNum": tag.sortNum,
-            "icon": tag.icon,
-            "isUsing": tag.isUsing,
-            "childTagList": childTagList,
-            "childTagsNum": len(childTagList)        # 子标签个数
-        })
-    total = len(tagList)
-    return http_return(200, '成功', {"total": total, "tagList": tagList})
-
-
-
 class AllTagView(ListAPIView):
     queryset = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True, isDelete=False)
     serializer_class = TagsSerialzer
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        serializer = self.get_serializer(queryset, many=True)
+
+        res = {
+            "total": len(serializer.data),
+            "tagList": serializer.data
+        }
+        return Response(res)
 
 
 
@@ -1952,12 +1927,13 @@ def modify_user(request):
     nickName = data.get('nickName', '')
     city = data.get('city', '')
     roles = data.get('roles', '')
-    pwd = data.get('pwd', '')
-    if not all([uuid, nickName, city, roles in ['normalUser','adminUser'], pwd]):
+    pwd = data.get('pwd', '') # 没有填写密码则不用修改
+    if not all([uuid, nickName, city, roles in ['normalUser','adminUser']]):
         return http_return(400, '参数错误')
 
-    if not 5<len(str(pwd))<40:
-        return http_return(400, '密码长度错误')
+    if not pwd:
+        if not 5<len(str(pwd))<40:
+            return http_return(400, '密码长度错误')
 
     if not 1<len(str(city))<40:
         return http_return(400, '城市长度错误')

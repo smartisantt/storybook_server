@@ -49,7 +49,7 @@ class TagsSerialzer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        fields = ('uuid', 'sortNum', 'name', 'icon', 'childTagList', 'childTagsNum')
+        fields = ('uuid', 'name', 'sortNum', 'icon','isUsing', 'childTagList',  'childTagsNum')
 
 
 
@@ -57,7 +57,7 @@ class TagsChildSerialzer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        fields = ('uuid', 'sortNum', 'name')
+        fields = ('uuid', 'name', 'sortNum')
 
 
 class TagsSimpleSerialzer(serializers.ModelSerializer):

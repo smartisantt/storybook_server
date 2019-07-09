@@ -784,8 +784,6 @@ def index_category_each(request):
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
         return http_return(400, '未获取到用户信息')
-    if not save_search(data):
-        return http_return(400, '存储搜索记录失败')
     if type == "audioStory":
         audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
         if keyword:

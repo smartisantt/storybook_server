@@ -10,6 +10,8 @@ class StoryFilter(django_filters.FilterSet):
     """模板id，模板名，日期，"""
     name = django_filters.CharFilter('name', lookup_expr='contains')
 
+
+
     class Meta:
         model = Story
         fields = ('id', 'name')

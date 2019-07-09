@@ -8,7 +8,7 @@ from manager import views
 from manager.managerCommon import check_identify
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
-    ActivityView, CycleBannerView, AdView, FeedbackView
+    ActivityView, CycleBannerView, AdView, FeedbackView, ChildTagView
 
 app_name = 'manager'
 
@@ -25,7 +25,8 @@ urlpatterns = [
     path('tags/modifychildtags/', check_identify(views.modify_child_tags), name='modify_child_tags'),
     # 所有分类标签的字标签
     path('tags/typetags/', TypeTagView.as_view()),
-    # path('tags/mytags/', TagView.as_view()),
+    path('tags/allchildtags/', ChildTagView.as_view()),
+
 
 
     # 模板故事路由
@@ -36,9 +37,6 @@ urlpatterns = [
     path('story/modifystory/', check_identify(views.modify_story), name='modify_story'),
     path('story/delstory/', check_identify(views.del_story), name='del_story'),
     path('story/changestorystatus/', check_identify(views.change_story_status), name='change_story_status'),
-
-
-
 
 
     # 模板音频

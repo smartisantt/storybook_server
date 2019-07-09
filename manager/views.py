@@ -6,6 +6,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
 
 from api.apiCommon import get_default_name
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
@@ -17,7 +18,7 @@ from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer
+    AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime
@@ -583,9 +584,20 @@ def modify_child_tags(request):
         return http_return(400, '修改分类失败')
 
 
+
+
 # 获取类型标签下的所有字标签
 class TypeTagView(ListAPIView):
     queryset = Tag.objects.filter(code='SEARCHSORT', parent__name='类型', isDelete=False).\
+        only('id', 'name', 'sortNum', 'uuid').all()
+    serializer_class = TagsSimpleSerialzer
+    pagination_class = MyPagination
+
+
+
+# 获取所有子标签
+class ChildTagView(ListAPIView):
+    queryset = Tag.objects.filter(code='SEARCHSORT', parent_id__isnull=False, isDelete=False).\
         only('id', 'name', 'sortNum', 'uuid').all()
     serializer_class = TagsSimpleSerialzer
     pagination_class = MyPagination
@@ -1070,6 +1082,10 @@ class BgmView(ListAPIView):
     serializer_class = BgmSerializer
     filter_class = BgmFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
@@ -2069,6 +2085,10 @@ class ActivityView(ListAPIView):
     serializer_class = ActivitySerializer
     filter_class = ActivityFilter
     pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')

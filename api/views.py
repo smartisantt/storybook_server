@@ -255,35 +255,6 @@ def recording_tag_list(request):
 
 
 @check_identify
-def user_center(request):
-    """
-    用户个人中心
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
-    user = User.objects.filter(uuid=uuid).first()
-    if not user:
-        return http_return(400, '用户信息不存在')
-    selfUuid = data['_cache']['uuid']
-    follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
-    userDict = {
-        "uuid": user.uuid,
-        "name": user.nickName if user.nickName else '',
-        "avatar": user.avatar if user.avatar else '',
-        "id": user.id,
-        "isFollow": True if follow else False,
-        "intro": user.intro if user.intro else '',
-        "followersCount": FriendShip.objects.filter(follows__uuid=uuid).count(),
-        "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count()
-    }
-    return http_return(200, '成功', {"userInfo": userDict})
-
-
-@check_identify
 def become_fans(request):
     """
     关注用户
@@ -323,29 +294,6 @@ def become_fans(request):
                 logging.error(str(e))
                 return (400, '关注失败')
         return http_return(200, '关注成功')
-
-
-@check_identify
-def user_audio_list(request):
-    """
-    用户故事列表
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
-    page = data.get('page', '')
-    pageCount = data.get('pageCount', '')
-    user = User.objects.filter(uuid=uuid).first()
-    if not user:
-        return http_return(400, '用户信息不存在')
-    audios = AudioStory.objects.exclude(checkStatus="unCheck").exclude(checkStatus="checkFail").filter(
-        userUuid__uuid=uuid, isDelete=False).order_by("-updateTime").all()
-    total, audios = page_index(audios, page, pageCount)
-    audioList = audioList_format(audios, data)
-    return http_return(200, '成功', {"total": total, "list": audioList})
 
 
 @check_identify

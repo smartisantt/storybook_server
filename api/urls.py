@@ -18,9 +18,7 @@ urlpatterns = [
     path('recording/add', views.recording_send, name='recording_send'),  # 故事发布
     path('recording/taglist', views.recording_tag_list, name='recording_tag_list'),  # 故事发布标签列表
 
-    path('user/info', views.user_center, name='user_center'),  # 主播个人主页
     path('user/attention', views.become_fans, name='become_fans'),  # 关注用户
-    path('user/audiostorylist', views.user_audio_list, name='user_audio_list'),  # 用户作品列表
     path('user/friendlist', views.user_fans, name='user_fans'),  # 用户粉丝或关注用户列表
 
     path('audiostory/list', views.audio_list, name='audio_list'),  # 所有故事列表

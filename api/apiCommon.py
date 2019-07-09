@@ -89,7 +89,8 @@ def check_identify(func):
             return http_return(400, '服务器连接redis失败')
         if not user_info:
             api = Api()
-            if not api.check_token(token):
+            user_info = api.check_token(token)
+            if not user_info:
                 return http_return(401, '登录失效')
             else:
                 # 记录登录ip,存入缓存

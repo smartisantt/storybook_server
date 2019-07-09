@@ -77,11 +77,11 @@ def recording_index_list(request):
         return http_return(400, '参数错误')
     story = Story.objects.exclude(status="destroy")
     if sort == "latest":
-        story = story.filter(isRecommd=False).order_by("-isTop", "-updateTime")
+        story = story.filter(isRecommd=False).order_by("isTop", "-updateTime")
     elif sort == "rank":
         story = story.order_by("-recordNum")
     elif sort == "recommended":  # 推荐算法
-        story = story.filter(isRecommd=True).order_by("-isTop", "-updateTime")
+        story = story.filter(isRecommd=True).order_by("isTop", "-updateTime")
     stories = story.all()
     total, stories = page_index(stories, page, pageCount)
     storyList = []

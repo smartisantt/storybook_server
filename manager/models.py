@@ -207,7 +207,7 @@ class Story(BaseModle, models.Model):
     recordNum = models.IntegerField(null=True)  # 录制次数
     status = models.CharField(max_length=32, null=True, default="normal")  # normal启用 forbid禁用 destroy删除
     isRecommd = models.BooleanField(default=True)  # 显示位置 默认1推荐 否则是 0最新
-    isTop = models.IntegerField(default=0)  # 置顶 默认为0 置顶为1
+    isTop = models.IntegerField(default=0)  # 置顶 1置顶 2不设置 3置底
     tags = models.ManyToManyField(Tag)
 
     class Meta:

@@ -1103,9 +1103,6 @@ class BgmView(ListAPIView):
     filter_class = BgmFilter
     pagination_class = MyPagination
 
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    ordering = ('-createTime',)
-    ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')

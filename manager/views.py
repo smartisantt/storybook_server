@@ -2317,7 +2317,7 @@ class CycleBannerView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.filter(startTime__gte=starttime, endTime__lte=endtime)
+                return self.queryset.filter(startTime__gte=endtime, endTime__lte=starttime)
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)

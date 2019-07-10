@@ -255,35 +255,6 @@ def recording_tag_list(request):
 
 
 @check_identify
-def user_center(request):
-    """
-    用户个人中心
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
-    user = User.objects.filter(uuid=uuid).first()
-    if not user:
-        return http_return(400, '用户信息不存在')
-    selfUuid = data['_cache']['uuid']
-    follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
-    userDict = {
-        "uuid": user.uuid,
-        "name": user.nickName if user.nickName else '',
-        "avatar": user.avatar if user.avatar else '',
-        "id": user.id,
-        "isFollow": True if follow else False,
-        "intro": user.intro if user.intro else '',
-        "followersCount": FriendShip.objects.filter(follows__uuid=uuid).count(),
-        "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count()
-    }
-    return http_return(200, '成功', {"userInfo": userDict})
-
-
-@check_identify
 def become_fans(request):
     """
     关注用户
@@ -294,12 +265,12 @@ def become_fans(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type')
+    type = data.get('type', '')
     selfUuid = data['_cache']['uuid']
     if selfUuid == uuid:
         return http_return(400, '不能自己关注自己')
     friend = FriendShip.objects.filter(follows__uuid=uuid, followers__uuid=selfUuid).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if friend:
             try:
                 with transaction.atomic():
@@ -321,31 +292,8 @@ def become_fans(request):
                     )
             except Exception as e:
                 logging.error(str(e))
-                return (400, '关注失败')
+                return http_return(400, '关注失败')
         return http_return(200, '关注成功')
-
-
-@check_identify
-def user_audio_list(request):
-    """
-    用户故事列表
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
-    page = data.get('page', '')
-    pageCount = data.get('pageCount', '')
-    user = User.objects.filter(uuid=uuid).first()
-    if not user:
-        return http_return(400, '用户信息不存在')
-    audios = AudioStory.objects.exclude(checkStatus="unCheck").exclude(checkStatus="checkFail").filter(
-        userUuid__uuid=uuid, isDelete=False).order_by("-updateTime").all()
-    total, audios = page_index(audios, page, pageCount)
-    audioList = audioList_format(audios, data)
-    return http_return(200, '成功', {"total": total, "list": audioList})
 
 
 @check_identify
@@ -588,7 +536,7 @@ def index_more(request):
     if type in [1, 2, 3]:
         typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
         audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False)
-        if type == '1':
+        if type == 1:
             audio = audio.filter(audioStoryType=True)
     elif type == 4:
         pass
@@ -838,7 +786,7 @@ def audiostory_praise(request):
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=1).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if behav:
             try:
                 with transaction.atomic():
@@ -885,7 +833,7 @@ def audiostory_collection(request):
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=3).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if behav:
             try:
                 with transaction.atomic():
@@ -1112,18 +1060,24 @@ def personal_index(request):
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
     selfUuid = data['_cache']['uuid']
+    follow = False
     if uuid:
         selfUuid = uuid
+        follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
     user = User.objects.filter(uuid=selfUuid).first()
-    userInfo = {
+    userDict = {
         "uuid": user.uuid,
         "nickname": user.nickName if user.nickName else '',
-        "city": user.city if user.city else '',
         "avatar": user.avatar if user.avatar else '',
+        "id": user.id,
+        "city": user.city if user.city else '',
+        "isFollow": True if follow else False,
+        "intro": user.intro if user.intro else '',
         "createTime": datetime_to_unix(user.createTime),
-        "intro": user.intro,
+        "followersCount": FriendShip.objects.filter(follows__uuid=uuid).count(),
+        "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count()
     }
-    return http_return(200, '成功', userInfo)
+    return http_return(200, '成功', userDict)
 
 
 @check_identify

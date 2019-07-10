@@ -103,7 +103,7 @@ if version == 'debug':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '127.0.0.1',  # 主机
             'PORT': '3306',  # 数据库使用的端口
-            # 'TIME_ZONE': 'Asia/Shanghai'
+            'TIME_ZONE': 'Asia/Shanghai'
         }
     }
 
@@ -116,7 +116,7 @@ elif version == 'test':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '192.168.100.235',  # 主机
             'PORT': '3306',  # 数据库使用的端口
-            # 'TIME_ZONE': 'Asia/Shanghai'
+            'TIME_ZONE': 'Asia/Shanghai'
         }
     }
 
@@ -181,7 +181,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = False
+USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/

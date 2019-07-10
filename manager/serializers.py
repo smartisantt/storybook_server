@@ -44,7 +44,7 @@ class TagsSerialzer(serializers.ModelSerializer):
 
     @staticmethod
     def get_childTagList(tag):
-        queryset = Tag.objects.filter(parent=tag)
+        queryset = Tag.objects.filter(parent=tag, isDelete=False)
         return TagsChildSerialzer(queryset, many=True).data
 
     class Meta:

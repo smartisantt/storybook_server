@@ -470,7 +470,11 @@ def del_tags(request):
     tag = Tag.objects.filter(uuid=uuid, code='SEARCHSORT', isDelete=False).first()
     if not tag:
         return http_return(400, '没有对象')
+
     try:
+        # 如果删除的是一级标签则所有字标签一起删除
+        if tag.parent is None:
+            Tag.objects.filter(parent=tag).update(isDelete=True)
         with transaction.atomic():
             tag.isDelete = True
             tag.save()
@@ -796,8 +800,9 @@ def del_story(request):
         return http_return(400, '删除模板失败')
 
 
-# """模板音频"""
+
 class AudioStoryInfoView(ListAPIView):
+    """模板音频"""
     queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),Q(isUpload=1),
                                          Q(checkStatus='check')|Q(checkStatus='exemption'))\
         .select_related('bgm', 'userUuid')\
@@ -822,7 +827,7 @@ class AudioStoryInfoView(ListAPIView):
         tag = self.request.query_params.get('tag', '')      # 类型标签
         # type = self.request.query_params.get('type', '')      # 录制形式
 
-        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
         if startTimestamp and endTimestamp:
             try:
@@ -1867,7 +1872,7 @@ def add_user(request):
     gender = data.get('gender', '')
     pwd = data.get('pwd', '')
 
-    if not all([nickName, city, roles in ['normalUser','adminUser'], pwd]):
+    if not all([gender in [0, 1, 2], nickName, city, roles in ['normalUser','adminUser'], pwd]):
         return http_return(400, '参数错误')
 
     if not 5<len(str(pwd))<40:
@@ -1911,7 +1916,7 @@ def add_user(request):
                 nickName = nickName or tel,
                 avatar = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file110598494460.jpg',
                 tel = tel,
-                gender = gender or 0,  # 性别 0未知  1男  2女
+                gender = gender,  # 性别 0未知  1男  2女
                 status = "normal",
                 roles = roles,
                 city = city
@@ -1934,8 +1939,9 @@ def modify_user(request):
     nickName = data.get('nickName', '')
     city = data.get('city', '')
     roles = data.get('roles', '')
+    gender = data.get('gender', '')
     pwd = data.get('pwd', '') # 没有填写密码则不用修改
-    if not all([uuid, nickName, city, roles in ['normalUser','adminUser']]):
+    if not all([gender in [0, 1, 2], uuid, nickName, city, roles in ['normalUser','adminUser']]):
         return http_return(400, '参数错误')
 
     if not 1<len(str(city))<40:
@@ -1964,6 +1970,7 @@ def modify_user(request):
             user.roles = roles
             user.city = city
             user.nickName = nickName
+            user.gender = gender
             user.save()
             return http_return(200, 'OK')
     except Exception as e:

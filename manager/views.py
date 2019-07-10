@@ -792,7 +792,7 @@ def del_story(request):
     # 用这个模板创造的作品则提示不能删除
     story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     audioStory = AudioStory.objects.filter(storyUuid=story, isDelete=False).first()
-    if not audioStory:
+    if audioStory:
         return http_return(400, '该模板已关联音频')
     try:
         with transaction.atomic():

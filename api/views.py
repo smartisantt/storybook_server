@@ -178,6 +178,14 @@ def recording_send(request):
         story = Story.objects.filter(uuid=storyUuid).first()
         if not story:
             return http_return(400, '模板信息不存在')
+        # 更新录制次数
+        try:
+            with transaction.atomic():
+                story.recordNum += 1
+                story.save()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '更新录制次数失败')
         audioStoryType = True
     bgm = None
     if bgmUuid:

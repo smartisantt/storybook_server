@@ -209,7 +209,7 @@ class AudioStorySimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'nickName', 'createTime')
+        fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'nickName', 'createTime', 'uuid')
 
 
 

@@ -1146,7 +1146,7 @@ def personal_history_list(request):
     if uuid:
         selfUuid = uuid
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
-    behavs = behav.order_by("audioUuid").distinct().all()
+    behavs = behav.order_by("audioUuid").distinct().order_by("-updateTime").all()
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
     for behav in behavs:
@@ -1474,3 +1474,25 @@ def book_list(request):
         "historyList": historyList,
     }
     return http_return(200, '成功', infoData)
+
+
+@check_identify
+def collection_more(request):
+    """
+    更多收藏
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    selfUuid = data['_cache']['uuid']
+    collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
+    collAudios = []
+    for coll in collectionBehav.all()[:6]:
+        collAudios.append(coll.audioUuid)
+    total, audios = page_index(collAudios, page, pageCount)
+    audioStoryList = audioList_format(audios, data)
+    return http_return(200, '成功', {"total": total, "list": audioStoryList})

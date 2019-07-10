@@ -921,7 +921,7 @@ def add_audio_story(request):
     return http_return(200, 'OK')
 
 
-
+# todo:后台管理返回合成音频
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
     queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0), Q(isUpload=1),
@@ -969,7 +969,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
             else:
                 self.queryset = self.queryset.filter(tags__id=0)
 
-        return self.queryset
+            return self.queryset
 
 
 
@@ -1443,7 +1443,7 @@ class AdView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.filter(startTime__gte=starttime, endTime__lte=endtime)
+                return self.queryset.filter(startTime__gte=endtime, endTime__lte=starttime)
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)

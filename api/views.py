@@ -237,9 +237,11 @@ def recording_send(request):
         if today - readDate == datetime.timedelta(days=1):
             selfUser.readDays = today
             selfUser.readDays += 1
-        if today - readDate > datetime.timedelta(days=1):
+        elif today - readDate > datetime.timedelta(days=1):
             selfUser.readDays = today
             selfUser.readDays = 1
+        else:
+            return http_return(200, '发布成功')
     else:
         selfUser.readDays = 1
     try:
@@ -248,7 +250,6 @@ def recording_send(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新阅读天数失败')
-
     return http_return(200, '发布成功')
 
 
@@ -1140,7 +1141,7 @@ def personal_history_list(request):
     if uuid:
         selfUuid = uuid
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
-    behavs = behav.order_by("-updateTime").all()
+    behavs = behav.order_by("-updateTime").distinct().all()
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
     for behav in behavs:
@@ -1310,6 +1311,24 @@ def feedback_reply_info(request):
     return http_return(200, '成功', replyInfo)
 
 
+@check_identify
+def help_list(request):
+    """
+    帮助手册列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    helpList = []
+    helpList.append({
+        "title": '绘童阅读规则及APP操作流程',
+        "target": 'http://123456789.html'
+    })
+    return http_return(200, '成功', helpList)
+
+
 def advertising_list(request):
     """
     进入弹屏
@@ -1394,8 +1413,8 @@ def search_word_like(request):
     if not data:
         return http_return(400, '参数错误')
     keyword = data.get('keyword', '')
-    user = User.objects.filter(nickName__contains=keyword).values_list('nickName', flat=True)
-    audio = AudioStory.objects.filter(name__contains=keyword).values_list('name', flat=True)
+    user = User.objects.filter(nickName__contains=keyword).values_list('nickName', flat=True).distinct()
+    audio = AudioStory.objects.filter(name__contains=keyword).values_list('name', flat=True).distinct()
     resStr = ','.join(list(user)[:5] + list(audio)[:5])
     return http_return(200, '成功', resStr)
 
@@ -1425,3 +1444,28 @@ def book_list(request):
     :param request:
     :return:
     """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()
+    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, status=4).distinct('audioUuid__uuid').count()
+    collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, status=3).order_by("-updateTime")
+    collAudios = []
+    for coll in collectionBehav.all()[:6]:
+        collAudios.append(coll.audioUuid)
+    collectionList = audioList_format(collAudios, data)
+
+    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, status=4).order_by(
+        "-updateTime").distinct("audioUuid")
+    historyAudios = []
+    for his in historyBehav.all()[:6]:
+        historyAudios.append(his.audioUuid)
+    historyList = audioList_format(historyAudios, data)
+    infoData = {
+        "readDays": selfUser.readDays,
+        "playCount": playCount,
+        "collectionList": collectionList,
+        "historyList": historyList,
+    }
+    return http_return(200, '成功', infoData)

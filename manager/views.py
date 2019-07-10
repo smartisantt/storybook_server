@@ -1804,6 +1804,18 @@ class UserView(ListAPIView):
     ordering = ('-createTime', )
     ordering_fields = ('id', 'createTime')
 
+    # 当前管理员不显示在用户列表里面
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset().exclude(userID=request.user.userID)
+        queryset = self.filter_queryset(queryset)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
 
     def get_queryset(self):
         # 首先更新用户禁言禁止登录状态
@@ -1917,6 +1929,7 @@ def modify_user(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
+
     uuid = data.get('uuid', '')
     nickName = data.get('nickName', '')
     city = data.get('city', '')
@@ -1924,10 +1937,6 @@ def modify_user(request):
     pwd = data.get('pwd', '') # 没有填写密码则不用修改
     if not all([uuid, nickName, city, roles in ['normalUser','adminUser']]):
         return http_return(400, '参数错误')
-
-    if not pwd:
-        if not 5<len(str(pwd))<40:
-            return http_return(400, '密码长度错误')
 
     if not 1<len(str(city))<40:
         return http_return(400, '城市长度错误')
@@ -1938,7 +1947,17 @@ def modify_user(request):
     user = User.objects.filter(uuid=uuid).first()
     if not user:
         return http_return(400, '没有用户')
-    # 调用接口 管理员在后台修改其他用户密码
+
+    tel = user.tel
+    if not tel:
+        return http_return(400, '没有用户手机号')
+    # 调用接口 管理员在后台 重置其他用户密码, 不能重置自己的
+    if pwd:
+        if not 5<len(str(pwd))<40:
+            return http_return(400, '密码长度错误')
+        api = Api()
+        if not api.admin_reset_pwd(tel, pwd, request.auth):
+            return http_return(400, "重置密码失败")
 
     try:
         with transaction.atomic():

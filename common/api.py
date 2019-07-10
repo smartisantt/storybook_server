@@ -17,6 +17,7 @@ class Api(object):
         self.token_url = '/api/sso/token/check'
         self.sts_token_url = '/api/oss/sts'
         self.create_user_url = '/api/sso/createbyuserpasswd'
+        self.reset_pwd_url = '/api/sso/admin/pwd/reset'
 
         self.search_user_byphone_url = '/api/sso/user/byphone'
 
@@ -30,8 +31,8 @@ class Api(object):
         data = {
             'token': token
         }
-        re = requests.post(url, json=data)
         try:
+            re = requests.post(url, json=data)
             if re.status_code == 200:
                 if re.json().get('data').get('valid'):
                     return re.json().get('data').get('info')
@@ -53,9 +54,9 @@ class Api(object):
             "phone": True,
             "passwd": password
         }
-        re = requests.post(url, json=data)
 
         try:
+            re = requests.post(url, json=data)
             if re.status_code == 200:
                 return re.json().get('data').get('userId', '')
             else:
@@ -75,8 +76,8 @@ class Api(object):
 
         headers = {'token': token}
 
-        re = requests.get(url, headers=headers)
         try:
+            re = requests.get(url, headers=headers)
             if re.status_code == 200:
                 if re.json().get('data'):
                     return re.json().get('data')
@@ -89,8 +90,9 @@ class Api(object):
         # url = f'{self.comm_host}{self.search_user_byphone_url}?phone={tel}'
         url = '{0}{1}?phone={2}'.format(self.comm_host,self.search_user_byphone_url,tel)
 
-        re = requests.get(url)
+
         try:
+            re = requests.get(url)
             if re.status_code == 200:
                 if re.json()['data'].get('data'):
                     return re.json()['data'].get('data')[0]
@@ -100,10 +102,31 @@ class Api(object):
             return -1
 
 
+    def admin_reset_pwd(self, tel, pwd, token):
+        """管理员重置密码，管理员重置自己密码会造成token失效"""
+        url = '{0}{1}'.format(self.comm_host, self.reset_pwd_url)
+        data = {
+            "loginId": tel,
+            "passwd": pwd
+        }
+        headers = {'token': token}
+
+        try:
+            re = requests.post(url, json=data, headers=headers, timeout=3)
+            if re.status_code == 200:
+                return True
+            else:
+                return False
+        except Exception as e:
+            logging.error(e)
+            return False
+
+
 if __name__ == '__main__':
     api = Api()
-    api.search_user_byphone('15928140420')
-    if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
-        print ('111')
-    api.create_user('18683367398', '123456')
+    api.admin_reset_pwd("13398876569", "1234567", "2C2936634B97A0C9EDDDFA0B7EC2A412")
+    # api.search_user_byphone('15928140420')
+    # if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
+        # print ('111')
+    # api.create_user('18683367398', '123456')
     # print(api.get_sts_token('0F4741AEF563F5894577912CADB2B5F3'))

@@ -230,6 +230,25 @@ def recording_send(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存记录失败')
+    # 更新连续阅读天数
+    readDate = selfUser.readDate
+    today = datetime.date.today()
+    if readDate:
+        if today - readDate == datetime.timedelta(days=1):
+            selfUser.readDays = today
+            selfUser.readDays += 1
+        if today - readDate > datetime.timedelta(days=1):
+            selfUser.readDays = today
+            selfUser.readDays = 1
+    else:
+        selfUser.readDays = 1
+    try:
+        with transaction.atomic():
+            selfUser.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新阅读天数失败')
+
     return http_return(200, '发布成功')
 
 
@@ -1062,8 +1081,8 @@ def personal_index(request):
     selfUuid = data['_cache']['uuid']
     follow = False
     if uuid:
-        selfUuid = uuid
         follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
+        selfUuid = uuid
     user = User.objects.filter(uuid=selfUuid).first()
     userDict = {
         "uuid": user.uuid,
@@ -1406,4 +1425,3 @@ def book_list(request):
     :param request:
     :return:
     """
-

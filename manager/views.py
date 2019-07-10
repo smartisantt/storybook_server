@@ -789,6 +789,7 @@ def del_story(request):
     if not story:
         return http_return(400, '没有对象')
 
+    # 用这个模板创造的作品则提示不能删除
     story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
         with transaction.atomic():
@@ -1287,6 +1288,7 @@ def forbid_bgm(request):
 @authentication_classes((CustomAuthentication, ))
 def del_audioStory(request):
     """删除模板音频 或者 自由音频"""
+
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
@@ -1298,6 +1300,12 @@ def del_audioStory(request):
     if not audioStory:
         return http_return(400, '找不到对象')
     try:
+        """删除的音频不要在首页模块显示"""
+        module = Module.objects.filter(audioUuid=audioStory).first()
+        if module:
+            module.isDelete = True
+            module.save()
+        # todo:删除的作品关联的其他地方也一并删除
         with transaction.atomic():
             audioStory.isDelete = True
             audioStory.save()

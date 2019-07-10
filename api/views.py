@@ -649,7 +649,7 @@ def search_hot(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    hots = HotSearch.objects.filter(isDelete=False).order_by("-isTop", "-searchNum").values_list('keyword',flat=True)
+    hots = HotSearch.objects.filter(isDelete=False).order_by("-isTop", "-searchNum").values_list('keyword', flat=True)
     resStr = ','.join(list(hots)[:10])
     return http_return(200, "成功", resStr)
 
@@ -1379,3 +1379,31 @@ def search_word_like(request):
     audio = AudioStory.objects.filter(name__contains=keyword).values_list('name', flat=True)
     resStr = ','.join(list(user)[:5] + list(audio)[:5])
     return http_return(200, '成功', resStr)
+
+
+@check_identify
+def logout(request):
+    """
+    退出登录
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    selfUser = User.objects.filter(uuid=data['_cache']['uuid']).first()
+    if selfUser:
+        token = request.META.get('HTTP_TOKEN')
+        caches['api'].delete(token)
+        return http_return(200, '退出登录成功')
+    return http_return(400, '退出登录失败')
+
+
+@check_identify
+def book_list(request):
+    """
+    书架列表
+    :param request:
+    :return:
+    """
+

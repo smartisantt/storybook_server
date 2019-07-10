@@ -12,6 +12,7 @@ import time
 
 from django.http import HttpResponse
 from django.core.cache import cache, caches
+from django.utils import timezone
 
 from manager.models import User, LoginLog
 from common.api import Api
@@ -270,6 +271,8 @@ def timestamp2datetime(startTimestamp, endTimestamp, convert=True):
     try:
         startTime = datetime.datetime.fromtimestamp(startTimestamp)
         endTime = datetime.datetime.fromtimestamp(endTimestamp)
+        startTime = timezone.make_aware(startTime, timezone.get_current_timezone())
+        endTime = timezone.make_aware(endTime, timezone.get_current_timezone())
     except Exception as e:
         logging.error(str(e))
         raise ParamsException('时间格式错误')

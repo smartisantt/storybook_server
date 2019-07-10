@@ -1485,8 +1485,6 @@ def add_ad(request):
     try:
         startTime = datetime.fromtimestamp(startTime)
         endTime = datetime.fromtimestamp(endTime)
-        startTime = timezone.make_aware(startTime, timezone.get_current_timezone())
-        endTime = timezone.make_aware(endTime, timezone.get_current_timezone())
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '时间格式错误')

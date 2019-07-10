@@ -1469,7 +1469,7 @@ def book_list(request):
     historyList = audioList_format(historyAudios, data)
     infoData = {
         "readDays": selfUser.readDays,
-        "playCount": playCount,
+        "readCount": playCount,
         "collectionList": collectionList,
         "historyList": historyList,
     }

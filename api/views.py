@@ -265,12 +265,12 @@ def become_fans(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = int(data.get('type', 2))
+    type = data.get('type', '')
     selfUuid = data['_cache']['uuid']
     if selfUuid == uuid:
         return http_return(400, '不能自己关注自己')
     friend = FriendShip.objects.filter(follows__uuid=uuid, followers__uuid=selfUuid).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if friend:
             try:
                 with transaction.atomic():
@@ -527,7 +527,7 @@ def index_more(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    type = int(data.get('type', 2))
+    type = int(data.get('type', ''))
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # rank:最热 latest:最新
@@ -781,12 +781,12 @@ def audiostory_praise(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = int(data.get('type', 2))
+    type = data.get('type', '')
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=1).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if behav:
             try:
                 with transaction.atomic():
@@ -828,12 +828,12 @@ def audiostory_collection(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = int(data.get('type', 2))
+    type = data.get('type', '')
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=3).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if behav:
             try:
                 with transaction.atomic():

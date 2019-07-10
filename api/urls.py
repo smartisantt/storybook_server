@@ -58,5 +58,6 @@ urlpatterns = [
     path('personal/help/list', views.help_list, name='help_list'),  # 帮助手册列表
 
     path('advertising/list', views.advertising_list, name='advertising_list'),  # 广告列表
+    path('book/list', views.book_list, name='book_list'),  # 书架页
 
 ]

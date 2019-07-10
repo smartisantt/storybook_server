@@ -6,6 +6,7 @@
 from django.db.models import Q
 
 from api.ssoSMS.sms import send_sms
+from api.test import update_history_data
 from common.common import *
 from api.apiCommon import *
 from common.mixFileAPI import MixAudio
@@ -1462,6 +1463,8 @@ def book_list(request):
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
+    if not selfUser:
+        return http_return(400, '未获取到用户信息')
     playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).values('userUuid').distinct().count()
     collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
     collAudios = []

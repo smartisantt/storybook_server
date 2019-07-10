@@ -95,7 +95,7 @@ class LoginLog(BaseModle, models.Model):
     devCode = models.CharField(max_length=256, verbose_name='设备编号', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='longinLogUuid', to_field='uuid')
     userAgent = models.CharField(max_length=256, verbose_name='登录平台', null=True)
-    isManager = models.BooleanField(default=False)      # 0 客户端登录  1 是后台管理端
+    isManager = models.BooleanField(default=False)  # 0 客户端登录  1 是后台管理端
 
     class Meta:
         db_table = 'tb_login_log'
@@ -104,7 +104,7 @@ class LoginLog(BaseModle, models.Model):
 class Operation(BaseModle, models.Model):
     """后台人员操作记录表"""
     adminUserUuid = models.CharField(max_length=64, null=True)
-    operation = models.CharField(max_length=255, null=True)     # create retrieve update delete
+    operation = models.CharField(max_length=255, null=True)  # create retrieve update delete
     objectUuid = models.CharField(max_length=64, null=True)
     remark = models.CharField(max_length=1024, null=True)
 
@@ -233,6 +233,8 @@ class User(BaseModle, models.Model):
 
     versionUuid = models.ForeignKey('Version', models.CASCADE, null=True, related_name='versionUserUuid',
                                     to_field='uuid')
+    readDate = models.DateField(null=True)  # 连续阅读最后时间
+    readDays = models.IntegerField(default=0)  # 连续阅读天数
 
     class Meta:
         db_table = 'tb_user'
@@ -290,7 +292,7 @@ class AudioStory(BaseModle, models.Model):
     作品表自由录制和模板作品
     """
     isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
-    mixAudioUrl = models.CharField(max_length=255, null=True)   # 合成音频url
+    mixAudioUrl = models.CharField(max_length=255, null=True)  # 合成音频url
     voiceUrl = models.CharField(max_length=255, null=True)  # 用户的声音
     userVolume = models.FloatField(default=1.0)  # 用户音量
     bgm = models.ForeignKey('Bgm', on_delete=models.CASCADE, related_name='bgmaudiosUuid', to_field='uuid', null=True)
@@ -325,7 +327,7 @@ class Behavior(BaseModle, models.Model):
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='busUuid', to_field='uuid', null=True)
     audioUuid = models.ForeignKey(AudioStory, on_delete=models.CASCADE, related_name='bauUuid', to_field='uuid',
                                   null=True)
-    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录 5:最近录过
+    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:收藏 4:播放记录 5:最近录过
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.CharField(max_length=256, null=True)
 

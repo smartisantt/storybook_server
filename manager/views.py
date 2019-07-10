@@ -921,7 +921,7 @@ def add_audio_story(request):
     return http_return(200, 'OK')
 
 
-
+# todo:后台管理返回合成音频
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
     queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0), Q(isUpload=1),
@@ -939,14 +939,13 @@ class FreedomAudioStoryInfoView(ListAPIView):
 
 
     def get_queryset(self):
-        startTimestamp = self.request.query_params.get('starttime', '')
-        endTimestamp = self.request.query_params.get('endtime', '')
+        startTimestamp = self.request.query_params.get('startTime', '')
+        endTimestamp = self.request.query_params.get('endTime', '')
 
-        # id = self.request.query_params.get('id', '')                # 故事ID
+
         nickName = self.request.query_params.get('nickName', '')    # 用户名
-        # name = self.request.query_params.get('name', '')    # 模板名
         tag = self.request.query_params.get('tag', '')      # 类型标签
-        # type = self.request.query_params.get('type', '')      # 录制形式
+
 
         if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
@@ -969,7 +968,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
             else:
                 self.queryset = self.queryset.filter(tags__id=0)
 
-        return self.queryset
+            return self.queryset
 
 
 
@@ -1443,7 +1442,7 @@ class AdView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.filter(startTime__gte=starttime, endTime__lte=endtime)
+                return self.queryset.filter(startTime__gte=endtime, endTime__lte=starttime)
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)
@@ -2317,7 +2316,7 @@ class CycleBannerView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.filter(startTime__gte=starttime, endTime__lte=endtime)
+                return self.queryset.filter(startTime__gte=endtime, endTime__lte=starttime)
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)

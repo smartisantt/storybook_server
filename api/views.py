@@ -265,7 +265,7 @@ def become_fans(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = int(data.get('type', ''))
+    type = int(data.get('type', 2))
     selfUuid = data['_cache']['uuid']
     if selfUuid == uuid:
         return http_return(400, '不能自己关注自己')
@@ -527,7 +527,7 @@ def index_more(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    type = int(data.get('type', ''))
+    type = int(data.get('type', 2))
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # rank:最热 latest:最新
@@ -536,7 +536,7 @@ def index_more(request):
     if type in [1, 2, 3]:
         typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
         audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False)
-        if type == '1':
+        if type == 1:
             audio = audio.filter(audioStoryType=True)
     elif type == 4:
         pass
@@ -781,7 +781,7 @@ def audiostory_praise(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = int(data.get('type', ''))
+    type = int(data.get('type', 2))
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
@@ -828,7 +828,7 @@ def audiostory_collection(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = int(data.get('type', ''))
+    type = int(data.get('type', 2))
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']

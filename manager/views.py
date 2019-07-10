@@ -54,9 +54,9 @@ def login(request):
     # 登录前更新用户状态
     currentTime = datetime.now()
     # 到了生效时间
-    User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal"). \
-        update(status=F("settingStatus"), updateTime=currentTime)
-    # 过了结束时间
+    # User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal"). \
+    #     update(status=F("settingStatus"), updateTime=currentTime)
+    # 过了结束时间，恢复用户成正常状态，缓存的信息userid自动删除
     User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
         update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
 
@@ -328,9 +328,8 @@ class AllTagView(ListAPIView):
     queryset = Tag.objects.filter(code="SEARCHSORT", parent_id__isnull=True, isDelete=False)
     serializer_class = TagsSerialzer
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
 
         res = {
@@ -1810,8 +1809,8 @@ class UserView(ListAPIView):
         # 首先更新用户禁言禁止登录状态
         currentTime = datetime.now()
         # 到了生效时间
-        User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal").\
-            update(status=F("settingStatus"), updateTime=currentTime)
+        # User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal").\
+        #     update(status=F("settingStatus"), updateTime=currentTime)
         # 过了结束时间
         User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]).\
             update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
@@ -1890,11 +1889,6 @@ def add_user(request):
             userID = userInfo
         else:
             return http_return(400, '创建用户失败')
-
-
-    # user = User.objects.filter(nickName=nickName).exclude(status='destroy').first()
-    # if user:
-    #     return http_return(400, '重复用户名')
 
     try:
         uuid = get_uuid()
@@ -1996,27 +1990,24 @@ def forbidden_user(request):
     uuid = data.get('uuid', '')
     type = data.get('type', '')
     # 前端传入毫秒为单位的时间戳
-    startTimestamp = data.get('starttime', '')
+    # 当前时间作为起始时间，无需前端传入
+    # startTimestamp = data.get('starttime', '')
     endTimestamp = data.get('endtime', '')
 
 
     # destroy  forbbiden_login  forbbiden_say
-    if not all([startTimestamp, endTimestamp, uuid, type in ["forbbiden_login", "forbbiden_say"]]):
+    if not all([endTimestamp, uuid, type in ["forbbiden_login", "forbbiden_say"]]):
         return http_return(400, '参数错误')
 
-    if not all([isinstance(startTimestamp, int), isinstance(endTimestamp, int)]):
+    if not endTimestamp.isdigit():
         return http_return(400, '时间格式错误')
 
-
-    # if endTimestamp < startTimestamp or endTimestamp <= int(time.time()*1000) or startTimestamp <= int(time.time()*1000):
-    if endTimestamp < startTimestamp:
-        return http_return(400, '无效时间')
-
-    startTimestamp = startTimestamp/1000
-    endTimestamp = endTimestamp/1000
+    endTimestamp = int(endTimestamp)/1000
     try:
-        startTime = datetime.fromtimestamp(startTimestamp)
         endTime = datetime.fromtimestamp(endTimestamp)
+        currentTime = datetime.now()
+        if currentTime >= endTime:
+            return http_return(400, '结束时间错误')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '时间参数错误')
@@ -2027,10 +2018,13 @@ def forbidden_user(request):
 
     try:
         with transaction.atomic():
-            user.startTime = startTime
+            user.startTime = currentTime
             user.endTime = endTime
             user.settingStatus = type
+            user.status = type
             user.save()
+            timeout = (endTime - currentTime).seconds
+            caches['api'].set(request.user.userID, type, timeout=timeout)
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -2058,6 +2052,7 @@ def cancel_forbid(request):
             user.settingStatus = None
             user.status = "normal"
             user.save()
+            caches['api'].delete(request.user.userID)
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
@@ -2126,6 +2121,7 @@ def activity_rank(request):
                 "uuid": game.userUuid.uuid or '',
                 "nickname": game.userUuid.nickName or '',
                 "avatar": game.userUuid.avatar or '',
+                "tel": game.userUuid.tel or '',
             },
             "audio": {
                 "id": game.audioUuid.id or '',

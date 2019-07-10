@@ -385,8 +385,7 @@ def audio_play(request):
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数错误')
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
-        isDelete=False).filter(uuid=uuid).first()
+    audio = AudioStory.objects.filter(uuid=uuid).first()
     if not audio:
         return http_return(400, '故事信息不存在')
     # 更新播放次数
@@ -489,8 +488,8 @@ def index_list(request):
                 "name": ever.audioUuid.name if ever.audioUuid.name else '',
                 "content": ever.audioUuid.remarks if ever.audioUuid.remarks else '',
                 "icon": ever.audioUuid.bgIcon if ever.audioUuid.bgIcon else '',
-                "type": '',
-                "target": '',
+                "type": 2,
+                "target": ever.audioUuid.uuid,
             })
     # 抢先听
     firstList = []
@@ -503,8 +502,8 @@ def index_list(request):
                 "name": first.audioUuid.name if first.audioUuid.name else '',
                 "icon": first.audioUuid.bgIcon if first.audioUuid.bgIcon else '',
                 "content": first.audioUuid.remarks if first.audioUuid.remarks else '',
-                "type": '',
-                "target": '',
+                "type": 2,
+                "target": first.audioUuid.uuid,
             })
     # 热门推荐
     hotList = []
@@ -516,8 +515,8 @@ def index_list(request):
                 "name": hot.audioUuid.name if hot.audioUuid.name else '',
                 "icon": hot.audioUuid.bgIcon if hot.audioUuid.bgIcon else '',
                 "content": hot.audioUuid.remarks if hot.audioUuid.remarks else '',
-                "type": '',
-                "target": '',
+                "type": 2,
+                "target": hot.audioUuid.uuid,
             })
     # 猜你喜欢
     likeList = []
@@ -531,8 +530,8 @@ def index_list(request):
                 "name": audio.name if audio.name else '',
                 "icon": audio.bgIcon if audio.bgIcon else '',
                 "content": audio.remarks if audio.remarks else '',
-                "type": '',
-                "target": ''
+                "type": 2,
+                "target": audio.uuid,
             })
     return http_return(200, '成功',
                        {"dailyReadList": everList, "listenFirstList": firstList, "hotRecommdList": hotList,
@@ -1451,7 +1450,7 @@ def book_list(request):
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
-    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by("audioUuid__uuid").distinct().count()
+    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by("audioUuid").distinct("audioUuid").count()
     collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
     collAudios = []
     for coll in collectionBehav.all()[:6]:
@@ -1459,7 +1458,7 @@ def book_list(request):
     collectionList = audioList_format(collAudios, data)
 
     historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by(
-        "audioUuid").distinct()
+        "audioUuid").distinct("audioUuid")
     historyAudios = []
     for his in historyBehav.order_by("updateTime").all()[:6]:
         historyAudios.append(his.audioUuid)

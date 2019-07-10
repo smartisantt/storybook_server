@@ -55,6 +55,7 @@ urlpatterns = [
     path('personal/feedback/add', views.feedback_add, name='feedback_add'),  # 添加反馈信息
     path('personal/feedback/list', views.feedback_reply_list, name='feedback_reply_list'),  # 回复列表
     path('personal/feedback/info', views.feedback_reply_info, name='feedback_reply_info'),  # 回复详情
+    path('personal/help/list', views.help_list, name='help_list'),  # 帮助手册列表
 
     path('advertising/list', views.advertising_list, name='advertising_list'),  # 广告列表
 

@@ -8,6 +8,7 @@ from django.db.models import Q
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from api.apiCommon import *
+from common.mixFileAPI import MixAudio
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
@@ -230,26 +231,11 @@ def recording_send(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存记录失败')
-    # 更新连续阅读天数
-    readDate = selfUser.readDate
-    today = datetime.date.today()
-    if readDate:
-        if today - readDate == datetime.timedelta(days=1):
-            selfUser.readDays = today
-            selfUser.readDays += 1
-        elif today - readDate > datetime.timedelta(days=1):
-            selfUser.readDays = today
-            selfUser.readDays = 1
-        else:
-            return http_return(200, '发布成功')
-    else:
-        selfUser.readDays = 1
-    try:
-        with transaction.atomic():
-            selfUser.save()
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '更新阅读天数失败')
+
+    # 提交音频合并请求
+    mix = MixAudio()
+    mix.audio_product(uuid)
+
     return http_return(200, '发布成功')
 
 
@@ -410,6 +396,24 @@ def audio_play(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存记录失败')
+    # 更新连续阅读天数
+    readDate = selfUser.readDate
+    today = datetime.date.today()
+    if readDate:
+        if today - readDate == datetime.timedelta(days=1):
+            selfUser.readDays = today
+            selfUser.readDays += 1
+        elif today - readDate > datetime.timedelta(days=1):
+            selfUser.readDays = today
+            selfUser.readDays = 1
+    else:
+        selfUser.readDays = 1
+    try:
+        with transaction.atomic():
+            selfUser.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新阅读天数失败')
     audios = []
     audios.append(audio)
     playDict = audioList_format(audios, data)[0]
@@ -1142,7 +1146,7 @@ def personal_history_list(request):
     if uuid:
         selfUuid = uuid
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
-    behavs = behav.order_by("audioUuid").distinct().all()
+    behavs = behav.order_by("audioUuid").distinct().order_by("-updateTime").all()
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
     for behav in behavs:
@@ -1450,7 +1454,7 @@ def book_list(request):
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
-    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by("audioUuid").distinct("audioUuid").count()
+    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).values('userUuid').distinct().count()
     collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
     collAudios = []
     for coll in collectionBehav.all()[:6]:
@@ -1458,7 +1462,7 @@ def book_list(request):
     collectionList = audioList_format(collAudios, data)
 
     historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by(
-        "audioUuid").distinct("audioUuid")
+        "audioUuid").distinct()
     historyAudios = []
     for his in historyBehav.order_by("updateTime").all()[:6]:
         historyAudios.append(his.audioUuid)
@@ -1470,3 +1474,25 @@ def book_list(request):
         "historyList": historyList,
     }
     return http_return(200, '成功', infoData)
+
+
+@check_identify
+def collection_more(request):
+    """
+    更多收藏
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    selfUuid = data['_cache']['uuid']
+    collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
+    collAudios = []
+    for coll in collectionBehav.all()[:6]:
+        collAudios.append(coll.audioUuid)
+    total, audios = page_index(collAudios, page, pageCount)
+    audioStoryList = audioList_format(audios, data)
+    return http_return(200, '成功', {"total": total, "list": audioStoryList})

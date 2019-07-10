@@ -793,7 +793,7 @@ def del_story(request):
     story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     audioStory = AudioStory.objects.filter(storyUuid=story, isDelete=False).first()
     if not audioStory:
-        return http_return(400, '该模板已关联模模板音频')
+        return http_return(400, '该模板已关联音频')
     try:
         with transaction.atomic():
             story.status = 'destroy'

@@ -265,7 +265,7 @@ def become_fans(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type')
+    type = int(data.get('type', ''))
     selfUuid = data['_cache']['uuid']
     if selfUuid == uuid:
         return http_return(400, '不能自己关注自己')
@@ -292,7 +292,7 @@ def become_fans(request):
                     )
             except Exception as e:
                 logging.error(str(e))
-                return (400, '关注失败')
+                return http_return(400, '关注失败')
         return http_return(200, '关注成功')
 
 
@@ -781,7 +781,7 @@ def audiostory_praise(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type', '')
+    type = int(data.get('type', ''))
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
@@ -828,7 +828,7 @@ def audiostory_collection(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type', '')
+    type = int(data.get('type', ''))
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']

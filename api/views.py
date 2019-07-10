@@ -479,7 +479,8 @@ def index_list(request):
         return http_return(400, '参数错误')
     # 每日一读
     everList = []
-    evers = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True).order_by(
+    evers = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True,
+                                  audioUuid__isDelete=False).order_by(
         "orderNum").all()
     if evers:
         for ever in evers:
@@ -493,7 +494,8 @@ def index_list(request):
             })
     # 抢先听
     firstList = []
-    firsts = Module.objects.filter(type='MOD2', isDelete=False).order_by("orderNum").all()[:6]
+    firsts = Module.objects.filter(type='MOD2', isDelete=False, audioUuid__isDelete=False).order_by("orderNum").all()[
+             :6]
     if firsts:
         for first in firsts:
             firstList.append({
@@ -506,7 +508,7 @@ def index_list(request):
             })
     # 热门推荐
     hotList = []
-    hots = Module.objects.filter(type='MOD3', isDelete=False).order_by("orderNum").all()[:4]
+    hots = Module.objects.filter(type='MOD3', isDelete=False, audioUuid__isDelete=False).order_by("orderNum").all()[:4]
     if hots:
         for hot in hots:
             hotList.append({
@@ -1141,7 +1143,7 @@ def personal_history_list(request):
     if uuid:
         selfUuid = uuid
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
-    behavs = behav.order_by("-updateTime").distinct().all()
+    behavs = behav.order_by("audioUuid").distinct().all()
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
     for behav in behavs:
@@ -1449,17 +1451,17 @@ def book_list(request):
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
-    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, status=4).distinct('audioUuid__uuid').count()
-    collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, status=3).order_by("-updateTime")
+    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by("audioUuid__uuid").distinct().count()
+    collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
     collAudios = []
     for coll in collectionBehav.all()[:6]:
         collAudios.append(coll.audioUuid)
     collectionList = audioList_format(collAudios, data)
 
-    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, status=4).order_by(
-        "-updateTime").distinct("audioUuid")
+    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by(
+        "audioUuid").distinct()
     historyAudios = []
-    for his in historyBehav.all()[:6]:
+    for his in historyBehav.order_by("updateTime").all()[:6]:
         historyAudios.append(his.audioUuid)
     historyList = audioList_format(historyAudios, data)
     infoData = {

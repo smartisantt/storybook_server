@@ -1358,13 +1358,15 @@ def advertising_list(request):
     nowDatetime = datetime.datetime.now()
     adv = Ad.objects.filter(endTime__gte=nowDatetime, startTime__lte=nowDatetime, isDelete=False)
     adv = adv.order_by("orderNum", "-createTime").first()
-    advobj = {
-        "uuid": adv.uuid,
-        "name": adv.name,
-        "icon": adv.icon,
-        "type": adv.type,
-        "target": adv.target,
-    }
+    advobj = {}
+    if adv:
+        advobj = {
+            "uuid": adv.uuid,
+            "name": adv.name,
+            "icon": adv.icon,
+            "type": adv.type,
+            "target": adv.target,
+        }
     return http_return(200, '成功', advobj)
 
 

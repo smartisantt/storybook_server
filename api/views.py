@@ -10,7 +10,7 @@ from api.test import update_history_data
 from common.common import *
 from api.apiCommon import *
 from common.mixFileAPI import MixAudio
-from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
+from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, activityHostUrl
 
 
 def identify_code(request):
@@ -191,7 +191,7 @@ def recording_send(request):
     bgm = None
     if bgmUuid:
         bgm = Bgm.objects.filter(uuid=bgmUuid).first()
-    if not all([audioUrl, audioVolume, storyTagUuidList, audioDuration, name, icon]):
+    if not all([audioUrl, audioVolume, storyTagUuidList, name, icon]):
         return http_return(400, '参数错误')
     if type not in [0, 1]:
         return http_return(400, '参数错误')
@@ -470,13 +470,16 @@ def index_banner(request):
     banner = banner.filter(location=0).order_by('orderNum')
     banners = banner.all()
     banList = []
+    selfUuid = data['_cache']['uuid']
     for banner in banners:
+        if banner.type == 0:
+            target = activityHostUrl + selfUuid + "/" + banner.target
         banList.append({
             "uuid": banner.uuid,
             'name': banner.name if banner.name else '',
             'icon': banner.icon if banner.icon else '',
             'type': banner.type,
-            'target': banner.target if banner.target else '',
+            'target': target if target else '',
         })
     return http_return(200, '成功', banList)
 
@@ -1358,13 +1361,15 @@ def advertising_list(request):
     nowDatetime = datetime.datetime.now()
     adv = Ad.objects.filter(endTime__gte=nowDatetime, startTime__lte=nowDatetime, isDelete=False)
     adv = adv.order_by("orderNum", "-createTime").first()
-    advobj = {
-        "uuid": adv.uuid,
-        "name": adv.name,
-        "icon": adv.icon,
-        "type": adv.type,
-        "target": adv.target,
-    }
+    advobj = {}
+    if adv:
+        advobj = {
+            "uuid": adv.uuid,
+            "name": adv.name,
+            "icon": adv.icon,
+            "type": adv.type,
+            "target": adv.target,
+        }
     return http_return(200, '成功', advobj)
 
 

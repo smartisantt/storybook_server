@@ -220,35 +220,100 @@ CORS_ALLOW_HEADERS = (
 )
 
 
-# 缓存配置
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': [
-            'redis://172.18.0.5:6379/0',
-        ],  # redis服务ip和端口，
-        'KEY_PREFIX': 'manage',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {
-                'max_connections': 1024,
-            }
+if version == "debug":
+    # 缓存配置
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': [
+                'redis://127.0.0.1:6379/0',
+            ],  # redis服务ip和端口，
+            'KEY_PREFIX': 'manage',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 1024,
+                }
+            },
         },
-    },
-    'api': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': [
-            'redis://172.18.0.5:6379/1',
-        ],  # redis服务ip和端口，
-        'KEY_PREFIX': 'api',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {
-                'max_connections': 512,
-            }
+        'api': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': [
+                'redis://127.0.0.1:6379/1',
+            ],  # redis服务ip和端口，
+            'KEY_PREFIX': 'api',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 512,
+                }
+            },
         },
-    },
-}
+    }
+elif version == "test":
+    # 缓存配置
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': [
+                'redis://127.0.0.1:6379/0',
+            ],  # redis服务ip和端口，
+            'KEY_PREFIX': 'manage',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 1024,
+                }
+            },
+        },
+        'api': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': [
+                'redis://127.0.0.1:6379/1',
+            ],  # redis服务ip和端口，
+            'KEY_PREFIX': 'api',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 512,
+                }
+            },
+        },
+    }
+elif version == "ali_test":
+    # 缓存配置
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': [
+                'redis://172.18.0.5:6379/0',
+            ],  # redis服务ip和端口，
+            'KEY_PREFIX': 'manage',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 1024,
+                },
+                'PASSWORD': 'hbb123',
+            },
+        },
+        'api': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': [
+                'redis://172.18.0.5:6379/1',
+            ],  # redis服务ip和端口，
+            'KEY_PREFIX': 'api',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 512,
+                },
+                'PASSWORD': 'hbb123',
+            },
+        },
+    }
+
+
 
 REST_FRAMEWORK = {
     # 分页配置

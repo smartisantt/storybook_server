@@ -5,7 +5,7 @@ import json
 from storybook_sever.settings import BASE_DIR
 from manager.models import *
 
-def main():
+def init_tag():
     json_file = BASE_DIR + '/init_mysqldata/tag.json'
     with open(json_file,encoding='utf-8') as f:
         json_str = f.read()
@@ -29,4 +29,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    init_tag()

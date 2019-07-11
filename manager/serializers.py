@@ -212,18 +212,11 @@ class AudioStorySimpleSerializer(serializers.ModelSerializer):
         fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'nickName', 'createTime', 'uuid')
 
 
-
-
-
-class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
+class QualifiedAudioStoryInfoSerializer(serializers.ModelSerializer):
     tagsInfo = serializers.SerializerMethodField()
     bgmInfo = serializers.SerializerMethodField()
     userInfo = serializers.SerializerMethodField()
     storyInfo = serializers.SerializerMethodField()
-    # 数据库中的数据已根据audioStoryType 判断来存储模板的name和bgIcon
-    # name = serializers.SerializerMethodField()
-    # bgIcon = serializers.SerializerMethodField()
-
 
     @staticmethod
     def get_tagsInfo(audioinfo):
@@ -241,19 +234,33 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
     def get_storyInfo(audioinfo):
         return StorySerializer(audioinfo.storyUuid).data
 
-    # @staticmethod
-    # def get_name(audioinfo):
-    #     if audioinfo.audioStoryType == False:
-    #         return audioinfo.name
-    #     else:
-    #         return audioinfo.storyUuid.name if audioinfo.storyUuid else None
 
-    # @staticmethod
-    # def get_bgIcon(audioinfo):
-    #     if audioinfo.audioStoryType == False:
-    #         return audioinfo.bgIcon
-    #     else:
-    #         return audioinfo.storyUuid.faceIcon if audioinfo.storyUuid else None
+    class Meta:
+        model = AudioStory
+        exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
+
+
+class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
+    tagsInfo = serializers.SerializerMethodField()
+    bgmInfo = serializers.SerializerMethodField()
+    userInfo = serializers.SerializerMethodField()
+    storyInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_tagsInfo(audioinfo):
+        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+
+    @staticmethod
+    def get_bgmInfo(audioinfo):
+        return BgmSimpleSerializer(audioinfo.bgm).data
+
+    @staticmethod
+    def get_userInfo(audioinfo):
+        return UserSerializer(audioinfo.userUuid).data
+
+    @staticmethod
+    def get_storyInfo(audioinfo):
+        return StorySerializer(audioinfo.storyUuid).data
 
 
     class Meta:

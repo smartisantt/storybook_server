@@ -69,6 +69,14 @@ class CheckAudioStoryInfoFilter(django_filters.FilterSet):
         fields = ('id', 'checkStatus', 'name')
 
 
+class QualifiedAudioStoryInfoFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+
+    class Meta:
+        model = AudioStory
+        fields = ('id', 'name')
+
+
 class BgmFilter(django_filters.FilterSet):
 
     name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')

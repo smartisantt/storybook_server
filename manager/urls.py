@@ -8,7 +8,7 @@ from manager import views
 from manager.managerCommon import check_identify
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
-    ActivityView, CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView
+    ActivityView, CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView
 
 app_name = 'manager'
 
@@ -52,6 +52,7 @@ urlpatterns = [
 
     # 审核
     path('check/audiolist/', CheckAudioStoryInfoView.as_view()),
+    path('check/qualified/', QualifiedAudioStoryInfoView.as_view()),
     path('check/configtags/', views.config_tags, name='config_tags'),
     path('check/checkaudio/', views.check_audio, name='check_audio'),
     path('audio/audiostorylist/', AllAudioSimpleView.as_view()),
@@ -112,6 +113,6 @@ urlpatterns = [
 ]
 
 # router = SimpleRouter()
-# router.register('feedback', Feedback2View)
+# router.register('feedback', CheckAudioStoryInfoView)
 #
 # urlpatterns += router.urls

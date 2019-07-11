@@ -14,7 +14,7 @@ from api.apiCommon import get_default_name
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, ActivityFilter, CycleBannerFilter, \
-    AdFilter, FeedbackFilter
+    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -22,7 +22,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
-    TagsSerialzer
+    TagsSerialzer, QualifiedAudioStoryInfoSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime, timedelta
@@ -979,7 +979,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
 class CheckAudioStoryInfoView(ListAPIView):
     queryset = AudioStory.objects.filter(isDelete=False, isUpload=1 )\
         .select_related('bgm', 'userUuid')\
-        .prefetch_related('tags').order_by('-createTime')
+        .prefetch_related('tags')
 
     serializer_class = CheckAudioStoryInfoSerializer
     filter_class = CheckAudioStoryInfoFilter
@@ -992,13 +992,7 @@ class CheckAudioStoryInfoView(ListAPIView):
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
-
-        # id = self.request.query_params.get('id', '')                # 故事ID
         nickName = self.request.query_params.get('nickName', '')    # 用户名
-        name = self.request.query_params.get('name', '')          # 作品名
-
-        # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 免检（后台上传的作品）
-        # checkstatus = self.request.query_params.get('checkstatus', '')      # 类型标签
 
         if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
@@ -1013,15 +1007,42 @@ class CheckAudioStoryInfoView(ListAPIView):
         if nickName:
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
-        # name 要在自由作品和模板作品中选择
-        # 作品类型  是用的模板1 还是自由录制0
-        if name:
-            nameInAudioStoryQuerySet = self.queryset.filter(
-                storyUuid__in=Story.objects.filter(name__icontains=name).all())
-            nameInFreedomAudioStoryQuerySet = self.queryset.filter(name__icontains=name).all()
-            self.queryset = nameInAudioStoryQuerySet|nameInFreedomAudioStoryQuerySet
         return self.queryset
 
+
+
+class QualifiedAudioStoryInfoView(ListAPIView):
+    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1,checkStatus__in=["check", "exemption"])\
+        .select_related('bgm', 'userUuid')\
+        .prefetch_related('tags')
+
+    serializer_class = QualifiedAudioStoryInfoSerializer
+    filter_class = QualifiedAudioStoryInfoFilter
+    pagination_class = MyPagination
+
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+        nickName = self.request.query_params.get('nickName', '')    # 用户名
+
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+
+        if nickName:
+            self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
+
+        return self.queryset
 
 
 @api_view(['POST'])

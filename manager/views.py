@@ -14,7 +14,7 @@ from api.apiCommon import get_default_name
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, ActivityFilter, CycleBannerFilter, \
-    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter
+    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, NowActivityFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -1323,6 +1323,14 @@ def del_audioStory(request):
     module = Module.objects.filter(audioUuid=audioStory, isDelete=False).first()
     if module:
         return http_return(400, '该音频已关联模块配置')
+    # 音频关联广告
+    ad = Ad.objects.filter(target=uuid, isDelete=False).first()
+    if ad:
+        return http_return(400, '该音频已关联广告')
+    # 音频关联轮播图
+    banner = CycleBanner.objects.filter(target=uuid, isDelete=False).first()
+    if banner:
+        return http_return(400, '该音频已关联轮播图')
     try:
         with transaction.atomic():
             audioStory.isDelete = True
@@ -1347,6 +1355,8 @@ def del_bgm(request):
     bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destroy").first()
     if not bgm:
         return http_return(400, '找不到对象')
+    if AudioStory.objects.filter(bgm__uuid=uuid, isDelete=False).exists():
+        return http_return(400, '改背景音乐在作品中使用')
     try:
         # forbid 停用 normal正常 在用  destroy 删除
         bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destroy").first()
@@ -1628,7 +1638,7 @@ def del_ad(request):
 # 模块配置
 class ModuleView(ListAPIView):
     """显示模块类型 MOD1每日一读  MOD2抢先听  MOD3热门推荐"""
-    queryset = Module.objects.filter(isDelete=False).\
+    queryset = Module.objects.filter(isDelete=False, audioUuid__isDelete=False).\
         select_related('audioUuid').order_by('orderNum')
     serializer_class = ModuleSerializer
     # pagination_class = MyPagination
@@ -1670,13 +1680,6 @@ class AllAudioSimpleView(ListAPIView):
         if nickName:
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
-        # name 要在自由作品和模板作品中选择
-        # 作品类型  是用的模板1 还是自由录制0
-        if name:
-            nameInAudioStoryQuerySet = self.queryset.filter(
-                storyUuid__in=Story.objects.filter(name__icontains=name).all())
-            nameInFreedomAudioStoryQuerySet = self.queryset.filter(name__icontains=name).all()
-            self.queryset = nameInAudioStoryQuerySet | nameInFreedomAudioStoryQuerySet
         return self.queryset
 
 
@@ -1976,7 +1979,7 @@ def modify_user(request):
     if not 1<len(str(nickName))<11:
         return http_return(400, '昵称长度错误')
 
-    user = User.objects.filter(uuid=uuid).first()
+    user = User.objects.filter(uuid=uuid).exclude(status="destroy").first()
     if not user:
         return http_return(400, '没有用户')
 
@@ -2041,11 +2044,7 @@ def forbidden_user(request):
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
     type = data.get('type', '')
-    # 前端传入毫秒为单位的时间戳
-    # 当前时间作为起始时间，无需前端传入
-    # startTimestamp = data.get('starttime', '')
     endTimestamp = data.get('endtime', '')
-
 
     # destroy  forbbiden_login  forbbiden_say
     if not all([endTimestamp, uuid, type in ["forbbiden_login", "forbbiden_say"]]):
@@ -2193,10 +2192,10 @@ class ActivityView(ListAPIView):
     serializer_class = ActivitySerializer
     filter_class = ActivityFilter
     pagination_class = MyPagination
-
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering = ('-createTime',)
     ordering_fields = ('id', 'createTime')
+
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
@@ -2213,6 +2212,7 @@ class ActivityView(ListAPIView):
                 raise ParamsException(e.detail)
 
         return self.queryset
+
 
 
 @api_view(['POST'])
@@ -2322,12 +2322,10 @@ def modify_activity(request):
 # 配置轮播图
 
 class CycleBannerView(ListAPIView):
-
     queryset = CycleBanner.objects.filter(isDelete=False)
     serializer_class = CycleBannerSerializer
     filter_class = CycleBannerFilter
     pagination_class = MyPagination
-
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
@@ -2402,7 +2400,6 @@ def add_cycle_banner(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
-
 
 
 @api_view(['POST'])
@@ -2503,24 +2500,6 @@ def change_cycle_banner_status(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
-
-
-
-# class Feedback2View(viewsets.GenericViewSet,
-#                      mixins.CreateModelMixin):
-#     queryset = Feedback.objects.all()
-#     serializer_class = FeedbackSerializer
-#     filter_class = FeedbackFilter
-#     pagination_class = MyPagination
-#
-#     @action(methods=('POST', ), detail=False, serializer_class=Feedback2Serializer)
-#     def reply2(self, request):
-#         serializers = self.get_serializer(data=request.data)
-#         result = serializers.is_valid(raise_exception=True)
-#         if not result:
-#             raise ParamsException('参数有误')
-#         serializers.reply2_data(serializers.data)
-#         return Response({'code':200, 'msg':'OK'})
 
 
 

@@ -112,7 +112,7 @@ class Api(object):
         headers = {'token': token}
 
         try:
-            re = requests.post(url, json=data, headers=headers, timeout=3)
+            re = requests.post(url, json=data, headers=headers)
             if re.status_code == 200:
                 return True
             else:

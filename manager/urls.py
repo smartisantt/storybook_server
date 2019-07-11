@@ -5,7 +5,6 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from manager import views
-from manager.managerCommon import check_identify
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
     ActivityView, CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView

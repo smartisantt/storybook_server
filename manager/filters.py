@@ -10,8 +10,6 @@ class StoryFilter(django_filters.FilterSet):
     """模板id，模板名，日期，"""
     name = django_filters.CharFilter('name', lookup_expr='contains')
 
-
-
     class Meta:
         model = Story
         fields = ('id', 'name')
@@ -78,7 +76,6 @@ class QualifiedAudioStoryInfoFilter(django_filters.FilterSet):
 
 
 class BgmFilter(django_filters.FilterSet):
-
     name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
 
     class Meta:
@@ -87,7 +84,6 @@ class BgmFilter(django_filters.FilterSet):
 
 
 class HotSearchFilter(django_filters.FilterSet):
-
     keyword = django_filters.CharFilter(lookup_expr='icontains')
 
     class Meta:
@@ -96,7 +92,6 @@ class HotSearchFilter(django_filters.FilterSet):
 
 
 class UserFilter(django_filters.FilterSet):
-
     nickName = django_filters.CharFilter(field_name='nickName', lookup_expr='icontains')
     tel = django_filters.CharFilter(lookup_expr='contains')
     city = django_filters.CharFilter(lookup_expr='contains')
@@ -112,9 +107,7 @@ class UserFilter(django_filters.FilterSet):
         fields = ('id', 'nickName', 'tel', 'status', 'city')
 
 
-
 class GameInfoFilter(django_filters.FilterSet):
-
     activityuuid = django_filters.CharFilter(method='filter_by_uuid')
 
     @staticmethod
@@ -130,14 +123,12 @@ class GameInfoFilter(django_filters.FilterSet):
 
 
 class ActivityFilter(django_filters.FilterSet):
-
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
     stage = django_filters.CharFilter(method='filter_by_stage')
 
     @staticmethod
     def filter_by_stage(queryset, name, value):
         currentTime = datetime.now()
-
         if value == "past":
             return queryset.filter(endTime__lt=currentTime)
         elif value == "now":
@@ -147,17 +138,14 @@ class ActivityFilter(django_filters.FilterSet):
         else:
             return queryset
 
-
-
     class Meta:
         model = Activity
-        fields = "__all__"
+        fields = ('id', 'name')
+
 
 
 class CycleBannerFilter(django_filters.FilterSet):
-
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
-
 
     class Meta:
         model = CycleBanner
@@ -165,9 +153,7 @@ class CycleBannerFilter(django_filters.FilterSet):
 
 
 class AdFilter(django_filters.FilterSet):
-
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
-
 
     class Meta:
         model = Ad

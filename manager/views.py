@@ -915,7 +915,7 @@ def add_audio_story(request):
     return http_return(200, 'OK')
 
 
-# todo:后台管理返回合成音频
+
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
     queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0), Q(isUpload=1),
@@ -926,7 +926,6 @@ class FreedomAudioStoryInfoView(ListAPIView):
     serializer_class = FreedomAudioStoryInfoSerializer
     filter_class = FreedomAudioStoryInfoFilter
     pagination_class = MyPagination
-
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering = ('-createTime',)
     ordering_fields = ('id', 'createTime')
@@ -935,8 +934,6 @@ class FreedomAudioStoryInfoView(ListAPIView):
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('startTime', '')
         endTimestamp = self.request.query_params.get('endTime', '')
-
-
         nickName = self.request.query_params.get('nickName', '')    # 用户名
         tag = self.request.query_params.get('tag', '')      # 类型标签
 

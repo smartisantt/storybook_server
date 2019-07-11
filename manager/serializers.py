@@ -99,11 +99,11 @@ class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
     tagsInfo = serializers.SerializerMethodField()
     bgmInfo = serializers.SerializerMethodField()
     userInfo = serializers.SerializerMethodField()
-    # storyInfo = serializers.SerializerMethodField()
 
     @staticmethod
     def get_tagsInfo(audioinfo):
-        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+        tag = audioinfo.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
 
     @staticmethod
     def get_bgmInfo(audioinfo):
@@ -113,9 +113,6 @@ class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
     def get_userInfo(audioinfo):
         return UserSerializer(audioinfo.userUuid).data
 
-    # @staticmethod
-    # def get_storyInfo(audioinfo):
-    #     return StorySerializer(audioinfo.storyUuid).data
 
     class Meta:
         model = AudioStory
@@ -249,7 +246,8 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_tagsInfo(audioinfo):
-        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+        tag = audioinfo.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
 
     @staticmethod
     def get_bgmInfo(audioinfo):

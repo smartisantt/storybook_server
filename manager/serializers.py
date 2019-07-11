@@ -133,7 +133,8 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_tagsInfo(audioinfo):
-        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+        tag = audioinfo.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
 
     @staticmethod
     def get_bgmInfo(audioinfo):

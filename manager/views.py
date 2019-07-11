@@ -1907,7 +1907,7 @@ def add_user(request):
     if not 1<len(str(city))<40:
         return http_return(400, '城市长度错误')
 
-    if not 1<len(str(nickName))<11:
+    if not 1<len(str(nickName))<20:
         return http_return(400, '昵称长度错误')
 
     if not isinstance(tel, str):
@@ -1973,7 +1973,7 @@ def modify_user(request):
     if not 1<len(str(city))<40:
         return http_return(400, '城市长度错误')
 
-    if not 1<len(str(nickName))<11:
+    if not 1<len(str(nickName))<20:
         return http_return(400, '昵称长度错误')
 
     user = User.objects.filter(uuid=uuid).exclude(status="destroy").first()

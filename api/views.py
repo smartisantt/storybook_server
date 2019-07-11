@@ -1093,7 +1093,9 @@ def personal_index(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    selfUuid = data['_cache']['uuid']
+    selfUuid = data['_cache'].get('uuid','')
+    if not selfUuid:
+        return http_return(401,'登录过期')
     follow = False
     if uuid:
         follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()

@@ -442,9 +442,11 @@ def audio_other(request):
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
-    selfUuid = data['_cache']['uuid']
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    if not audio:
+        return http_return(400, '作品信息不存在')
     otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
-        isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=selfUuid, isDelete=False)
+        isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=audio.userUuid.uuid, isDelete=False)
     otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)
@@ -1093,9 +1095,9 @@ def personal_index(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    selfUuid = data['_cache'].get('uuid','')
+    selfUuid = data['_cache'].get('uuid', '')
     if not selfUuid:
-        return http_return(401,'登录过期')
+        return http_return(401, '登录过期')
     follow = False
     if uuid:
         follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()

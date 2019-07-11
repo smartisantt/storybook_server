@@ -821,12 +821,8 @@ class AudioStoryInfoView(ListAPIView):
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
-
-        # id = self.request.query_params.get('id', '')                # 故事ID
         nickName = self.request.query_params.get('nickName', '')    # 用户名
-        name = self.request.query_params.get('name', '')    # 模板名
         tag = self.request.query_params.get('tag', '')      # 类型标签
-        # type = self.request.query_params.get('type', '')      # 录制形式
 
         if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
@@ -840,9 +836,7 @@ class AudioStoryInfoView(ListAPIView):
 
         if nickName:
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
-        if name:
-            self.queryset = self.queryset.filter(
-                storyUuid__in=Story.objects.filter(name__icontains=name).all())
+
         if tag:
             tag_info = Tag.objects.filter(uuid=tag, isDelete=False).first()
             if tag_info:

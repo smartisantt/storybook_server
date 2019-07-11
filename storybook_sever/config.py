@@ -17,5 +17,3 @@ if version == 'ali_test':
     IS_SEND = True
 else:
     IS_SEND = False
-
-activityHostUrl = 'http://huitonghuodong.hbbclub.com/'

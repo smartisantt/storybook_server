@@ -10,7 +10,7 @@ from api.test import update_history_data
 from common.common import *
 from api.apiCommon import *
 from common.mixFileAPI import MixAudio
-from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, activityHostUrl
+from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
 def identify_code(request):
@@ -470,16 +470,13 @@ def index_banner(request):
     banner = banner.filter(location=0).order_by('orderNum')
     banners = banner.all()
     banList = []
-    selfUuid = data['_cache']['uuid']
     for banner in banners:
-        if banner.type == 0:
-            target = activityHostUrl + selfUuid + "/" + banner.target
         banList.append({
             "uuid": banner.uuid,
             'name': banner.name if banner.name else '',
             'icon': banner.icon if banner.icon else '',
             'type': banner.type,
-            'target': target if target else '',
+            'target': banner.target,
         })
     return http_return(200, '成功', banList)
 

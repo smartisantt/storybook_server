@@ -10,7 +10,7 @@ from api.test import update_history_data
 from common.common import *
 from api.apiCommon import *
 from common.mixFileAPI import MixAudio
-from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, activityHostUrl
+from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
 def identify_code(request):

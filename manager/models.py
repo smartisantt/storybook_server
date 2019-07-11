@@ -19,6 +19,7 @@ class Activity(BaseModle, models.Model):
     活动表
     """
     name = models.CharField(max_length=255, verbose_name="活动名称", null=True)
+    url = models.CharField(max_length=255, verbose_name="活动url", null=True)
     intro = models.CharField(max_length=1024, verbose_name="活动介绍", null=True)
     status = models.CharField(max_length=32, verbose_name="活动状态", null=True)  # normal正常 forbid 禁用 destroy 删除
     icon = models.CharField(max_length=256, verbose_name="活动图片", null=True)

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Create your views here.
+from urllib.parse import urljoin
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import authentication, viewsets, mixins
@@ -2214,8 +2215,9 @@ def create_activity(request):
     intro = data.get('intro', '')
     startTime = data.get('starttime', '')
     endTime = data.get('endtime', '')
+    url = data.get('url', '')
     icon = data.get('icon', '')         # 非必填
-    if not all([name, intro, startTime, endTime]):
+    if not all([url, name, intro, startTime, endTime]):
         return http_return(400, '参数错误')
     if Activity.objects.filter(name=name).exists():
         return http_return(400, '重复活动名')
@@ -2225,6 +2227,12 @@ def create_activity(request):
 
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
+
+    if not isinstance(url ,str):
+        return http_return(400, 'url错误')
+
+    if not url.startswith( 'http' ):
+        return http_return('url格式错误')
 
     startTime = startTime/1000
     endTime = endTime/1000
@@ -2242,6 +2250,7 @@ def create_activity(request):
             Activity.objects.create(
                 uuid = uuid,
                 name = name,
+                url = urljoin(url,uuid),
                 startTime = startTime,
                 endTime = endTime,
                 intro = intro,

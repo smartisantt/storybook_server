@@ -1384,10 +1384,10 @@ def audio_other_version(request):
     audio = AudioStory.objects.filter(uuid=uuid).first()
     if not audio:
         return http_return(400, '模板音频不存在')
-    if not audio.audioStoryType:
+    if not audio.storyUuid:
         return http_return(400, '自由录制作品没有其他主播版本')
     otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
-        isDelete=False).filter(storyUuid__uuid=audio.storyUuid.uuid)
+        isDelete=False).filter(storyUuid__uuid=audio.storyUuid.uuid).exclude(userUuid__uuid=audio.userUuid.uuid)
     otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)

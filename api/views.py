@@ -472,6 +472,7 @@ def index_banner(request):
     banList = []
     selfUuid = data['_cache']['uuid']
     for banner in banners:
+        target = banner.target
         if banner.type == 0:
             target = activityHostUrl + selfUuid + "/" + banner.target
         banList.append({

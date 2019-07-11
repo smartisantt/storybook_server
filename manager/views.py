@@ -14,7 +14,7 @@ from api.apiCommon import get_default_name
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, ActivityFilter, CycleBannerFilter, \
-    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, NowActivityFilter
+    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -53,9 +53,6 @@ def login(request):
 
     # 登录前更新用户状态
     currentTime = datetime.now()
-    # 到了生效时间
-    # User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal"). \
-    #     update(status=F("settingStatus"), updateTime=currentTime)
     # 过了结束时间，恢复用户成正常状态，缓存的信息userid自动删除
     User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
         update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)

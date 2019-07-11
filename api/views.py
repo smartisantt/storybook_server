@@ -470,17 +470,13 @@ def index_banner(request):
     banner = banner.filter(location=0).order_by('orderNum')
     banners = banner.all()
     banList = []
-    selfUuid = data['_cache']['uuid']
     for banner in banners:
-        target = banner.target
-        if banner.type == 0:
-            target = activityHostUrl + selfUuid + "/" + banner.target
         banList.append({
             "uuid": banner.uuid,
             'name': banner.name if banner.name else '',
             'icon': banner.icon if banner.icon else '',
             'type': banner.type,
-            'target': target if target else '',
+            'target': banner.target,
         })
     return http_return(200, '成功', banList)
 

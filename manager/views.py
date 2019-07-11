@@ -1509,6 +1509,13 @@ def add_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
+    if type == 4:
+        activity = Activity.objects.filter(uuid=target).first()
+        if activity:
+            target = activity.url
+        else:
+            return http_return(400, '没有此活动')
+
     try:
         uuid = get_uuid()
         Ad.objects.create(
@@ -2379,6 +2386,13 @@ def add_cycle_banner(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '时间参数错误')
+
+    if type == 4:
+        activity = Activity.objects.filter(uuid=target).first()
+        if activity:
+            target = activity.url
+        else:
+            return http_return(400, '没有此活动')
 
     try:
         uuid = get_uuid()

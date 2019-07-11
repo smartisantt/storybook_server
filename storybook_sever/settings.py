@@ -225,7 +225,7 @@ CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': [
-            'redis://172.18.0.5:6379/0',
+            'redis://127.0.0.1/0',
         ],  # redis服务ip和端口，
         'KEY_PREFIX': 'manage',
         'OPTIONS': {
@@ -238,7 +238,7 @@ CACHES = {
     'api': {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': [
-            'redis://172.18.0.5:6379/1',
+            'redis://127.0.0.1/1',
         ],  # redis服务ip和端口，
         'KEY_PREFIX': 'api',
         'OPTIONS': {

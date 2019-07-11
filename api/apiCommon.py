@@ -44,12 +44,14 @@ def create_session(user_info, token, loginIP):
     :param user_info:
     :return:
     """
+    logDate = datetime.date.today()
     user = {
         'nickName': user_info.nickName if user_info.nickName else None,
         'uuid': user_info.uuid,
         'userId': user_info.userID,
         'tel': user_info.tel,
-        'loginIp': loginIP
+        'loginIp': loginIP,
+        "logDate": logDate,
     }
     try:
         caches['api'].set(token, user, USER_SESSION_OVER_TIME)
@@ -126,16 +128,27 @@ def check_identify(func):
                 if not create_session(user_data, token, loginIP):
                     return http_return(401, '用户不存在')
             # 如果有登陆出现，则存登录日志
+        nowDate = datetime.date.today()
+        logDate = user_info.get('logDate', '')
+        if not logDate:  # 如果日志日期不存在则刷新缓存
+            user_info['logDate'] = nowDate
             try:
-                log = LoginLog(
-                    uuid=get_uuid(),
-                    ipAddr=user_info.get('loginIp', ''),
-                    userUuid=user_data,
-                )
-                log.save()
+                caches['api'].set(token, user_info, USER_SESSION_OVER_TIME)
             except Exception as e:
                 logging.error(str(e))
-                return http_return(401, '日志保存失败')
+                return http_return(400, '日志时间保存失败')
+        else:
+            if logDate != nowDate:  # 如果当天没有存日志则添加
+                try:
+                    log = LoginLog(
+                        uuid=get_uuid(),
+                        ipAddr=user_info.get('loginIp', ''),
+                        userUuid=user_data,
+                    )
+                    log.save()
+                except Exception as e:
+                    logging.error(str(e))
+                    return http_return(401, '日志保存失败')
 
         userID = user_info.get('userId', '')
         forbidInfo = caches['api'].get(userID)

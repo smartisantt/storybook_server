@@ -35,7 +35,7 @@ class Ad(BaseModle, models.Model):
     """
     name = models.CharField(max_length=64, null=True)
     icon = models.CharField(max_length=255, verbose_name='广告图片', null=True)
-    type = models.IntegerField(null=True)  # 跳转类型 0活动 1专辑 2audiostory 3story 4外部链接
+    type = models.IntegerField(null=True)  # 0 活动 1 专辑 2 音频 3 商品 4外部链接
     target = models.CharField(max_length=255, null=True)  # 跳转uuid 或者外部url
     orderNum = models.IntegerField(null=True)  # 显示序号  数字越小越优先显示
     startTime = models.DateTimeField(verbose_name='时效开始时间', null=True)

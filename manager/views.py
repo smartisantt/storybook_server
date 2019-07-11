@@ -2038,7 +2038,7 @@ def forbidden_user(request):
     if not all([endTimestamp, uuid, type in ["forbbiden_login", "forbbiden_say"]]):
         return http_return(400, '参数错误')
 
-    if not endTimestamp.isdigit():
+    if not isinstance(endTimestamp, int):
         return http_return(400, '时间格式错误')
 
     endTimestamp = int(endTimestamp)/1000

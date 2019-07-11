@@ -1,4 +1,7 @@
 
+from datetime import datetime
+
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -41,12 +44,12 @@ class TagsSerialzer(serializers.ModelSerializer):
 
     @staticmethod
     def get_childTagList(tag):
-        queryset = Tag.objects.filter(parent=tag)
+        queryset = Tag.objects.filter(parent=tag, isDelete=False)
         return TagsChildSerialzer(queryset, many=True).data
 
     class Meta:
         model = Tag
-        fields = ('uuid', 'sortNum', 'name', 'icon', 'childTagList', 'childTagsNum')
+        fields = ('uuid', 'name', 'sortNum', 'icon','isUsing', 'childTagList',  'childTagsNum')
 
 
 
@@ -54,14 +57,14 @@ class TagsChildSerialzer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        fields = ('uuid', 'sortNum', 'name')
+        fields = ('uuid', 'name', 'sortNum')
 
 
 class TagsSimpleSerialzer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        exclude = ("parent", "isDelete", "isUsing")
+        exclude = ("parent", "isDelete", "isUsing", "createTime", "updateTime", "id")
 
 class BgmSimpleSerializer(serializers.ModelSerializer):
 
@@ -96,11 +99,11 @@ class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
     tagsInfo = serializers.SerializerMethodField()
     bgmInfo = serializers.SerializerMethodField()
     userInfo = serializers.SerializerMethodField()
-    # storyInfo = serializers.SerializerMethodField()
 
     @staticmethod
     def get_tagsInfo(audioinfo):
-        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+        tag = audioinfo.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
 
     @staticmethod
     def get_bgmInfo(audioinfo):
@@ -110,9 +113,6 @@ class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
     def get_userInfo(audioinfo):
         return UserSerializer(audioinfo.userUuid).data
 
-    # @staticmethod
-    # def get_storyInfo(audioinfo):
-    #     return StorySerializer(audioinfo.storyUuid).data
 
     class Meta:
         model = AudioStory
@@ -125,12 +125,13 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
     bgmInfo = serializers.SerializerMethodField()
     userInfo = serializers.SerializerMethodField()
     storyInfo = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    bgIcon = serializers.SerializerMethodField()
+    # name = serializers.SerializerMethodField()
+    # bgIcon = serializers.SerializerMethodField()
 
     @staticmethod
     def get_tagsInfo(audioinfo):
-        return TagsSimpleSerialzer(audioinfo.tags, many=True).data
+        tag = audioinfo.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
 
     @staticmethod
     def get_bgmInfo(audioinfo):
@@ -143,20 +144,20 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_storyInfo(audioinfo):
         return StorySerializer(audioinfo.storyUuid).data
+    #
+    # @staticmethod
+    # def get_name(audioinfo):
+    #     if audioinfo.audioStoryType == False:
+    #         return audioinfo.name
+    #     else:
+    #         return audioinfo.storyUuid.name if audioinfo.storyUuid else None
 
-    @staticmethod
-    def get_name(audioinfo):
-        if audioinfo.audioStoryType == False:
-            return audioinfo.name
-        else:
-            return audioinfo.storyUuid.name if audioinfo.storyUuid else None
-
-    @staticmethod
-    def get_bgIcon(audioinfo):
-        if audioinfo.audioStoryType == False:
-            return audioinfo.bgIcon
-        else:
-            return audioinfo.storyUuid.faceIcon if audioinfo.storyUuid else None
+    # @staticmethod
+    # def get_bgIcon(audioinfo):
+    #     if audioinfo.audioStoryType == False:
+    #         return audioinfo.bgIcon
+    #     else:
+    #         return audioinfo.storyUuid.faceIcon if audioinfo.storyUuid else None
 
     class Meta:
         model = AudioStory
@@ -206,20 +207,14 @@ class AudioStorySimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'nickName', 'createTime')
+        fields = ('name', 'storyInfo', 'audioStoryType', 'bgIcon', 'nickName', 'createTime', 'uuid')
 
 
-
-
-
-class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
+class QualifiedAudioStoryInfoSerializer(serializers.ModelSerializer):
     tagsInfo = serializers.SerializerMethodField()
     bgmInfo = serializers.SerializerMethodField()
     userInfo = serializers.SerializerMethodField()
     storyInfo = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    bgIcon = serializers.SerializerMethodField()
-
 
     @staticmethod
     def get_tagsInfo(audioinfo):
@@ -237,19 +232,34 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
     def get_storyInfo(audioinfo):
         return StorySerializer(audioinfo.storyUuid).data
 
-    @staticmethod
-    def get_name(audioinfo):
-        if audioinfo.audioStoryType == False:
-            return audioinfo.name
-        else:
-            return audioinfo.storyUuid.name if audioinfo.storyUuid else None
+
+    class Meta:
+        model = AudioStory
+        exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
+
+
+class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
+    tagsInfo = serializers.SerializerMethodField()
+    bgmInfo = serializers.SerializerMethodField()
+    userInfo = serializers.SerializerMethodField()
+    storyInfo = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_bgIcon(audioinfo):
-        if audioinfo.audioStoryType == False:
-            return audioinfo.bgIcon
-        else:
-            return audioinfo.storyUuid.faceIcon if audioinfo.storyUuid else None
+    def get_tagsInfo(audioinfo):
+        tag = audioinfo.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
+
+    @staticmethod
+    def get_bgmInfo(audioinfo):
+        return BgmSimpleSerializer(audioinfo.bgm).data
+
+    @staticmethod
+    def get_userInfo(audioinfo):
+        return UserSerializer(audioinfo.userUuid).data
+
+    @staticmethod
+    def get_storyInfo(audioinfo):
+        return StorySerializer(audioinfo.storyUuid).data
 
 
     class Meta:
@@ -343,14 +353,29 @@ class GameInfoSerializer(serializers.ModelSerializer):
 class ActivitySerializer(serializers.ModelSerializer):
 
     count = serializers.SerializerMethodField()
+    # 返回当前活动处于哪个阶段 未开始，进行中，已结束
+    stage = serializers.SerializerMethodField()
 
     @staticmethod
     def get_count(activity):
         return activity.activityRankUuid.count()
 
+    @staticmethod
+    def get_stage(activity):
+        # currentTime = datetime.now()
+        currentTime =timezone.now()
+
+        if activity.endTime<currentTime:
+            return "past"
+        elif activity.startTime<=currentTime<=activity.endTime:
+            return "now"
+        elif currentTime<activity.startTime:
+            return "future"
+
+
     class Meta:
         model = Activity
-        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon")
+        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon", "stage")
 
 
 
@@ -400,6 +425,35 @@ class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
         exclude = ("userUuid", )
+
+
+# class Feedback2Serializer(serializers.Serializer):
+#     # 校验数据
+#     uuid = serializers.CharField(required=True)
+#     replyInfo = serializers.CharField(required=True,
+#                                       error_messages={'required':"replyInfo不能为空"})
+#
+#     def validate(self, attrs):
+#         feedback = Feedback.objects.filter(uuid=attrs.get('uuid')).first()
+#         if not Feedback.objects.filter(uuid=attrs.get('uuid')).exists():
+#             raise ValidationError('无效的uuid')
+#
+#         if feedback.status == 1:
+#             oldReplyInfo = feedback.replyInfo
+#             if oldReplyInfo == attrs.get('replyInfo'):
+#                 raise ValidationError('两次回复消息一样')
+#         return attrs
+
+
+    def reply2_data(self, validate_data):
+        feedback = Feedback.objects.filter(uuid=validate_data['uuid']).first()
+        feedback.replyInfo = validate_data['replyInfo']
+        feedback.status = 1
+        feedback.isRead = False
+        feedback.save()
+        return True
+
+
 
 
 

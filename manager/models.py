@@ -95,7 +95,7 @@ class LoginLog(BaseModle, models.Model):
     devCode = models.CharField(max_length=256, verbose_name='设备编号', null=True)
     userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='longinLogUuid', to_field='uuid')
     userAgent = models.CharField(max_length=256, verbose_name='登录平台', null=True)
-    isManager = models.BooleanField(default=False)      # 0 客户端登录  1 是后台管理端
+    isManager = models.BooleanField(default=False)  # 0 客户端登录  1 是后台管理端
 
     class Meta:
         db_table = 'tb_login_log'
@@ -104,7 +104,7 @@ class LoginLog(BaseModle, models.Model):
 class Operation(BaseModle, models.Model):
     """后台人员操作记录表"""
     adminUserUuid = models.CharField(max_length=64, null=True)
-    operation = models.CharField(max_length=255, null=True)     # create retrieve update delete
+    operation = models.CharField(max_length=255, null=True)  # create retrieve update delete
     objectUuid = models.CharField(max_length=64, null=True)
     remark = models.CharField(max_length=1024, null=True)
 
@@ -207,7 +207,7 @@ class Story(BaseModle, models.Model):
     recordNum = models.IntegerField(null=True)  # 录制次数
     status = models.CharField(max_length=32, null=True, default="normal")  # normal启用 forbid禁用 destroy删除
     isRecommd = models.BooleanField(default=True)  # 显示位置 默认1推荐 否则是 0最新
-    isTop = models.IntegerField(default=0)  # 置顶 默认为0 置顶为1
+    isTop = models.IntegerField(default=0)  # 置顶 1置顶 2不设置 3置底
     tags = models.ManyToManyField(Tag)
 
     class Meta:
@@ -233,6 +233,8 @@ class User(BaseModle, models.Model):
 
     versionUuid = models.ForeignKey('Version', models.CASCADE, null=True, related_name='versionUserUuid',
                                     to_field='uuid')
+    readDate = models.DateField(null=True)  # 连续阅读最后时间
+    readDays = models.IntegerField(default=0)  # 连续阅读天数
 
     class Meta:
         db_table = 'tb_user'
@@ -260,7 +262,7 @@ class CycleBanner(BaseModle, models.Model):
     icon = models.CharField(max_length=255, null=True)  # 轮播图片
     startTime = models.DateTimeField(null=True)  # 有效起始时间
     endTime = models.DateTimeField(null=True)
-    type = models.IntegerField(null=True)  # 跳转类型 0活动 1专辑 2audiostory 3商品 4外部链接
+    type = models.IntegerField(null=True)  # 跳转类型 0绘本 1专辑 2audiostory 3商品 4外部链接
     target = models.CharField(max_length=255, null=True)  # 跳转uuid
     isUsing = models.BooleanField(default=True)  #
     location = models.IntegerField(null=True)  # 1：录制首页轮播图 0：首页轮播图
@@ -290,10 +292,11 @@ class AudioStory(BaseModle, models.Model):
     作品表自由录制和模板作品
     """
     isUpload = models.IntegerField(default=1)  # 是否上传 0 没有传  1 上传到服务器
+    mixAudioUrl = models.CharField(max_length=255, null=True)  # 合成音频url
     voiceUrl = models.CharField(max_length=255, null=True)  # 用户的声音
-    userVolume = models.FloatField(null=True)  # 用户音量
+    userVolume = models.FloatField(default=1.0)  # 用户音量
     bgm = models.ForeignKey('Bgm', on_delete=models.CASCADE, related_name='bgmaudiosUuid', to_field='uuid', null=True)
-    bgmVolume = models.FloatField(null=True)  # 背景音乐音量
+    bgmVolume = models.FloatField(default=1.0)  # 背景音乐音量
     type = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
     audioStoryType = models.BooleanField(default=True)  # 1模板录制 0 自由音频
     playTimes = models.IntegerField(null=True)  # 播放次数
@@ -324,7 +327,7 @@ class Behavior(BaseModle, models.Model):
     userUuid = models.ForeignKey(User, on_delete=models.CASCADE, related_name='busUuid', to_field='uuid', null=True)
     audioUuid = models.ForeignKey(AudioStory, on_delete=models.CASCADE, related_name='bauUuid', to_field='uuid',
                                   null=True)
-    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:喜欢 4:播放记录
+    type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:收藏 4:播放记录 5:最近录过
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.CharField(max_length=256, null=True)
 

@@ -103,7 +103,7 @@ if version == 'debug':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '127.0.0.1',  # 主机
             'PORT': '3306',  # 数据库使用的端口
-            'TIME_ZONE': 'Asia/Shanghai'
+            # 'TIME_ZONE': 'Asia/Shanghai'
         }
     }
 
@@ -116,7 +116,7 @@ elif version == 'test':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '192.168.100.235',  # 主机
             'PORT': '3306',  # 数据库使用的端口
-            'TIME_ZONE': 'Asia/Shanghai'
+            # 'TIME_ZONE': 'Asia/Shanghai'
         }
     }
 
@@ -127,8 +127,8 @@ elif version == 'ali_test':
             'NAME': 'htdb',  # 储数据的库名
             'USER': 'root',  # 数据库用户名
             'PASSWORD': 'hbb123',  # 密码
-            'HOST': '59.110.140.167',  # 主机
-            'PORT': '3306',  # 数据库使用的端口
+            'HOST': '39.97.233.65',  # 主机
+            'PORT': '8002',  # 数据库使用的端口
         }
     }
 
@@ -181,7 +181,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
@@ -225,7 +225,7 @@ CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': [
-            'redis://127.0.0.1:6379/0',
+            'redis://172.18.0.5:6379/0',
         ],  # redis服务ip和端口，
         'KEY_PREFIX': 'manage',
         'OPTIONS': {
@@ -238,7 +238,7 @@ CACHES = {
     'api': {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': [
-            'redis://127.0.0.1:6379/1',
+            'redis://172.18.0.5:6379/1',
         ],  # redis服务ip和端口，
         'KEY_PREFIX': 'api',
         'OPTIONS': {

@@ -2,18 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import datetime
-import logging
 import random
 import re
 import string
 
-from django.core.cache import cache, caches
-from django.db import transaction
+from django.core.cache import caches
+from django.core.paginator import Paginator
+from django.db.models import Q
 
-from common.common import http_return, get_uuid, datetime_to_unix
+from common.common import http_return, get_uuid, datetime_to_unix, page_index
 from manager.models import *
-from storybook_sever import api
-from storybook_sever.api import Api
+from common.api import Api
 from storybook_sever.config import USER_SESSION_OVER_TIME
 
 
@@ -45,12 +44,14 @@ def create_session(user_info, token, loginIP):
     :param user_info:
     :return:
     """
+    logDate = datetime.date.today()
     user = {
         'nickName': user_info.nickName if user_info.nickName else None,
         'uuid': user_info.uuid,
         'userId': user_info.userID,
         'tel': user_info.tel,
-        'loginIp': loginIP
+        'loginIp': loginIP,
+        "logDate": logDate,
     }
     try:
         caches['api'].set(token, user, USER_SESSION_OVER_TIME)
@@ -102,7 +103,7 @@ def check_identify(func):
                     version = Version.objects.filter(status="dafault").first()
                     defaultIcon = user_info.get('wxAvatarUrl', '')
                     if defaultIcon == '':
-                        defaultIcon = 'beijing.aliyuncs.com/5cefaceb16d3fc77d6bf8095.jpeg'
+                        defaultIcon = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file110598494460.jpg'
                     defaultName = user_info.get('wxNickname', '')
                     if defaultName == '':
                         defaultName = get_default_name(user_info.get('phone', ''))
@@ -127,6 +128,9 @@ def check_identify(func):
                 if not create_session(user_data, token, loginIP):
                     return http_return(401, '用户不存在')
             # 如果有登陆出现，则存登录日志
+        nowDate = datetime.date.today()
+        logDate = user_info.get('logDate', '')
+        if logDate != nowDate:  # 如果当天没有存日志则添加
             try:
                 log = LoginLog(
                     uuid=get_uuid(),
@@ -138,12 +142,9 @@ def check_identify(func):
                 logging.error(str(e))
                 return http_return(401, '日志保存失败')
 
-        selfUuid = user_info.get('uuid')
-        nowDatetime = datetime.datetime.now()
-        selfUser = User.objects.filter(uuid=selfUuid, startTime__lte=nowDatetime, endTime__gte=nowDatetime,
-                                       settingStatus='forbbiden_login').first()
-        if selfUser:
-            caches['api'].delete(token)
+        userID = user_info.get('userId', '')
+        forbidInfo = caches['api'].get(userID)
+        if forbidInfo and forbidInfo == "forbbiden_login":
             return http_return(403, '禁止登陆，请联系管理员')
 
         return func(request)
@@ -209,12 +210,9 @@ def forbbiden_say(func):
         except Exception as e:
             logging.error(str(e))
             return http_return(400, '连接redis失败')
-        selfUuid = user_info.get('uuid')
-        nowDatetime = datetime.datetime.now()
-        selfUser = User.objects.filter(uuid=selfUuid, startTime__lte=nowDatetime, endTime__gte=nowDatetime,
-                                       settingStatus='forbbiden_say').first()
-        if selfUser:
-            caches['api'].delete(token)
+        userID = user_info.get('userId', '')
+        forbidInfo = caches['api'].get(userID)
+        if forbidInfo and forbidInfo == "forbbiden_say":
             return http_return(403, '禁止操作，请联系管理员')
 
         return func(request)
@@ -222,7 +220,7 @@ def forbbiden_say(func):
     return wrapper
 
 
-def audioList_format(audios,data):
+def audioList_format(audios, data):
     """
     处理返回格式化
     :param audios:
@@ -234,21 +232,23 @@ def audioList_format(audios,data):
         checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=1).first()
         checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=3).first()
         story = None
-        if audio.audioStoryType:
+        if audio.storyUuid:
+            storyObj = audio.storyUuid
             story = {
-                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                "name": audio.storyUuid.name if audio.storyUuid else '',
-                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                "content": audio.storyUuid.content if audio.storyUuid else '',
-                "intro": audio.storyUuid.intro if audio.storyUuid else ''
+                "uuid": storyObj.uuid if storyObj.uuid else '',
+                "name": storyObj.name if storyObj.name else '',
+                "icon": storyObj.faceIcon if storyObj.faceIcon else '',
+                "content": storyObj.content if storyObj.content else '',
+                "intro": storyObj.intro if storyObj.intro else ''
             }
         bgm = None
         if audio.bgm:
+            bgmObj = audio.bgm
             bgm = {
-                "uuid": audio.bgm.uuid if audio.bgm.uuid else '',
-                "url": audio.bgm.url if audio.bgm.url else '',
-                "name": audio.bgm.name if audio.bgm.name else '',
-                "duration":audio.bgm.duration if audio.bgm.duration else '',
+                "uuid": bgmObj.uuid if bgmObj.uuid else '',
+                "url": bgmObj.url if bgmObj.url else '',
+                "name": bgmObj.name if bgmObj.name else '',
+                "duration": bgmObj.duration if bgmObj.duration else 0,
             }
         tagList = []
         for tag in audio.tags.all():
@@ -257,35 +257,40 @@ def audioList_format(audios,data):
                 'name': tag.name if tag.name else '',
                 "icon": tag.icon if tag.icon else '',
             })
+        publisher = None
+        if audio.userUuid:
+            user = audio.userUuid
+            publisher = {
+                "uuid": user.uuid if user.uuid else '',
+                "nickname": user.nickName if user.nickName else '',
+                "avatar": user.avatar if user.avatar else '',
+                "createTime": datetime_to_unix(user.createTime) if user.createTime else 0,
+                "city": user.city if user.city else ''
+            }
         audioStoryList.append({
             "uuid": audio.uuid,
             "remarks": audio.remarks if audio.remarks else '',
             "name": audio.name if audio.name else '',
             "icon": audio.bgIcon if audio.bgIcon else '',
-            "audioVolume": audio.userVolume,
-            "createTime": datetime_to_unix(audio.createTime),
-            "playCount": audio.playTimes,
+            "audioVolume": audio.userVolume if audio.userVolume else 1.0,
+            "bgmVolume": audio.bgmVolume if audio.bgmVolume else 1.0,
+            "createTime": datetime_to_unix(audio.createTime) if audio.createTime else 0,
+            "playCount": audio.playTimes if audio.playTimes else 0,
             "story": story,
             "audio": {
-                "url": audio.voiceUrl,
-                "duration": audio.duration,
+                "url": audio.voiceUrl if audio.voiceUrl else '',
+                "duration": audio.duration if audio.duration else 0,
             },
             "bgm": bgm,
-            "publisher": {
-                "uuid": audio.userUuid.uuid if audio.userUuid else '',
-                "nickname": audio.userUuid.nickName if audio.userUuid else '',
-                "avatar": audio.userUuid.avatar if audio.userUuid else '',
-                "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else '',
-                "city": audio.userUuid.city if audio.userUuid else ''
-            },
+            "publisher": publisher,
             "isPraise": True if checkPraise else False,
             "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
             "isCollection": True if checkLike else False,
             "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
             "commentsCount": 0,
+            "tagList": tagList,
         })
     return audioStoryList
-
 
 
 def userList_format(users):
@@ -309,10 +314,45 @@ def userList_format(users):
     return resultList
 
 
-def paginator(page,pageCount):
+def result_all(audios, users, data):
+    """
+    返回搜索和分类筛选结果
+    :param audios:
+    :param users:
+    :param data:
+    :return:
+    """
+    audioList = audioList_format(audios, data)
+    userList = userList_format(users)
+    searchAudioStory = {
+        "filter": [
+            {"label": "最多播放", "value": "rank"},
+            {"label": "最新上传", "value": "latest"}
+        ],
+        "list": audioList,
+    }
+    searchUser = {
+        "filter": [
+            {"label": "最多粉丝", "value": "followersCount"},
+            {"label": "最多音频", "value": "audioStoryCount"}
+        ],
+        "list": userList,
+    }
+    return searchAudioStory, searchUser
+
+
+def paginator(myList, page, pageCount=10):
     """
     插件分页
     :param page:
     :param pageCount:
     :return:
     """
+    try:
+        pageObj = Paginator(myList, pageCount)
+        total = pageObj.count
+        res_data = pageObj.page(page)
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    return total, res_data

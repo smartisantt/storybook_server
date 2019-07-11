@@ -1,13 +1,12 @@
 import logging
 
 from django.core.cache import caches
-from django.db import transaction
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from manager.managerCommon import http_return, get_uuid, get_ip_address, create_session
+from manager.managerCommon import get_uuid, get_ip_address, create_session
 from manager.models import User, LoginLog
-from storybook_sever.api import Api
+from common.api import Api
 
 
 
@@ -50,7 +49,7 @@ class CustomAuthentication(BaseAuthentication):
             api = Api()
             user_info = api.check_token(token)
             if not user_info:
-                raise AuthenticationFailed(detail='禁止登录')
+                raise AuthenticationFailed(detail='提供有效的token')
 
 
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\

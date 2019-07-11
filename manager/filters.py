@@ -41,10 +41,11 @@ class FreedomAudioStoryInfoFilter(django_filters.FilterSet):
 
 
 class AudioStoryInfoFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
 
     class Meta:
         model = AudioStory
-        fields = ('id', 'type')
+        fields = ('id', 'type', 'name')
 
 
 class UserSearchFilter(django_filters.FilterSet):
@@ -60,14 +61,22 @@ class UserSearchFilter(django_filters.FilterSet):
 class CheckAudioStoryInfoFilter(django_filters.FilterSet):
     # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption(后台上传的免审核）
     checkstatus = django_filters.CharFilter(field_name='checkStatus')
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
 
     class Meta:
         model = AudioStory
-        fields = ('id', 'checkStatus')
+        fields = ('id', 'checkStatus', 'name')
+
+
+class QualifiedAudioStoryInfoFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+
+    class Meta:
+        model = AudioStory
+        fields = ('id', 'name')
 
 
 class BgmFilter(django_filters.FilterSet):
-
     name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
 
     class Meta:
@@ -76,7 +85,6 @@ class BgmFilter(django_filters.FilterSet):
 
 
 class HotSearchFilter(django_filters.FilterSet):
-
     keyword = django_filters.CharFilter(lookup_expr='icontains')
 
     class Meta:
@@ -85,9 +93,9 @@ class HotSearchFilter(django_filters.FilterSet):
 
 
 class UserFilter(django_filters.FilterSet):
-
     nickName = django_filters.CharFilter(field_name='nickName', lookup_expr='icontains')
     tel = django_filters.CharFilter(lookup_expr='contains')
+    city = django_filters.CharFilter(lookup_expr='contains')
     # status = django_filters.CharFilter(method='filter_by_status')
     #
     # @staticmethod
@@ -100,9 +108,7 @@ class UserFilter(django_filters.FilterSet):
         fields = ('id', 'nickName', 'tel', 'status', 'city')
 
 
-
 class GameInfoFilter(django_filters.FilterSet):
-
     activityuuid = django_filters.CharFilter(method='filter_by_uuid')
 
     @staticmethod
@@ -118,32 +124,29 @@ class GameInfoFilter(django_filters.FilterSet):
 
 
 class ActivityFilter(django_filters.FilterSet):
-
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
-    status = django_filters.CharFilter(method='filter_by_status')
+    stage = django_filters.CharFilter(method='filter_by_stage')
 
     @staticmethod
-    def filter_by_status(queryset, name, value):
+    def filter_by_stage(queryset, name, value):
         currentTime = datetime.now()
-
         if value == "past":
             return queryset.filter(endTime__lt=currentTime)
         elif value == "now":
             return queryset.filter(startTime__lt=currentTime, endTime__gt=currentTime)
         elif value == "future":
             return queryset.filter(startTime__gt=currentTime)
-
-
+        else:
+            return queryset
 
     class Meta:
         model = Activity
-        fields = "__all__"
+        fields = ('id', 'name')
+
 
 
 class CycleBannerFilter(django_filters.FilterSet):
-
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
-
 
     class Meta:
         model = CycleBanner
@@ -151,9 +154,7 @@ class CycleBannerFilter(django_filters.FilterSet):
 
 
 class AdFilter(django_filters.FilterSet):
-
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
-
 
     class Meta:
         model = Ad

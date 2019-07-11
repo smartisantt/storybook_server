@@ -6,8 +6,10 @@
 from django.db.models import Q
 
 from api.ssoSMS.sms import send_sms
+from api.test import update_history_data
 from common.common import *
 from api.apiCommon import *
+from common.mixFileAPI import MixAudio
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
 
 
@@ -77,11 +79,11 @@ def recording_index_list(request):
         return http_return(400, '参数错误')
     story = Story.objects.exclude(status="destroy")
     if sort == "latest":
-        story = story.filter(isRecommd=False).order_by("-isTop", "-updateTime")
+        story = story.filter(isRecommd=False).order_by("isTop", "-updateTime")
     elif sort == "rank":
         story = story.order_by("-recordNum")
     elif sort == "recommended":  # 推荐算法
-        story = story.filter(isRecommd=True).order_by("-isTop", "-updateTime")
+        story = story.filter(isRecommd=True).order_by("isTop", "-updateTime")
     stories = story.all()
     total, stories = page_index(stories, page, pageCount)
     storyList = []
@@ -95,33 +97,6 @@ def recording_index_list(request):
             "count": st.recordNum,
         })
     return http_return(200, '成功', {"total": total, "list": storyList})
-
-
-@check_identify
-def recording_banner(request):
-    """
-    首页轮播图
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    nowDatetime = datetime.datetime.now()
-    banner = CycleBanner.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True)
-    # 按显示序号排序
-    banner = banner.filter(location=1).order_by('orderNum')
-    banners = banner.all()
-    banList = []
-    for banner in banners:
-        banList.append({
-            'name': banner.name if banner.name else '',
-            'icon': banner.icon if banner.name else '',
-            'type': banner.type,
-            'target': banner.target if banner.target else '',
-        })
-    total = len(banners)
-    return http_return(200, '成功', {"total": total, "bannerList": banList})
 
 
 @check_identify
@@ -201,10 +176,18 @@ def recording_send(request):
     story = None
     audioStoryType = False
     if storyUuid:
+        audioStoryType = True
         story = Story.objects.filter(uuid=storyUuid).first()
         if not story:
             return http_return(400, '模板信息不存在')
-        audioStoryType = True
+        # 更新录制次数
+        try:
+            with transaction.atomic():
+                story.recordNum += 1
+                story.save()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '更新录制次数失败')
     bgm = None
     if bgmUuid:
         bgm = Bgm.objects.filter(uuid=bgmUuid).first()
@@ -242,6 +225,26 @@ def recording_send(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '发布失败')
+    # 记录历史
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    try:
+        with transaction.atomic():
+            Behavior.objects.create(
+                uuid=get_uuid(),
+                userUuid=selfUser,
+                audioUuid=audio,
+                type=5,
+            )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '保存记录失败')
+
+    # 提交音频合并请求
+    mix = MixAudio()
+    mix.audio_product(uuid)
+
     return http_return(200, '发布成功')
 
 
@@ -267,35 +270,6 @@ def recording_tag_list(request):
 
 
 @check_identify
-def user_center(request):
-    """
-    用户个人中心
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
-    user = User.objects.filter(uuid=uuid).first()
-    if not user:
-        return http_return(400, '用户信息不存在')
-    selfUuid = data['_cache']['uuid']
-    follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
-    userDict = {
-        "uuid": user.uuid,
-        "name": user.nickName if user.nickName else '',
-        "avatar": user.avatar if user.avatar else '',
-        "id": user.id,
-        "isFollower": True if follow else False,
-        "intro": user.intro if user.intro else '',
-        "followersCount": FriendShip.objects.filter(follows__uuid=uuid).count(),
-        "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count()
-    }
-    return http_return(200, '成功', {"userInfo": userDict})
-
-
-@check_identify
 def become_fans(request):
     """
     关注用户
@@ -306,10 +280,12 @@ def become_fans(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type')
+    type = data.get('type', '')
     selfUuid = data['_cache']['uuid']
+    if selfUuid == uuid:
+        return http_return(400, '不能自己关注自己')
     friend = FriendShip.objects.filter(follows__uuid=uuid, followers__uuid=selfUuid).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if friend:
             try:
                 with transaction.atomic():
@@ -331,51 +307,8 @@ def become_fans(request):
                     )
             except Exception as e:
                 logging.error(str(e))
-                return (400, '关注失败')
+                return http_return(400, '关注失败')
         return http_return(200, '关注成功')
-
-
-@check_identify
-def user_audio_list(request):
-    """
-    用户故事列表
-    :param request:
-    :return:
-    """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
-    page = data.get('page', '')
-    pageCount = data.get('pageCount', '')
-    user = User.objects.filter(uuid=uuid).first()
-    if not user:
-        return http_return(400, '用户信息不存在')
-    audios = user.useAudioUuid.filter(isDelete=False).order_by("-createTime").all()
-    total, audios = page_index(audios, page, pageCount)
-    audioList = []
-    for audio in audios:
-        icon = audio.bgIcon
-        name = audio.name
-        if audio.audioStoryType:
-            icon = audio.storyUuid.faceIcon
-            name = audio.storyUuid.name
-        tagList = []
-        for tag in audio.tags.all():
-            tagList.append({
-                'uuid': tag.uuid,
-                'name': tag.name if tag.name else '',
-                "icon": tag.icon if tag.icon else ''
-            })
-        audioList.append({
-            "uuid": audio.uuid,
-            "duration": audio.duration,
-            "icon": icon if icon else '',
-            "name": name if name else '',
-            "createTime": datetime_to_unix(audio.createTime),
-            "tagList": tagList
-        })
-    return http_return(200, '成功', {"total": total, "list": audioList})
 
 
 @check_identify
@@ -425,7 +358,7 @@ def audio_list(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     audioStoryType = data.get('audioStoryType', None)
-    audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
     if audioStoryType:
         audio = audio.filter(audioStoryType=audioStoryType)
     audios = audio.order_by('-createTime').all()
@@ -447,7 +380,7 @@ def audio_play(request):
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数错误')
-    audio = AudioStory.objects.filter(uuid=uuid, checkStatus='check', isDelete=False).first()
+    audio = AudioStory.objects.filter(uuid=uuid).first()
     if not audio:
         return http_return(400, '故事信息不存在')
     # 更新播放次数
@@ -472,48 +405,27 @@ def audio_play(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存记录失败')
-    story = ''
-    if audio.audioStoryType:
-        story = {
-            "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-            "name": audio.storyUuid.name if audio.storyUuid else '',
-            "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-            "content": audio.storyUuid.content if audio.storyUuid else '',
-            "intro": audio.storyUuid.intro if audio.storyUuid else ''
-        }
-    checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=1).first()
-    checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=3).first()
-    playDict = {
-        "uuid": audio.uuid,
-        "name": audio.name if audio.name else '',
-        "icon": audio.bgIcon if audio.bgIcon else '',
-        "audioVolume": audio.userVolume,
-        "createTime": datetime_to_unix(audio.createTime),
-        "playCount": audio.playTimes,
-        "story": story,
-        "audio": {
-            "url": audio.voiceUrl,
-            "duration": audio.duration,
-        },
-        "bgm": {
-            "uuid": audio.bgm.uuid if audio.bgm else '',
-            "url": audio.bgm.url if audio.bgm else '',
-            "name": audio.bgm.name if audio.bgm else '',
-            "duration": audio.bgm.duration if audio.bgm else '',
-        },
-        "publisher": {
-            "uuid": audio.userUuid.uuid if audio.userUuid else '',
-            "nickname": audio.userUuid.nickName if audio.userUuid else '',
-            "avatar": audio.userUuid.avatar if audio.userUuid else '',
-            "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else '',
-            "city": audio.userUuid.city if audio.userUuid else ''
-        },
-        "isPraise": True if checkPraise else False,
-        "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
-        "isCollection": True if checkLike else False,
-        "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
-        "commentsCount": '',
-    }
+    # 更新连续阅读天数
+    readDate = selfUser.readDate
+    today = datetime.date.today()
+    if readDate:
+        if today - readDate == datetime.timedelta(days=1):
+            selfUser.readDays = today
+            selfUser.readDays += 1
+        elif today - readDate > datetime.timedelta(days=1):
+            selfUser.readDays = today
+            selfUser.readDays = 1
+    else:
+        selfUser.readDays = 1
+    try:
+        with transaction.atomic():
+            selfUser.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新阅读天数失败')
+    audios = []
+    audios.append(audio)
+    playDict = audioList_format(audios, data)[0]
     return http_return(200, '成功', playDict)
 
 
@@ -530,9 +442,12 @@ def audio_other(request):
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
-    user = User.objects.filter(useAudioUuid__uuid=uuid).first()
-    otheraudio = AudioStory.objects.exclude(uuid=uuid).filter(userUuid__uuid=user.uuid).filter(isDelete=False)
-    otheraudios = otheraudio.order_by("-createTime").all()
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    if not audio:
+        return http_return(400, '作品信息不存在')
+    otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=audio.userUuid.uuid, isDelete=False)
+    otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)
     return http_return(200, '成功', {"total": total, "list": audioList})
@@ -578,7 +493,8 @@ def index_list(request):
         return http_return(400, '参数错误')
     # 每日一读
     everList = []
-    evers = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True).order_by(
+    evers = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True,
+                                  audioUuid__isDelete=False).order_by(
         "orderNum").all()
     if evers:
         for ever in evers:
@@ -587,12 +503,13 @@ def index_list(request):
                 "name": ever.audioUuid.name if ever.audioUuid.name else '',
                 "content": ever.audioUuid.remarks if ever.audioUuid.remarks else '',
                 "icon": ever.audioUuid.bgIcon if ever.audioUuid.bgIcon else '',
-                "type": '',
-                "target": '',
+                "type": 2,
+                "target": ever.audioUuid.uuid,
             })
     # 抢先听
     firstList = []
-    firsts = Module.objects.filter(type='MOD2', isDelete=False).order_by("orderNum").all()[:4]
+    firsts = Module.objects.filter(type='MOD2', isDelete=False, audioUuid__isDelete=False).order_by("orderNum").all()[
+             :6]
     if firsts:
         for first in firsts:
             firstList.append({
@@ -600,12 +517,12 @@ def index_list(request):
                 "name": first.audioUuid.name if first.audioUuid.name else '',
                 "icon": first.audioUuid.bgIcon if first.audioUuid.bgIcon else '',
                 "content": first.audioUuid.remarks if first.audioUuid.remarks else '',
-                "type": '',
-                "target": '',
+                "type": 2,
+                "target": first.audioUuid.uuid,
             })
     # 热门推荐
     hotList = []
-    hots = Module.objects.filter(type='MOD3', isDelete=False).order_by("orderNum").all()[:4]
+    hots = Module.objects.filter(type='MOD3', isDelete=False, audioUuid__isDelete=False).order_by("orderNum").all()[:4]
     if hots:
         for hot in hots:
             hotList.append({
@@ -613,12 +530,13 @@ def index_list(request):
                 "name": hot.audioUuid.name if hot.audioUuid.name else '',
                 "icon": hot.audioUuid.bgIcon if hot.audioUuid.bgIcon else '',
                 "content": hot.audioUuid.remarks if hot.audioUuid.remarks else '',
-                "type": '',
-                "target": '',
+                "type": 2,
+                "target": hot.audioUuid.uuid,
             })
     # 猜你喜欢
     likeList = []
-    audios = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
+    audios = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(
         isDelete=False).order_by("-playTimes").all()[:6]
     if audios:
         for audio in audios:
@@ -627,8 +545,8 @@ def index_list(request):
                 "name": audio.name if audio.name else '',
                 "icon": audio.bgIcon if audio.bgIcon else '',
                 "content": audio.remarks if audio.remarks else '',
-                "type": '',
-                "target": ''
+                "type": 2,
+                "target": audio.uuid,
             })
     return http_return(200, '成功',
                        {"dailyReadList": everList, "listenFirstList": firstList, "hotRecommdList": hotList,
@@ -650,11 +568,11 @@ def index_more(request):
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # rank:最热 latest:最新
     # MOD1每日一读  MOD2抢先听  MOD3热门推荐 MOD4猜你喜欢
-    audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False)
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
     if type in [1, 2, 3]:
         typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
         audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False)
-        if type == '1':
+        if type == 1:
             audio = audio.filter(audioStoryType=True)
     elif type == 4:
         pass
@@ -694,26 +612,11 @@ def search_all(request):
         return http_return(400, '参数错误')
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
-    audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
     user = User.objects.filter(roles='normalUser')
-    audio = audio.filter(name__contains=keyword).order_by("-createTime")
-    user = user.filter(nickName__contains=keyword).order_by("-createTime")
-    audioList = audioList_format(audio.all()[:6], data)
-    userList = userList_format(user.all()[:6])
-    searchAudioStory = {
-        "filter": [
-            {"label": "最多播放", "value": "rank"},
-            {"label": "最新上传", "value": "latest"}
-        ],
-        "list": audioList,
-    }
-    searchUser = {
-        "filter": [
-            {"label": "最多粉丝", "value": "followersCount"},
-            {"label": "最多音频", "value": "audioStoryCount"}
-        ],
-        "list": userList,
-    }
+    audios = audio.filter(name__contains=keyword).order_by("-updateTime").all()[:6]
+    users = user.filter(nickName__contains=keyword).order_by("-updateTime").all()[:6]
+    searchAudioStory, searchUser = result_all(audios, users, data)
     return http_return(200, '成功', {"searchAudioStory": searchAudioStory, "searchUser": searchUser})
 
 
@@ -741,14 +644,12 @@ def search_each(request):
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
     if type == "audioStory":
-        audio = AudioStory.objects.filter(checkStatus='check', isDelete=False)
+        audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
         audio = audio.filter(Q(storyUuid__name__contains=keyword) | Q(name__contains=keyword))
         if filterValue == 'rank':
             audio = audio.order_by("-playTimes")
-        elif filterValue == 'latest':
-            audio = audio.order_by("-createTime")
         else:
-            return http_return(400, '参数错误')
+            audio = audio.order_by("-updateTime")
         audios = audio.all()
         total, audios = page_index(audios, page, pageCount)
         resultList = audioList_format(audios, data)
@@ -758,13 +659,11 @@ def search_each(request):
         ]
     elif type == "publisher":
         user = User.objects.filter(roles='normalUser')
-        users = user.filter(nickName__contains=keyword).order_by("-createTime").all()
+        users = user.filter(nickName__contains=keyword).all()
         if filterValue == 'audioStoryCount':
             users = sorted(user, key=lambda x: x.useAudioUuid.filter(isDelete=False).count(), reverse=True)
-        elif filterValue == 'followersCount':
-            users = sorted(users, key=lambda x: FriendShip.objects.filter(follows__uuid=x.uuid).count(), reverse=True)
         else:
-            return http_return(400, '参数错误')
+            users = sorted(users, key=lambda x: FriendShip.objects.filter(follows__uuid=x.uuid).count(), reverse=True)
         total, users = page_index(users, page, pageCount)
         resultList = userList_format(users)
         filter = [
@@ -786,12 +685,9 @@ def search_hot(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    hots = HotSearch.objects.filter(isDelete=False).order_by("-isTop", "-searchNum").all()[:10]
-    hotSearchList = []
-    for hot in hots:
-        hotSearchList.append(hot.keyword)
-    hotSearch = ','.join(hotSearchList)
-    return http_return(200, "成功", {"hotSearch": hotSearch})
+    hots = HotSearch.objects.filter(isDelete=False).order_by("-isTop", "-searchNum").values_list('keyword', flat=True)
+    resStr = ','.join(list(hots)[:10])
+    return http_return(200, "成功", resStr)
 
 
 @check_identify
@@ -835,33 +731,18 @@ def index_category_result(request):
     data = request_body(request)
     if not data:
         return http_return(400, '参数错误')
-    categoryStr = data.get('categoryStr', '')
-    audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(isDelete=False)
+    keyword = data.get('keyword', '')
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
     user = User.objects.filter(status='normal')
-    if categoryStr:
-        categoryList = categoryStr.split('*')
+    if keyword:
+        categoryList = keyword.split('*')
         for cate in categoryList:
             tagList = cate.split(',')
             audio = audio.filter(tags__uuid__in=tagList)
             user = user.filter(useAudioUuid__tags__uuid__in=tagList)
-    audios = audio.order_by("-createTime").all()[:6]
+    audios = audio.order_by("-updateTime").all()[:6]
     users = user.order_by('-updateTime').all()[:6]
-    audioList = audioList_format(audios, data)
-    userList = userList_format(users)
-    searchAudioStory = {
-        "filter": [
-            {"label": "最多播放", "value": "rank"},
-            {"label": "最新上传", "value": "latest"}
-        ],
-        "list": audioList,
-    }
-    searchUser = {
-        "filter": [
-            {"label": "最多粉丝", "value": "followersCount"},
-            {"label": "最多音频", "value": "audioStoryCount"}
-        ],
-        "list": userList,
-    }
+    searchAudioStory, searchUser = result_all(audios, users, data)
     return http_return(200, '成功', {"searchAudioStory": searchAudioStory, "searchUser": searchUser})
 
 
@@ -876,39 +757,53 @@ def index_category_each(request):
     if not data:
         return http_return(400, '参数错误')
     type = data.get('type', '')  # audioStory publisher
-    categoryStr = data.get('categoryStr', '')
+    keyword = data.get('keyword', '')
+    filterValue = data.get('filterValue', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
         return http_return(400, '未获取到用户信息')
-    if not save_search(data):
-        return http_return(400, '存储搜索记录失败')
     if type == "audioStory":
-        audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
-            isDelete=False)
-        if categoryStr:
-            categoryList = categoryStr.split('*')
+        audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
+        if keyword:
+            categoryList = keyword.split('*')
             for cate in categoryList:
                 tagList = cate.split(',')
                 audio = audio.filter(tags__uuid__in=tagList)
-        audios = audio.order_by("-createTime").all()
+        if filterValue == 'rank':
+            audio = audio.order_by("-playTimes")
+        else:
+            audio = audio.order_by("-updateTime")
+        audios = audio.all()
         total, audios = page_index(audios, page, pageCount)
         resultList = audioList_format(audios, data)
+        filter = [
+            {"label": "最多播放", "value": "rank"},
+            {"label": "最新上传", "value": "latest"}
+        ]
     elif type == "publisher":
         user = User.objects.filter(status='normal')
-        if categoryStr:
-            categoryList = categoryStr.split('*')
+        if keyword:
+            categoryList = keyword.split('*')
             for cate in categoryList:
                 tagList = cate.split(',')
                 user = user.filter(useAudioUuid__tags__uuid__in=tagList)
         users = user.order_by('-updateTime').all()
+        if filterValue == 'audioStoryCount':
+            users = sorted(user, key=lambda x: x.useAudioUuid.filter(isDelete=False).count(), reverse=True)
+        else:
+            users = sorted(users, key=lambda x: FriendShip.objects.filter(follows__uuid=x.uuid).count(), reverse=True)
         total, users = page_index(users, page, pageCount)
         resultList = userList_format(users)
+        filter = [
+            {"label": "最多粉丝", "value": "followersCount"},
+            {"label": "最多音频", "value": "audioStoyrCount"}
+        ]
     else:
         return http_return(400, '参数错误')
-    return http_return(200, '成功', {"list": resultList, "total": total})
+    return http_return(200, '成功', {"list": resultList, "total": total, "filter": filter})
 
 
 @check_identify
@@ -922,12 +817,12 @@ def audiostory_praise(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type','')
+    type = data.get('type', '')
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=1).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if behav:
             try:
                 with transaction.atomic():
@@ -935,7 +830,7 @@ def audiostory_praise(request):
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '取消点赞失败')
-        return http_return(200,'取消点赞成功')
+        return http_return(200, '取消点赞成功')
     else:
         if not behav:
             audio = AudioStory.objects.filter(uuid=uuid).first()
@@ -969,12 +864,12 @@ def audiostory_collection(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    type = data.get('type','')
+    type = data.get('type', '')
     if not uuid:
         return http_return(400, '参数错误')
     selfUuid = data['_cache']['uuid']
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=3).first()
-    if type and type == 1:
+    if type and int(type) == 1:
         if behav:
             try:
                 with transaction.atomic():
@@ -982,7 +877,7 @@ def audiostory_collection(request):
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '取消收藏失败')
-        return http_return(200,'取消收藏成功')
+        return http_return(200, '取消收藏成功')
     else:
         if not behav:
             audio = AudioStory.objects.filter(uuid=uuid).first()
@@ -1127,8 +1022,9 @@ def activity_audiostory_list(request):
     games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
     for game in games:
         activityUuidList.append(game.audioUuid.uuid)
-    audio = AudioStory.objects.exclude(checkStatus="checkFail").exclude(checkStatus="unCheck").filter(
-        userUuid__uuid=data['_cache']['uuid'], isDelete=False)
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(
+        userUuid__uuid=data['_cache']['uuid'])
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:
@@ -1138,34 +1034,7 @@ def activity_audiostory_list(request):
     audio = audio.filter(createTime__gte=startTime, createTime__lte=endTime)
     audios = audio.exclude(uuid__in=activityUuidList).order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
-    audioStoryList = []
-    for audio in audios:
-        story = None
-        if audio.audioStoryType:
-            story = {
-                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                "name": audio.storyUuid.name if audio.storyUuid else '',
-                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                "content": audio.storyUuid.content if audio.storyUuid else '',
-                "intro": audio.storyUuid.intro if audio.storyUuid else ''
-            }
-        tagList = []
-        for tag in audio.tags.all():
-            tagList.append({
-                'uuid': tag.uuid,
-                'name': tag.name if tag.name else '',
-                "icon": tag.icon if tag.icon else '',
-            })
-        audioStoryList.append({
-            "uuid": audio.uuid,
-            "duration": audio.duration,
-            "icon": audio.bgIcon if audio.bgIcon else '',
-            "name": audio.name if audio.name else '',
-            "palyCount": audio.playTimes,
-            "createTime": datetime_to_unix(audio.createTime),
-            "tagList": tagList,
-            "story": story,
-        })
+    audioStoryList = audioList_format(audio, data)
     return http_return(200, '成功', {"list": audioStoryList, "total": total})
 
 
@@ -1226,19 +1095,27 @@ def personal_index(request):
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-    selfUuid = data['_cache']['uuid']
+    selfUuid = data['_cache'].get('uuid', '')
+    if not selfUuid:
+        return http_return(401, '登录过期')
+    follow = False
     if uuid:
+        follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
         selfUuid = uuid
     user = User.objects.filter(uuid=selfUuid).first()
-    userInfo = {
+    userDict = {
         "uuid": user.uuid,
         "nickname": user.nickName if user.nickName else '',
-        "city": user.city if user.city else '',
         "avatar": user.avatar if user.avatar else '',
+        "id": user.id,
+        "city": user.city if user.city else '',
+        "isFollow": True if follow else False,
+        "intro": user.intro if user.intro else '',
         "createTime": datetime_to_unix(user.createTime),
-        "intro": user.intro,
+        "followersCount": FriendShip.objects.filter(follows__uuid=uuid).count(),
+        "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count()
     }
-    return http_return(200, '成功', userInfo)
+    return http_return(200, '成功', userDict)
 
 
 @check_identify
@@ -1257,7 +1134,8 @@ def personal_audiostory(request):
     selfUuid = data['_cache']['uuid']
     if uuid:
         selfUuid = uuid
-    audio = AudioStory.objects.filter(isDelete=False, userUuid__uuid=selfUuid)
+    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(userUuid__uuid=selfUuid)
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
@@ -1281,62 +1159,16 @@ def personal_history_list(request):
     if uuid:
         selfUuid = uuid
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
-    behavs = behav.order_by("-updateTime").all()
+    behavs = behav.order_by("audioUuid").distinct().order_by("-updateTime").all()
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
     for behav in behavs:
-        audio = behav.audioUuid
-        selfUuid = data['_cache']['uuid']
-        checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=1).first()
-        checkLike = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=3).first()
-        story = None
-        if audio.audioStoryType:
-            story = {
-                "uuid": audio.storyUuid.uuid if audio.storyUuid else '',
-                "name": audio.storyUuid.name if audio.storyUuid else '',
-                "icon": audio.storyUuid.faceIcon if audio.storyUuid else '',
-                "content": audio.storyUuid.content if audio.storyUuid else '',
-                "intro": audio.storyUuid.intro if audio.storyUuid else ''
-            }
-        tagList = []
-        for tag in audio.tags.all():
-            tagList.append({
-                'uuid': tag.uuid,
-                'name': tag.name if tag.name else '',
-                "icon": tag.icon if tag.icon else '',
-            })
-        audioStory = {
-            "uuid": audio.uuid,
-            "remarks": audio.remarks if audio.remarks else '',
-            "name": audio.name if audio.name else '',
-            "icon": audio.bgIcon if audio.bgIcon else '',
-            "audioVolume": audio.userVolume,
-            "createTime": datetime_to_unix(audio.createTime),
-            "playCount": audio.playTimes,
-            "story": story,
-            "audio": {
-                "url": audio.voiceUrl,
-                "duration": audio.duration,
-            },
-            "bgm": {
-                "uuid": audio.bgm.uuid if audio.bgm else '',
-                "url": audio.bgm.url if audio.bgm else '',
-                "name": audio.bgm.name if audio.bgm else '',
-                "duration": audio.bgm.duration if audio.bgm else '',
-            },
-            "publisher": {
-                "uuid": audio.userUuid.uuid if audio.userUuid else '',
-                "nickname": audio.userUuid.nickName if audio.userUuid else '',
-                "avatar": audio.userUuid.avatar if audio.userUuid else '',
-                "createTime": datetime_to_unix(audio.userUuid.createTime) if audio.userUuid else '',
-                "city": audio.userUuid.city if audio.userUuid else ''
-            },
-            "isPraise": True if checkPraise else False,
-            "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
-            "isCollection": True if checkLike else False,
-            "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
-            "commentsCount": '',
-        }
+        audioStory = None
+        if behav.audioUuid:
+            audio = behav.audioUuid
+            audios = []
+            audios.append(audio)
+            audioStory = audioList_format(audios, data)[0]
         palyHistoryList.append({
             "uuid": behav.uuid,
             "audioStory": audioStory,
@@ -1497,6 +1329,24 @@ def feedback_reply_info(request):
     return http_return(200, '成功', replyInfo)
 
 
+@check_identify
+def help_list(request):
+    """
+    帮助手册列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    helpList = []
+    helpList.append({
+        "title": '绘童阅读规则及APP操作流程',
+        "target": 'http://123456789.html'
+    })
+    return http_return(200, '成功', helpList)
+
+
 def advertising_list(request):
     """
     进入弹屏
@@ -1534,10 +1384,130 @@ def audio_other_version(request):
     audio = AudioStory.objects.filter(uuid=uuid).first()
     if not audio:
         return http_return(400, '模板音频不存在')
-    if not audio.audioStoryType:
+    if not audio.storyUuid:
         return http_return(400, '自由录制作品没有其他主播版本')
-    otheraudio = AudioStory.objects.exclude(uuid=uuid, isDelete=True).filter(storyUuid__uuid=audio.storyUuid.uuid)
-    otheraudios = otheraudio.order_by("-createTime").all()
+    otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        isDelete=False).filter(storyUuid__uuid=audio.storyUuid.uuid).exclude(userUuid__uuid=audio.userUuid.uuid)
+    otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)
     return http_return(200, '成功', {"total": total, "list": audioList})
+
+
+@check_identify
+def recording_stroy_recent(request):
+    """
+    最近录制
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    selfUuid = data['_cache']['uuid']
+    if uuid:
+        selfUuid = uuid
+    behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=5)
+    behavs = behav.order_by("-updateTime").all()
+    total, behavs = page_index(behavs, page, pageCount)
+    audios = []
+    for behav in behavs:
+        audios.append(behav.audioUuid)
+    audioStoryList = audioList_format(audios, data)
+    return http_return(200, '成功', {"list": audioStoryList, "total": total})
+
+
+@check_identify
+def search_word_like(request):
+    """
+    模糊匹配参数
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    keyword = data.get('keyword', '')
+    user = User.objects.filter(nickName__contains=keyword).values_list('nickName', flat=True).distinct()
+    audio = AudioStory.objects.filter(name__contains=keyword).values_list('name', flat=True).distinct()
+    resStr = ','.join(list(user)[:5] + list(audio)[:5])
+    return http_return(200, '成功', resStr)
+
+
+@check_identify
+def logout(request):
+    """
+    退出登录
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    selfUser = User.objects.filter(uuid=data['_cache']['uuid']).first()
+    if selfUser:
+        token = request.META.get('HTTP_TOKEN')
+        caches['api'].delete(token)
+        return http_return(200, '退出登录成功')
+    return http_return(400, '退出登录失败')
+
+
+@check_identify
+def book_list(request):
+    """
+    书架列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    selfUuid = data['_cache']['uuid']
+    selfUser = User.objects.filter(uuid=selfUuid).first()
+    if not selfUser:
+        return http_return(400, '未获取到用户信息')
+    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).values('userUuid').distinct().count()
+    collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
+    collAudios = []
+    for coll in collectionBehav.all()[:6]:
+        collAudios.append(coll.audioUuid)
+    collectionList = audioList_format(collAudios, data)
+
+    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by(
+        "audioUuid").distinct()
+    historyAudios = []
+    for his in historyBehav.order_by("updateTime").all()[:6]:
+        historyAudios.append(his.audioUuid)
+    historyList = audioList_format(historyAudios, data)
+    infoData = {
+        "readDays": selfUser.readDays,
+        "readCount": playCount,
+        "collectionList": collectionList,
+        "historyList": historyList,
+    }
+    return http_return(200, '成功', infoData)
+
+
+@check_identify
+def collection_more(request):
+    """
+    更多收藏
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '参数错误')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    selfUuid = data['_cache']['uuid']
+    collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
+    collAudios = []
+    for coll in collectionBehav.all()[:6]:
+        collAudios.append(coll.audioUuid)
+    total, audios = page_index(collAudios, page, pageCount)
+    audioStoryList = audioList_format(audios, data)
+    return http_return(200, '成功', {"total": total, "list": audioStoryList})

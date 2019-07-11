@@ -5,23 +5,17 @@ import random
 import re
 import uuid
 import datetime
-import calendar
 import json
 import logging
 import string
 import time
 
-import base64
-
-
-from django.db import connection
-
 from django.http import HttpResponse
-from django.db import transaction
 from django.core.cache import cache, caches
+from django.utils import timezone
 
-from manager.models import User, Version, LoginLog
-from storybook_sever.api import Api
+from manager.models import User, LoginLog
+from common.api import Api
 from storybook_sever.config import *
 from utils.errors import ParamsException
 
@@ -277,6 +271,8 @@ def timestamp2datetime(startTimestamp, endTimestamp, convert=True):
     try:
         startTime = datetime.datetime.fromtimestamp(startTimestamp)
         endTime = datetime.datetime.fromtimestamp(endTimestamp)
+        # startTime = timezone.make_aware(startTime, timezone.get_current_timezone())
+        # endTime = timezone.make_aware(endTime, timezone.get_current_timezone())
     except Exception as e:
         logging.error(str(e))
         raise ParamsException('时间格式错误')
@@ -439,7 +435,7 @@ def match_tel(tel):
     :param tel:
     :return:
     """
-    if re.match(r'1[3,4,5,7,8,9]\d{9}', tel):
+    if re.match("^1[35678]\d{9}$", tel):
         return True
     return False
 

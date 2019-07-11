@@ -2062,7 +2062,7 @@ def forbidden_user(request):
             user.settingStatus = type
             user.status = type
             user.save()
-            timeout = (endTime - currentTime).seconds
+            timeout = (endTime - currentTime).total_seconds()
             caches['api'].set(request.user.userID, type, timeout=timeout)
         return http_return(200, 'OK')
     except Exception as e:

@@ -442,11 +442,9 @@ def audio_other(request):
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
-    user = User.objects.filter(useAudioUuid__uuid=uuid).first()
-    if not user:
-        return http_return(400, '用户信息不存在')
+    selfUuid = data['_cache']['uuid']
     otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
-        isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=user.uuid, isDelete=False)
+        isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=selfUuid, isDelete=False)
     otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
     audioList = audioList_format(otheraudios, data)

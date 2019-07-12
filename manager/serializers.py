@@ -386,7 +386,7 @@ class CycleBannerSerializer(serializers.ModelSerializer):
         linkObjectInfo = ""
         if cycleBanner.type == 0:   # 活动
             try:
-                linkObjectInfo = Activity.objects.filter(url=cycleBanner.target).first().name
+                linkObjectInfo = Activity.objects.filter(uuid=cycleBanner.target).first().name
             except:
                 raise ParamsException({'code': 400, 'msg': '数据库存储数据格式错误'})
         elif cycleBanner.type == 1: # 专辑

@@ -1510,7 +1510,7 @@ def add_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
-    if type == 4:
+    if type == 0:
         activity = Activity.objects.filter(uuid=target).first()
         if activity:
             target = activity.url
@@ -2564,7 +2564,7 @@ def modify_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间错误')
 
-    if type == 4:
+    if type == 0:
         activity = Activity.objects.filter(uuid=target).first()
         if activity:
             target = activity.url

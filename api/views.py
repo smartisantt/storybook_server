@@ -579,7 +579,7 @@ def index_more(request):
     elif type == 4:
         pass
     elif type in [5, 6, 7, 8]:
-        classList = {5: "绘本", 6: "故事", 7: "英语", 8: "国学"}
+        classList = {5: "绘本", 6: "经典故事", 7: "英语", 8: "国学"}
         audio = audio.filter(tags__name=classList[type])
     else:
         return http_return(400, '参数错误')

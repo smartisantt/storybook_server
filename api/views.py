@@ -213,7 +213,7 @@ def recording_send(request):
             voiceUrl=audioUrl,
             userVolume=audioVolume,
             bgm=bgm,
-            bgmVolume=bgmVolume if bgmVolume else None,
+            bgmVolume=bgmVolume,
             type=type,
             playTimes=0,
             audioStoryType=audioStoryType,

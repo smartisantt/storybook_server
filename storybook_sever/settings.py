@@ -94,7 +94,7 @@ WSGI_APPLICATION = 'storybook_sever.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-if version == 'test':
+if version == 'debug':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',  # 数据库引擎
@@ -106,7 +106,6 @@ if version == 'test':
             # 'TIME_ZONE': 'Asia/Shanghai'
         }
     }
-
 elif version == 'test':
     DATABASES = {
         'default': {

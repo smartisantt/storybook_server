@@ -180,6 +180,8 @@ def recording_send(request):
         story = Story.objects.filter(uuid=storyUuid).first()
         if not story:
             return http_return(400, '模板信息不存在')
+        name = story.name
+        icon = story.faceIcon
         # 更新录制次数
         try:
             with transaction.atomic():
@@ -191,7 +193,7 @@ def recording_send(request):
     bgm = None
     if bgmUuid:
         bgm = Bgm.objects.filter(uuid=bgmUuid).first()
-    if not all([audioUrl, audioVolume, storyTagUuidList, name, icon]):
+    if not all([audioUrl, audioVolume, storyTagUuidList]):
         return http_return(400, '参数错误')
     if type not in [0, 1]:
         return http_return(400, '参数错误')

@@ -130,12 +130,13 @@ def check_identify(func):
             # 如果有登陆出现，则存登录日志
         nowDate = datetime.date.today()
         logDate = user_info.get('logDate', '')
+        selfUser = None
         if logDate != nowDate:  # 如果当天没有存日志则添加
             try:
                 log = LoginLog(
                     uuid=get_uuid(),
                     ipAddr=user_info.get('loginIp', ''),
-                    userUuid=user_data,
+                    userUuid=selfUser,
                 )
                 log.save()
             except Exception as e:

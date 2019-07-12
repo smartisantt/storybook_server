@@ -2380,7 +2380,8 @@ def modify_activity(request):
     icon = data.get('icon', '')
     startTime = data.get('starttime', '')
     endTime = data.get('endtime', '')
-    if not all([uuid, name, intro, icon, startTime, endTime]):
+    url = data.get('url', '')
+    if not all([uuid, name, intro, icon, startTime, endTime, url]):
         return http_return(400, '参数错误')
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:
@@ -2395,6 +2396,9 @@ def modify_activity(request):
 
     if startTime > endTime:
         return http_return(400, '时间错误')
+
+    if not url.startswith( 'http' ):
+        return http_return('url格式错误')
 
     startTime = startTime/1000
     endTime = endTime/1000
@@ -2413,6 +2417,7 @@ def modify_activity(request):
             activity.endTime = endTime
             activity.icon = icon
             activity.intro = intro
+            activity.url = urljoin(url,uuid)
             activity.save()
             return http_return(200, 'OK')
     except Exception as e:

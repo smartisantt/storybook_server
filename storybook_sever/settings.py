@@ -106,7 +106,6 @@ if version == 'debug':
             # 'TIME_ZONE': 'Asia/Shanghai'
         }
     }
-
 elif version == 'test':
     DATABASES = {
         'default': {
@@ -219,9 +218,8 @@ CORS_ALLOW_HEADERS = (
     'X-XSRF-TOKEN'
 )
 
-
+#缓存配置
 if version == "debug":
-    # 缓存配置
     CACHES = {
         'default': {
             'BACKEND': 'django_redis.cache.RedisCache',

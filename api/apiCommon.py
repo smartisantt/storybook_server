@@ -130,19 +130,29 @@ def check_identify(func):
             # 如果有登陆出现，则存登录日志
         nowDate = datetime.date.today()
         logDate = user_info.get('logDate', '')
+        userID = user_info.get('userId', '')
+        selfUser = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
         if logDate != nowDate:  # 如果当天没有存日志则添加
             try:
                 log = LoginLog(
                     uuid=get_uuid(),
                     ipAddr=user_info.get('loginIp', ''),
-                    userUuid=user_data,
+                    userUuid=selfUser,
                 )
                 log.save()
             except Exception as e:
                 logging.error(str(e))
                 return http_return(401, '日志保存失败')
+            # 更新缓存
+            # user_info['logDate'] = nowDate
+            # try:
+            #
+            #     caches['api'].getset(token, user_info)
+            # except Exception as e:
+            #     logging.error(str(e))
+            #     return http_return(400, '更新缓存失败')
 
-        userID = user_info.get('userId', '')
+        # 禁止登陆
         forbidInfo = caches['api'].get(userID)
         if forbidInfo and forbidInfo == "forbbiden_login":
             return http_return(403, '禁止登陆，请联系管理员')

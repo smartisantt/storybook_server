@@ -3,6 +3,8 @@
 
 
 # Create your views here.
+from urllib.parse import urljoin
+
 from django.db.models import Q
 
 from api.ssoSMS.sms import send_sms
@@ -473,12 +475,16 @@ def index_banner(request):
     banners = banner.all()
     banList = []
     for banner in banners:
+        target = banner.target
+        if banner.type == 0:
+            activity = AudioStory.objects.filter(uuid=banner.target).first()
+            target = urljoin(activity.url, target)
         banList.append({
             "uuid": banner.uuid,
             'name': banner.name if banner.name else '',
             'icon': banner.icon if banner.icon else '',
             'type': banner.type,
-            'target': banner.target,
+            'target': target,
         })
     return http_return(200, '成功', banList)
 

@@ -1,11 +1,6 @@
-import os
-from datetime import datetime
-
 from django.utils import timezone
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
-from common.common import get_uuid
 from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
     Feedback
 from utils.errors import ParamsException
@@ -355,7 +350,7 @@ class ActivitySerializer(serializers.ModelSerializer):
     count = serializers.SerializerMethodField()
     # 返回当前活动处于哪个阶段 未开始，进行中，已结束
     stage = serializers.SerializerMethodField()
-    url = serializers.SerializerMethodField()
+
 
     @staticmethod
     def get_count(activity):
@@ -373,16 +368,11 @@ class ActivitySerializer(serializers.ModelSerializer):
         elif currentTime<activity.startTime:
             return "future"
 
-    @staticmethod
-    def get_url(activity):
-        if activity.url:
-            return os.path.split(activity.url)[0]
-        else:
-            return ''
+
 
     class Meta:
         model = Activity
-        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon", "stage", "url")
+        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon", "stage","url")
 
 
 

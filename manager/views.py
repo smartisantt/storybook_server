@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # Create your views here.
-from urllib.parse import urljoin
-
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import authentication, viewsets, mixins
 from rest_framework.decorators import authentication_classes, api_view, action
@@ -1510,12 +1508,12 @@ def add_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
-    if type == 0:
-        activity = Activity.objects.filter(uuid=target).first()
-        if activity:
-            target = activity.url
-        else:
-            return http_return(400, '没有此活动')
+    # if type == 0:
+    #     activity = Activity.objects.filter(uuid=target).first()
+    #     if activity:
+    #         target = activity.url
+    #     else:
+    #         return http_return(400, '没有此活动')
 
     try:
         uuid = get_uuid()
@@ -2355,7 +2353,7 @@ def create_activity(request):
             Activity.objects.create(
                 uuid = uuid,
                 name = name,
-                url = urljoin(url,uuid),
+                url = url,
                 startTime = startTime,
                 endTime = endTime,
                 intro = intro,
@@ -2418,7 +2416,7 @@ def modify_activity(request):
             activity.endTime = endTime
             activity.icon = icon
             activity.intro = intro
-            activity.url = urljoin(url,uuid)
+            activity.url = url
             activity.save()
             return http_return(200, 'OK')
     except Exception as e:
@@ -2564,12 +2562,12 @@ def modify_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间错误')
 
-    if type == 0:
-        activity = Activity.objects.filter(uuid=target).first()
-        if activity:
-            target = activity.url
-        else:
-            return http_return(400, '没有此活动')
+    # if type == 0:
+    #     activity = Activity.objects.filter(uuid=target).first()
+    #     if activity:
+    #         target = activity.url
+    #     else:
+    #         return http_return(400, '没有此活动')
     try:
         cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False)
         cycleBanner.update(

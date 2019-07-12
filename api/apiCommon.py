@@ -128,31 +128,31 @@ def check_identify(func):
                 if not create_session(user_data, token, loginIP):
                     return http_return(401, '用户不存在')
             # 如果有登陆出现，则存登录日志
-        nowDate = datetime.date.today()
-        logDate = user_info.get('logDate', '')
-        if logDate != nowDate:  # 如果当天没有存日志则添加
-            try:
-                log = LoginLog(
-                    uuid=get_uuid(),
-                    ipAddr=user_info.get('loginIp', ''),
-                    userUuid=user_data,
-                )
-                log.save()
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(401, '日志保存失败')
-            # 更新缓存
-            user_info['logDate'] = nowDate
-            try:
-                caches['api'].getset(token, user_info)
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '更新缓存失败')
-
-        userID = user_info.get('userId', '')
-        forbidInfo = caches['api'].get(userID)
-        if forbidInfo and forbidInfo == "forbbiden_login":
-            return http_return(403, '禁止登陆，请联系管理员')
+        # nowDate = datetime.date.today()
+        # logDate = user_info.get('logDate', '')
+        # if logDate != nowDate:  # 如果当天没有存日志则添加
+        #     try:
+        #         log = LoginLog(
+        #             uuid=get_uuid(),
+        #             ipAddr=user_info.get('loginIp', ''),
+        #             userUuid=user_data,
+        #         )
+        #         log.save()
+        #     except Exception as e:
+        #         logging.error(str(e))
+        #         return http_return(401, '日志保存失败')
+        #     # 更新缓存
+        #     user_info['logDate'] = nowDate
+        #     try:
+        #         caches['api'].getset(token, user_info)
+        #     except Exception as e:
+        #         logging.error(str(e))
+        #         return http_return(400, '更新缓存失败')
+        #
+        # userID = user_info.get('userId', '')
+        # forbidInfo = caches['api'].get(userID)
+        # if forbidInfo and forbidInfo == "forbbiden_login":
+        #     return http_return(403, '禁止登陆，请联系管理员')
 
         return func(request)
 

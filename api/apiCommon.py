@@ -44,14 +44,12 @@ def create_session(user_info, token, loginIP):
     :param user_info:
     :return:
     """
-    logDate = datetime.date.today()
     user = {
         'nickName': user_info.nickName if user_info.nickName else None,
         'uuid': user_info.uuid,
         'userId': user_info.userID,
         'tel': user_info.tel,
         'loginIp': loginIP,
-        "logDate": logDate,
     }
     try:
         caches['api'].set(token, user, USER_SESSION_OVER_TIME)
@@ -73,6 +71,26 @@ def get_default_name(tel):
         end = tel[-4:]
         result = start + "****" + end
     return result
+
+
+def save_login_log(user_info, user):
+    """
+    保存登陆日志
+    :param user_info:
+    :param user:
+    :return:
+    """
+    try:
+        log = LoginLog(
+            uuid=get_uuid(),
+            ipAddr=user_info.get('loginIp', ''),
+            userUuid=user,
+        )
+        log.save()
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    return True
 
 
 def check_identify(func):
@@ -129,28 +147,28 @@ def check_identify(func):
                     return http_return(401, '用户不存在')
             # 如果有登陆出现，则存登录日志
         nowDate = datetime.date.today()
-        logDate = user_info.get('logDate', '')
         userID = user_info.get('userId', '')
         selfUser = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
-        if logDate != nowDate:  # 如果当天没有存日志则添加
+        selfUuid = selfUser.uuid
+        logDate = caches['api'].get(selfUuid)
+        if logDate:
+            if logDate != nowDate:  # 如果当天没有存日志则添加
+                if not save_login_log(user_info, selfUser):
+                    return http_return(400, '存储登陆日志失败')
+                caches['api'].delete(selfUuid)
+                try:
+                    caches['api'].set(selfUuid, nowDate, USER_SESSION_OVER_TIME)
+                except Exception as e:
+                    logging.error(str(e))
+                    return http_return(400, '缓存错误')
+        else:  # 如果没有标志则存入标志并且保存登录日志
             try:
-                log = LoginLog(
-                    uuid=get_uuid(),
-                    ipAddr=user_info.get('loginIp', ''),
-                    userUuid=selfUser,
-                )
-                log.save()
+                caches['api'].set(selfUuid, nowDate, USER_SESSION_OVER_TIME)
             except Exception as e:
                 logging.error(str(e))
-                return http_return(401, '日志保存失败')
-            # 更新缓存
-            # user_info['logDate'] = nowDate
-            # try:
-            #
-            #     caches['api'].getset(token, user_info)
-            # except Exception as e:
-            #     logging.error(str(e))
-            #     return http_return(400, '更新缓存失败')
+                return http_return(400, '缓存错误')
+            if not save_login_log(user_info, selfUser):
+                return http_return(400, '存储登陆日志失败')
 
         # 禁止登陆
         forbidInfo = caches['api'].get(userID)

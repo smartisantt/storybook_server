@@ -141,6 +141,13 @@ def check_identify(func):
             except Exception as e:
                 logging.error(str(e))
                 return http_return(401, '日志保存失败')
+            # 更新缓存
+            user_info['logDate'] = nowDate
+            try:
+                caches['api'].getset(token, user_info)
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '更新缓存失败')
 
         userID = user_info.get('userId', '')
         forbidInfo = caches['api'].get(userID)

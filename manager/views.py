@@ -2377,11 +2377,11 @@ def modify_activity(request):
     uuid = data.get('uuid', '')
     name = data.get('name', '')
     intro = data.get('intro', '')
-    icon = data.get('icon', '')
+    icon = data.get('icon', '') # 没有icon
     startTime = data.get('starttime', '')
     endTime = data.get('endtime', '')
     url = data.get('url', '')
-    if not all([uuid, name, intro, icon, startTime, endTime, url]):
+    if not all([uuid, name, intro, startTime, endTime, url]):
         return http_return(400, '参数错误')
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:

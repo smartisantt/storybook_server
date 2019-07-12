@@ -1873,8 +1873,105 @@ class UserView(ListAPIView):
 
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def validate_tel(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    tel = data.get('tel', '')
+    if not tel:
+        return http_return(400, '手机号不能为空')
+    if not re.match("^1[35678]\d{9}$", tel):
+        return http_return(400, '手机号码错误')
 
-# 添加用户
+    # status 0 已经注册 1 迁移用户  2 新建用户
+    user = User.objects.filter(tel=tel).exclude(status='destroy').first()
+    if user:
+        return http_return(200, 'OK', {'status': 0})
+
+    api = Api()
+    userInfo = api.search_user_byphone(tel)
+    if userInfo == -1:
+        return http_return(400, '接口通信错误')
+    if userInfo:
+        return http_return(200, 'OK', {'status': 1})
+    else:
+        # 新用户
+        return http_return(200, 'OK', {'status': 2})
+
+
+# 迁移老用户
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def migrate_user(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    tel = data.get('tel', '')
+    if not tel:
+        return http_return(400, '手机号不能为空')
+    if not re.match("^1[35678]\d{9}$", tel):
+        return http_return(400, '手机号码错误')
+
+    user = User.objects.filter(tel=tel).exclude(status='destroy').first()
+    if user:
+        return http_return(400, '此手机号已经注册')
+
+    nickName = data.get('nickName', '')
+    city = data.get('city', '')
+    roles = data.get('roles', '')
+    gender = data.get('gender', '')
+
+
+    if not all([gender in [0, 1, 2], nickName, city, roles in ['normalUser', 'adminUser']]):
+        return http_return(400, '参数错误')
+
+
+    if not 1 < len(str(city)) < 40:
+        return http_return(400, '城市长度错误')
+
+    if not 1 < len(str(nickName)) < 20:
+        return http_return(400, '昵称长度错误')
+
+    if not isinstance(tel, str):
+        tel = str(tel)
+
+    # /api/sso/user/byphone 读取用户列表(手机号用户)
+    api = Api()
+    userID = ''
+    userInfo = api.search_user_byphone(tel)
+    if userInfo == -1:
+        return http_return(400, '接口通信错误')
+    if userInfo:
+        userID = userInfo['userId']
+
+    else:
+        return http_return(400, '无法迁移用户')
+
+    try:
+        uuid = get_uuid()
+        with transaction.atomic():
+            User.objects.create(
+                uuid=uuid,
+                userID=userID,
+                nickName=nickName or tel,
+                avatar='https://hbb-ads.oss-cn-beijing.aliyuncs.com/file110598494460.jpg',
+                tel=tel,
+                gender=gender,  # 性别 0未知  1男  2女
+                status="normal",
+                roles=roles,
+                city=city
+            )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+
+
+
+
+# 添加新用户
 @api_view(['POST'])
 @authentication_classes((CustomAuthentication, ))
 def add_user(request):
@@ -1920,8 +2017,8 @@ def add_user(request):
     if userInfo == -1:
         return http_return(400, '接口通信错误')
     if userInfo:
-        userID = userInfo['userId']
-
+        # userID = userInfo['userId']
+        return http_return(400, '此用户在其他平台已注册，请迁移用户')
     else:
         # /api/sso/createbyuserpasswd 管理员创建一个账号密码
         userInfo = api.create_user(tel, pwd)

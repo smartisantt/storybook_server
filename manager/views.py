@@ -261,7 +261,8 @@ def total_data(request):
 
 
     # 图表数据--新增用户
-    graph1 = User.objects.filter(createTime__range=(t1, t2)).\
+    graph1 = User.objects.filter(createTime__range=(t1, t2)). \
+        only('createTime', 'id'). \
         extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%d')"}).\
         order_by('time').values('time')\
         .annotate(userNum=Count('createTime')).values('time', 'userNum')
@@ -1509,7 +1510,7 @@ def add_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
-    if type == 4:
+    if type == 0:
         activity = Activity.objects.filter(uuid=target).first()
         if activity:
             target = activity.url
@@ -2563,7 +2564,12 @@ def modify_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间错误')
 
-
+    if type == 0:
+        activity = Activity.objects.filter(uuid=target).first()
+        if activity:
+            target = activity.url
+        else:
+            return http_return(400, '没有此活动')
     try:
         cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False)
         cycleBanner.update(

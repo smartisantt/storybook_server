@@ -538,9 +538,8 @@ def index_list(request):
     # 猜你喜欢
     likeList = []
     audios = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
-        isDelete=False).order_by("-playTimes").all()[:6]
+        isDelete=False).order_by("?")[:6]
     if audios:
-        # audios = random.sample(audios, 6)
         for audio in audios:
             likeList.append({
                 "uuid": audio.uuid,

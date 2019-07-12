@@ -1835,16 +1835,16 @@ class UserView(ListAPIView):
     ordering_fields = ('id', 'createTime')
 
     # 当前管理员不显示在用户列表里面
-    def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset().exclude(userID=request.user.userID)
-        queryset = self.filter_queryset(queryset)
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    # def get(self, request, *args, **kwargs):
+    #     queryset = self.get_queryset().exclude(userID=request.user.userID)
+    #     queryset = self.filter_queryset(queryset)
+    #     page = self.paginate_queryset(queryset)
+    #     if page is not None:
+    #         serializer = self.get_serializer(page, many=True)
+    #         return self.get_paginated_response(serializer.data)
+    #
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
 
 
     def get_queryset(self):

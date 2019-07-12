@@ -409,8 +409,10 @@ class CycleBannerSerializer(serializers.ModelSerializer):
                 raise ParamsException({'code': 400, 'msg': '参数错误'})
         elif cycleBanner.type == 3: # 商品
             pass
-        elif cycleBanner.type == 4:
+        elif cycleBanner.type == 4: # 外部连接
             linkObjectInfo = cycleBanner.target
+        elif cycleBanner.type == 5: # 模板
+            pass
 
         return linkObjectInfo
 

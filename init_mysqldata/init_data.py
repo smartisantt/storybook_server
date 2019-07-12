@@ -27,6 +27,26 @@ def init_tag():
             tag.save()
 
 
+def init_admin():
+    json_file = BASE_DIR + '/init_mysqldata/adminuser.json'
+    with open(json_file,encoding='utf-8') as f:
+        json_str = f.read()
+        json_data = json.loads(json_str)
+
+        for item in json_data:
+            user = User()
+            user.id = item['id']
+            user.uuid = item['uuid']
+            user.createTime = datetime.now()
+            user.updateTime = datetime.now()
+            user.tel = item['tel']
+            user.userID = item['userID']
+            user.roles = item['roles']
+            user.status = item['status']
+            user.gender = item['gender']
+            user.avatar = item['avatar']
+            user.nickName = item['nickName']
+            user.save()
 
 if __name__ == '__main__':
     init_tag()

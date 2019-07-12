@@ -86,6 +86,8 @@ urlpatterns = [
     # 用户管理
     path('user/userlist/', UserView.as_view()),
     path('user/adduser/', views.add_user, name='add_user'),
+    path('user/validatetel/', views.validate_tel, name='validate_tel'),
+    path('user/migrateuser/', views.migrate_user, name='migrate_user'),
     path('user/deluser/', views.del_user, name='del_user'),
     path('user/forbiddenuser/', views.forbidden_user, name='forbidden_user'),
     path('user/cancelforbid/', views.cancel_forbid, name='cancel_forbid'),

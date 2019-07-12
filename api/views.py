@@ -476,9 +476,9 @@ def index_banner(request):
     banList = []
     for banner in banners:
         target = banner.target
-        # if banner.type == 0:
-        #     activity = AudioStory.objects.filter(uuid=banner.target).first()
-        #     target = urljoin(activity.url, target)
+        if banner.type == 0:
+            activity = Activity.objects.filter(uuid=target).first()
+            target = urljoin(activity.url, target)
         banList.append({
             "uuid": banner.uuid,
             'name': banner.name if banner.name else '',

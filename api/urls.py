@@ -62,4 +62,6 @@ urlpatterns = [
     path('book/list', views.book_list, name='book_list'),  # 书架首页
     path('book/collection', views.collection_more, name='collection_more'),  # 收藏更多
 
+    path('logout/', views.logout, name='logout'),  # 退出登录
+
 ]

@@ -10,7 +10,8 @@ from storybook_sever.config import version
 class Api(object):
 
     def __init__(self):
-        self.comm_host = 'http://wsdev.pymom.com'
+        # self.comm_host = 'http://wsdev.pymom.com'
+        self.comm_host = 'http://casdev.pymom.com'
         self.create_user_host = 'http://casdev.pymom.com'
         self.sts_token_host = 'https://aiupload.hbbclub.com'
 
@@ -124,9 +125,9 @@ class Api(object):
 
 if __name__ == '__main__':
     api = Api()
-    api.admin_reset_pwd("13398876569", "1234567", "2C2936634B97A0C9EDDDFA0B7EC2A412")
-    # api.search_user_byphone('15928140420')
+    # api.admin_reset_pwd("13398876569", "1234567", "2C2936634B97A0C9EDDDFA0B7EC2A412")
+    print(api.search_user_byphone('15928140420'))
     # if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
         # print ('111')
-    # api.create_user('18683367398', '123456')
+    # print(api.create_user('18683367399', '123456'))
     # print(api.get_sts_token('0F4741AEF563F5894577912CADB2B5F3'))

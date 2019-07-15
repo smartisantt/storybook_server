@@ -3,10 +3,11 @@
 
 
 # Create your views here.
+from urllib.parse import urljoin
+
 from django.db.models import Q
 
 from api.ssoSMS.sms import send_sms
-from api.test import update_history_data
 from common.common import *
 from api.apiCommon import *
 from common.mixFileAPI import MixAudio
@@ -21,7 +22,7 @@ def identify_code(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     tel = data.get('tel', '0')
     if not match_tel(tel):
         return http_return(400, '请输入正确的手机号')
@@ -53,7 +54,7 @@ def check_identify_code(request):
     """
     data = request_body(request, "POST")
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     identify_code = data.get('identifyCode')
     tel = data.get('tel')
     code = cache.get(tel)
@@ -71,12 +72,12 @@ def recording_index_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # latest最新 rank排行 recommended推荐
     if sort not in ['latest', 'rank', 'recommended']:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此排序类型')
     story = Story.objects.exclude(status="destroy")
     if sort == "latest":
         story = story.filter(isRecommd=False).order_by("isTop", "-updateTime")
@@ -108,7 +109,7 @@ def recording_stroy_detail(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数错误')
@@ -134,7 +135,7 @@ def recording_bgmusic_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     bgm = Bgm.objects.filter(status='normal').order_by('sortNum')
@@ -161,7 +162,7 @@ def recording_send(request):
     """
     data = request_body(request, 'POST')
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     storyUuid = data.get('storyUuid', '')
     audioUrl = data.get('audioUrl', '')
     audioVolume = data.get('audioVolume', '')
@@ -180,6 +181,8 @@ def recording_send(request):
         story = Story.objects.filter(uuid=storyUuid).first()
         if not story:
             return http_return(400, '模板信息不存在')
+        name = story.name
+        icon = story.faceIcon
         # 更新录制次数
         try:
             with transaction.atomic():
@@ -191,10 +194,14 @@ def recording_send(request):
     bgm = None
     if bgmUuid:
         bgm = Bgm.objects.filter(uuid=bgmUuid).first()
-    if not all([audioUrl, audioVolume, storyTagUuidList, name, icon]):
-        return http_return(400, '参数错误')
+    if not audioUrl:
+        return http_return(400, '录音失败，请重新录音后发表')
+    if not audioVolume:
+        return http_return(400, '请选择用户音量')
+    if not storyTagUuidList:
+        return http_return(400, '请选择作品标签')
     if type not in [0, 1]:
-        return http_return(400, '参数错误')
+        return http_return(400, '请选择录制类型')
     tags = []
     for tagUuid in storyTagUuidList:
         tag = Tag.objects.filter(uuid=tagUuid).first()
@@ -209,9 +216,9 @@ def recording_send(request):
             userUuid=user if user else None,
             isUpload=1,
             voiceUrl=audioUrl,
-            userVolume=audioVolume,
+            userVolume=audioVolume if audioVolume else 1.0,
             bgm=bgm,
-            bgmVolume=bgmVolume if bgmVolume else None,
+            bgmVolume=bgmVolume if bgmVolume else 1.0,
             type=type,
             playTimes=0,
             audioStoryType=audioStoryType,
@@ -257,7 +264,7 @@ def recording_tag_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     tag = Tag.objects.filter(code="RECORDTYPE", isUsing=True, isDelete=False).order_by('sortNum')
     tags = tag.all()
     tagList = []
@@ -278,7 +285,7 @@ def become_fans(request):
     """
     data = request_body(request, 'POST')
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     type = data.get('type', '')
     selfUuid = data['_cache']['uuid']
@@ -320,7 +327,7 @@ def user_fans(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     type = data.get('type', '')
     page = data.get('page', '')
@@ -339,7 +346,7 @@ def user_fans(request):
         for f in user.follows.all():
             users.append(f.followers)
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '类型参数错误')
     total, users = page_index(users, page, pageCount)
     userList = userList_format(users)
     return http_return(200, '成功', {"total": total, "list": userList})
@@ -354,7 +361,7 @@ def audio_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     audioStoryType = data.get('audioStoryType', None)
@@ -376,7 +383,7 @@ def audio_play(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数错误')
@@ -438,7 +445,7 @@ def audio_other(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
@@ -462,7 +469,7 @@ def index_banner(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     nowDatetime = datetime.datetime.now()
     banner = CycleBanner.objects.filter(startTime__lte=nowDatetime, endTime__gte=nowDatetime, isUsing=True,
                                         isDelete=False)
@@ -471,12 +478,16 @@ def index_banner(request):
     banners = banner.all()
     banList = []
     for banner in banners:
+        target = banner.target
+        if banner.type == 0:
+            activity = Activity.objects.filter(uuid=target).first()
+            target = urljoin(activity.url, target)
         banList.append({
             "uuid": banner.uuid,
             'name': banner.name if banner.name else '',
             'icon': banner.icon if banner.icon else '',
             'type': banner.type,
-            'target': banner.target,
+            'target': target,
         })
     return http_return(200, '成功', banList)
 
@@ -490,7 +501,7 @@ def index_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     # 每日一读
     everList = []
     evers = Module.objects.filter(type='MOD1', isDelete=False, audioUuid__audioStoryType=True,
@@ -536,8 +547,7 @@ def index_list(request):
     # 猜你喜欢
     likeList = []
     audios = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
-        isDelete=False).filter(
-        isDelete=False).order_by("-playTimes").all()[:6]
+        isDelete=False).order_by("?")[:6]
     if audios:
         for audio in audios:
             likeList.append({
@@ -562,7 +572,7 @@ def index_more(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     type = int(data.get('type', ''))
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
@@ -577,16 +587,16 @@ def index_more(request):
     elif type == 4:
         pass
     elif type in [5, 6, 7, 8]:
-        classList = {5: "绘本", 6: "故事", 7: "英语", 8: "国学"}
+        classList = {5: "绘本", 6: "经典故事", 7: "英语", 8: "国学"}
         audio = audio.filter(tags__name=classList[type])
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此参数类型')
     if sort == "latest":
         audio = audio.order_by('-createTime')
     elif sort == "rank":
         audio = audio.order_by('-playTimes')
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此排序类型')
     audios = audio.all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
@@ -602,14 +612,14 @@ def search_all(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     keyword = data.get('keyword')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
         return http_return(400, '未获取到用户信息')
     if not keyword:
-        return http_return(400, '参数错误')
+        return http_return(400, '请输入搜索关键词')
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
     audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
@@ -629,7 +639,7 @@ def search_each(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     keyword = data.get('keyword')
     filterValue = data.get('filterValue', '')  # rank latest followersCount audioStoryCount
     type = data.get('type', '')  # audioStory publisher
@@ -640,7 +650,7 @@ def search_each(request):
     if not selfUser:
         return http_return(400, '未获取到用户信息')
     if not keyword:
-        return http_return(400, '参数错误')
+        return http_return(400, '请输入搜索关键词')
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
     if type == "audioStory":
@@ -671,7 +681,7 @@ def search_each(request):
             {"label": "最多音频", "value": "audioStoyrCount"}
         ]
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此搜索类型')
     return http_return(200, '成功', {"list": resultList, "total": total, "filter": filter})
 
 
@@ -684,7 +694,7 @@ def search_hot(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     hots = HotSearch.objects.filter(isDelete=False).order_by("-isTop", "-searchNum").values_list('keyword', flat=True)
     resStr = ','.join(list(hots)[:10])
     return http_return(200, "成功", resStr)
@@ -699,7 +709,7 @@ def index_category_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     tag = Tag.objects.filter(isDelete=False, isUsing=True)
     tags = tag.filter(code='SEARCHSORT', parent=None).order_by('sortNum').all()
     tagList = []
@@ -730,7 +740,7 @@ def index_category_result(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     keyword = data.get('keyword', '')
     audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
     user = User.objects.filter(status='normal')
@@ -755,7 +765,7 @@ def index_category_each(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     type = data.get('type', '')  # audioStory publisher
     keyword = data.get('keyword', '')
     filterValue = data.get('filterValue', '')
@@ -802,7 +812,7 @@ def index_category_each(request):
             {"label": "最多音频", "value": "audioStoyrCount"}
         ]
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此筛选类型')
     return http_return(200, '成功', {"list": resultList, "total": total, "filter": filter})
 
 
@@ -815,7 +825,7 @@ def audiostory_praise(request):
     """
     data = request_body(request, 'POST')
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     type = data.get('type', '')
     if not uuid:
@@ -862,7 +872,7 @@ def audiostory_collection(request):
     """
     data = request_body(request, 'POST')
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     type = data.get('type', '')
     if not uuid:
@@ -909,7 +919,7 @@ def activity_detail(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数错误')
@@ -965,7 +975,7 @@ def activity_rank(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
@@ -1012,7 +1022,7 @@ def activity_audiostory_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
@@ -1047,11 +1057,13 @@ def activity_join(request):
     """
     data = request_body(request, 'POST')
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     activityUuid = data.get('activityUuid', '')
     audioStoryUuid = data.get('audioStoryUuid', '')
-    if not all([audioStoryUuid, activityUuid]):
-        return http_return(400, '参数错误')
+    if not audioStoryUuid:
+        return http_return(400, '请选择参赛作品')
+    if not activityUuid:
+        return http_return(400, '请选择参赛活动')
     activity = Activity.objects.filter(uuid=activityUuid).first()
     if not activity:
         return http_return(400, '活动信息不存在')
@@ -1093,7 +1105,7 @@ def personal_index(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     selfUuid = data['_cache'].get('uuid', '')
     if not selfUuid:
@@ -1127,14 +1139,14 @@ def personal_audiostory(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
     if uuid:
         selfUuid = uuid
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+    audio = AudioStory.objects.filter(checkStatus="check").filter(
         isDelete=False).filter(userUuid__uuid=selfUuid)
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
@@ -1151,7 +1163,7 @@ def personal_history_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
@@ -1159,7 +1171,7 @@ def personal_history_list(request):
     if uuid:
         selfUuid = uuid
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
-    behavs = behav.order_by("audioUuid").distinct().order_by("-updateTime").all()
+    behavs = behav.order_by("-updateTime").all()
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
     for behav in behavs:
@@ -1185,10 +1197,10 @@ def personal_history_del(request):
     """
     data = request_body(request, 'POST')
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     historyUuidList = data.get('historyUuidList', '')
     if not historyUuidList:
-        return http_return(400, '参数错误')
+        return http_return(400, '请选择需要清空的聊天记录')
     try:
         with transaction.atomic():
             Behavior.objects.filter(uuid__in=historyUuidList).delete()
@@ -1207,7 +1219,7 @@ def personal_change(request):
     """
     data = request_body(request, 'POST')
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     avatar = data.get('avatar', '')
     nickname = data.get('nickname', '')
     intro = data.get('intro', '')
@@ -1243,13 +1255,15 @@ def feedback_add(request):
     """
     data = request_body(request, 'POST')
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     type = data.get('type', '')
     content = data.get('content', '')
     iconList = data.get('iconList', '')
     tel = data.get('tel', '')
-    if not all([type, content]):
-        return http_return(400, '参数错误')
+    if not type:
+        return http_return(400, '请选择反馈类型')
+    if not content:
+        return http_return(400, '请输入反馈内容')
     selfUuid = data['_cache']['uuid']
     user = User.objects.filter(uuid=selfUuid).first()
     if not user:
@@ -1280,7 +1294,7 @@ def feedback_reply_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     selfUuid = data['_cache']['uuid']
     feed = Feedback.objects.filter(userUuid__uuid=selfUuid, status=1)
     feeds = feed.order_by("-updateTime").all()
@@ -1306,7 +1320,7 @@ def feedback_reply_info(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     feed = Feedback.objects.filter(uuid=uuid).first()
     try:
@@ -1338,7 +1352,7 @@ def help_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     helpList = []
     helpList.append({
         "title": '绘童阅读规则及APP操作流程',
@@ -1379,7 +1393,7 @@ def audio_other_version(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
@@ -1405,7 +1419,7 @@ def recording_stroy_recent(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
@@ -1431,7 +1445,7 @@ def search_word_like(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     keyword = data.get('keyword', '')
     user = User.objects.filter(nickName__contains=keyword).values_list('nickName', flat=True).distinct()
     audio = AudioStory.objects.filter(name__contains=keyword).values_list('name', flat=True).distinct()
@@ -1448,7 +1462,7 @@ def logout(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     selfUser = User.objects.filter(uuid=data['_cache']['uuid']).first()
     if selfUser:
         token = request.META.get('HTTP_TOKEN')
@@ -1466,7 +1480,7 @@ def book_list(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
@@ -1478,10 +1492,9 @@ def book_list(request):
         collAudios.append(coll.audioUuid)
     collectionList = audioList_format(collAudios, data)
 
-    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by(
-        "audioUuid").distinct()
+    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
     historyAudios = []
-    for his in historyBehav.order_by("updateTime").all()[:6]:
+    for his in historyBehav.order_by("-updateTime").all()[:6]:
         historyAudios.append(his.audioUuid)
     historyList = audioList_format(historyAudios, data)
     infoData = {
@@ -1502,7 +1515,7 @@ def collection_more(request):
     """
     data = request_body(request)
     if not data:
-        return http_return(400, '参数错误')
+        return http_return(400, '请求错误')
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']

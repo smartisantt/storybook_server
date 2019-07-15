@@ -1,11 +1,6 @@
-
-from datetime import datetime
-
 from django.utils import timezone
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
-from common.common import get_uuid
 from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
     Feedback
 from utils.errors import ParamsException
@@ -356,6 +351,7 @@ class ActivitySerializer(serializers.ModelSerializer):
     # 返回当前活动处于哪个阶段 未开始，进行中，已结束
     stage = serializers.SerializerMethodField()
 
+
     @staticmethod
     def get_count(activity):
         return activity.activityRankUuid.count()
@@ -373,9 +369,10 @@ class ActivitySerializer(serializers.ModelSerializer):
             return "future"
 
 
+
     class Meta:
         model = Activity
-        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon", "stage")
+        fields = ("name", "startTime", "endTime", "count", "uuid", "id", "intro", "icon", "stage","url")
 
 
 
@@ -391,7 +388,7 @@ class CycleBannerSerializer(serializers.ModelSerializer):
             try:
                 linkObjectInfo = Activity.objects.filter(uuid=cycleBanner.target).first().name
             except:
-                raise ParamsException({'code': 400, 'msg': '参数错误'})
+                raise ParamsException({'code': 400, 'msg': '数据库存储数据格式错误'})
         elif cycleBanner.type == 1: # 专辑
             pass
         elif cycleBanner.type == 2: # 音频
@@ -399,11 +396,13 @@ class CycleBannerSerializer(serializers.ModelSerializer):
                 audioStory = AudioStory.objects.filter(uuid=cycleBanner.target).first()
                 linkObjectInfo = audioStory.storyUuid.name if audioStory.audioStoryType else audioStory.name
             except:
-                raise ParamsException({'code': 400, 'msg': '参数错误'})
+                raise ParamsException({'code': 400, 'msg': '数据库存储数据格式错误'})
         elif cycleBanner.type == 3: # 商品
             pass
-        elif cycleBanner.type == 4:
+        elif cycleBanner.type == 4: # 外部连接
             linkObjectInfo = cycleBanner.target
+        elif cycleBanner.type == 5: # 模板
+            pass
 
         return linkObjectInfo
 

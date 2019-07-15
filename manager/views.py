@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # Create your views here.
-
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import authentication, viewsets, mixins
 from rest_framework.decorators import authentication_classes, api_view, action
@@ -102,6 +101,7 @@ def login(request):
 
             if not user:
                 return http_return(403, '没有权限')
+
             # 当前表中没有此用户信息则不在数据库中创建，你又不是管理员
             # if not user:
             #     user = User(
@@ -260,7 +260,8 @@ def total_data(request):
 
 
     # 图表数据--新增用户
-    graph1 = User.objects.filter(createTime__range=(t1, t2)).\
+    graph1 = User.objects.filter(createTime__range=(t1, t2)). \
+        only('createTime', 'id'). \
         extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%d')"}).\
         order_by('time').values('time')\
         .annotate(userNum=Count('createTime')).values('time', 'userNum')
@@ -1508,6 +1509,13 @@ def add_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
+    # if type == 0:
+    #     activity = Activity.objects.filter(uuid=target).first()
+    #     if activity:
+    #         target = activity.url
+    #     else:
+    #         return http_return(400, '没有此活动')
+
     try:
         uuid = get_uuid()
         Ad.objects.create(
@@ -1827,16 +1835,16 @@ class UserView(ListAPIView):
     ordering_fields = ('id', 'createTime')
 
     # 当前管理员不显示在用户列表里面
-    def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset().exclude(userID=request.user.userID)
-        queryset = self.filter_queryset(queryset)
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    # def get(self, request, *args, **kwargs):
+    #     queryset = self.get_queryset().exclude(userID=request.user.userID)
+    #     queryset = self.filter_queryset(queryset)
+    #     page = self.paginate_queryset(queryset)
+    #     if page is not None:
+    #         serializer = self.get_serializer(page, many=True)
+    #         return self.get_paginated_response(serializer.data)
+    #
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
 
 
     def get_queryset(self):
@@ -1865,8 +1873,105 @@ class UserView(ListAPIView):
 
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def validate_tel(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    tel = data.get('tel', '')
+    if not tel:
+        return http_return(400, '手机号不能为空')
+    if not re.match("^1[35678]\d{9}$", tel):
+        return http_return(400, '手机号码错误')
 
-# 添加用户
+    # status 0 已经注册 1 迁移用户  2 新建用户
+    user = User.objects.filter(tel=tel).exclude(status='destroy').first()
+    if user:
+        return http_return(200, 'OK', {'status': 0})
+
+    api = Api()
+    userInfo = api.search_user_byphone(tel)
+    if userInfo == -1:
+        return http_return(400, '接口通信错误')
+    if userInfo:
+        return http_return(200, 'OK', {'status': 1})
+    else:
+        # 新用户
+        return http_return(200, 'OK', {'status': 2})
+
+
+# 迁移老用户
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def migrate_user(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    tel = data.get('tel', '')
+    if not tel:
+        return http_return(400, '手机号不能为空')
+    if not re.match("^1[35678]\d{9}$", tel):
+        return http_return(400, '手机号码错误')
+
+    user = User.objects.filter(tel=tel).exclude(status='destroy').first()
+    if user:
+        return http_return(400, '此手机号已经注册')
+
+    nickName = data.get('nickName', '')
+    city = data.get('city', '')
+    roles = data.get('roles', '')
+    gender = data.get('gender', '')
+
+
+    if not all([gender in [0, 1, 2], nickName, city, roles in ['normalUser', 'adminUser']]):
+        return http_return(400, '参数错误')
+
+
+    if not 1 < len(str(city)) < 40:
+        return http_return(400, '城市长度错误')
+
+    if not 1 < len(str(nickName)) < 20:
+        return http_return(400, '昵称长度错误')
+
+    if not isinstance(tel, str):
+        tel = str(tel)
+
+    # /api/sso/user/byphone 读取用户列表(手机号用户)
+    api = Api()
+    userID = ''
+    userInfo = api.search_user_byphone(tel)
+    if userInfo == -1:
+        return http_return(400, '接口通信错误')
+    if userInfo:
+        userID = userInfo['userId']
+
+    else:
+        return http_return(400, '无法迁移用户')
+
+    try:
+        uuid = get_uuid()
+        with transaction.atomic():
+            User.objects.create(
+                uuid=uuid,
+                userID=userID,
+                nickName=nickName or tel,
+                avatar='https://hbb-ads.oss-cn-beijing.aliyuncs.com/file110598494460.jpg',
+                tel=tel,
+                gender=gender,  # 性别 0未知  1男  2女
+                status="normal",
+                roles=roles,
+                city=city
+            )
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+
+
+
+
+# 添加新用户
 @api_view(['POST'])
 @authentication_classes((CustomAuthentication, ))
 def add_user(request):
@@ -1876,7 +1981,7 @@ def add_user(request):
     tel = data.get('tel', '')
     if not tel:
         return http_return(400, '手机号不能为空')
-    if not re.match("^1[35678]\d{9}$", tel):
+    if not re.match("^1[3456789]\d{9}$", tel):
         return http_return(400, '手机号码错误')
 
     user = User.objects.filter(tel=tel).exclude(status='destroy').first()
@@ -1912,8 +2017,8 @@ def add_user(request):
     if userInfo == -1:
         return http_return(400, '接口通信错误')
     if userInfo:
-        userID = userInfo['userId']
-
+        # userID = userInfo['userId']
+        return http_return(400, '此用户在其他平台已注册，请迁移用户')
     else:
         # /api/sso/createbyuserpasswd 管理员创建一个账号密码
         userInfo = api.create_user(tel, pwd)
@@ -1941,7 +2046,7 @@ def add_user(request):
         return http_return(200, 'OK')
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '添加失败')
+        return http_return(400, '保存用户失败')
 
 
 
@@ -1974,13 +2079,23 @@ def modify_user(request):
     tel = user.tel
     if not tel:
         return http_return(400, '没有用户手机号')
-    # 调用接口 管理员在后台 重置其他用户密码, 不能重置自己的
+    # 调用接口 管理员在后台 重置其他用户密码, 重置自己的密码清缓存
     if pwd:
         if not 5<len(str(pwd))<40:
             return http_return(400, '密码长度错误')
         api = Api()
         if not api.admin_reset_pwd(tel, pwd, request.auth):
             return http_return(400, "重置密码失败")
+        if request.user.uuid == uuid:
+            caches['default'].delete(request.auth)
+
+    data = {}
+    if request.user.uuid == uuid:
+        data['nickName'] = nickName
+        if pwd:
+            data['changepwd'] = 1
+        else:
+            data['changepwd'] = 0
 
     try:
         with transaction.atomic():
@@ -1989,7 +2104,7 @@ def modify_user(request):
             user.nickName = nickName
             user.gender = gender
             user.save()
-            return http_return(200, 'OK')
+            return http_return(200, 'OK', data)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -2214,8 +2329,9 @@ def create_activity(request):
     intro = data.get('intro', '')
     startTime = data.get('starttime', '')
     endTime = data.get('endtime', '')
+    url = data.get('url', '')
     icon = data.get('icon', '')         # 非必填
-    if not all([name, intro, startTime, endTime]):
+    if not all([url, name, intro, startTime, endTime]):
         return http_return(400, '参数错误')
     if Activity.objects.filter(name=name).exists():
         return http_return(400, '重复活动名')
@@ -2225,6 +2341,12 @@ def create_activity(request):
 
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
+
+    if not isinstance(url ,str):
+        return http_return(400, 'url错误')
+
+    if not url.startswith( 'http' ):
+        return http_return('url格式错误')
 
     startTime = startTime/1000
     endTime = endTime/1000
@@ -2242,6 +2364,7 @@ def create_activity(request):
             Activity.objects.create(
                 uuid = uuid,
                 name = name,
+                url = url,
                 startTime = startTime,
                 endTime = endTime,
                 intro = intro,
@@ -2264,10 +2387,11 @@ def modify_activity(request):
     uuid = data.get('uuid', '')
     name = data.get('name', '')
     intro = data.get('intro', '')
-    icon = data.get('icon', '')
+    icon = data.get('icon', '') # 没有icon
     startTime = data.get('starttime', '')
     endTime = data.get('endtime', '')
-    if not all([uuid, name, intro, icon, startTime, endTime]):
+    url = data.get('url', '')
+    if not all([uuid, name, intro, startTime, endTime, url]):
         return http_return(400, '参数错误')
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:
@@ -2282,6 +2406,9 @@ def modify_activity(request):
 
     if startTime > endTime:
         return http_return(400, '时间错误')
+
+    if not url.startswith( 'http' ):
+        return http_return('url格式错误')
 
     startTime = startTime/1000
     endTime = endTime/1000
@@ -2300,6 +2427,7 @@ def modify_activity(request):
             activity.endTime = endTime
             activity.icon = icon
             activity.intro = intro
+            activity.url = url
             activity.save()
             return http_return(200, 'OK')
     except Exception as e:
@@ -2371,6 +2499,13 @@ def add_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间参数错误')
 
+    if type == 4:
+        activity = Activity.objects.filter(uuid=target).first()
+        if activity:
+            target = activity.url
+        else:
+            return http_return(400, '没有此活动')
+
     try:
         uuid = get_uuid()
         CycleBanner.objects.create(
@@ -2438,7 +2573,12 @@ def modify_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间错误')
 
-
+    # if type == 0:
+    #     activity = Activity.objects.filter(uuid=target).first()
+    #     if activity:
+    #         target = activity.url
+    #     else:
+    #         return http_return(400, '没有此活动')
     try:
         cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False)
         cycleBanner.update(

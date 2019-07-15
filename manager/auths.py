@@ -3,11 +3,12 @@ import logging
 from django.core.cache import caches
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import BasePermission
 
 from manager.managerCommon import get_uuid, get_ip_address, create_session
 from manager.models import User, LoginLog
 from common.api import Api
-
+from utils.errors import ParamsException
 
 
 class CustomAuthentication(BaseAuthentication):
@@ -26,7 +27,7 @@ class CustomAuthentication(BaseAuthentication):
         user = None
         # 缓存有数据  没有写登录日志
         if user_info:
-            user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
+            user = User.objects.filter(userID=user_info.get('userId', '')).\
                 exclude(status="destroy").only('userID').first()
             if not user:
                 raise AuthenticationFailed('没有管理员权限')
@@ -74,3 +75,11 @@ class CustomAuthentication(BaseAuthentication):
                 logging.error(str(e))
                 raise AuthenticationFailed('保存日志失败')
         return user, token
+
+
+class CustomAuthorization(BasePermission):
+
+    def has_permission(self, request, view):
+        if request.user and request.user.roles == 'adminUser':
+            return True
+        raise ParamsException({'code':403, 'msg': '没有管理员权限'})

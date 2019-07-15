@@ -1899,7 +1899,7 @@ def validate_tel(request):
     tel = data.get('tel', '')
     if not tel:
         return http_return(400, '手机号不能为空')
-    if not re.match("^1[35678]\d{9}$", tel):
+    if not re.match("^1[3456789]\d{9}$", tel):
         return http_return(400, '手机号码错误')
 
     # status 0 已经注册 1 迁移用户  2 新建用户
@@ -1928,7 +1928,7 @@ def migrate_user(request):
     tel = data.get('tel', '')
     if not tel:
         return http_return(400, '手机号不能为空')
-    if not re.match("^1[35678]\d{9}$", tel):
+    if not re.match("^1[3456789]\d{9}$", tel):
         return http_return(400, '手机号码错误')
 
     user = User.objects.filter(tel=tel).exclude(status='destroy').first()

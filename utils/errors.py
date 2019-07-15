@@ -8,3 +8,4 @@ class ParamsException(APIException):
 
     def __init__(self, error):
         self.detail = error
+

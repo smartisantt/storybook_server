@@ -317,5 +317,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'manager.auths.CustomAuthentication',
     ),
+    # 配置默认的授权类
+    'DEFAULT_PERMISSION_CLASSES': (
+        'manager.auths.CustomAuthorization',
+    ),
     'EXCEPTION_HANDLER': 'utils.custom_exceptions.custom_exception_handler'
 }

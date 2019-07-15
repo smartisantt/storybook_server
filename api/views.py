@@ -1171,7 +1171,7 @@ def personal_history_list(request):
     if uuid:
         selfUuid = uuid
     behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
-    behavs = behav.order_by("audioUuid").distinct().order_by("-updateTime").all()
+    behavs = behav.order_by("-updateTime").all()
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
     for behav in behavs:
@@ -1492,10 +1492,9 @@ def book_list(request):
         collAudios.append(coll.audioUuid)
     collectionList = audioList_format(collAudios, data)
 
-    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by(
-        "audioUuid").distinct()
+    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
     historyAudios = []
-    for his in historyBehav.order_by("updateTime").all()[:6]:
+    for his in historyBehav.order_by("-updateTime").all()[:6]:
         historyAudios.append(his.audioUuid)
     historyList = audioList_format(historyAudios, data)
     infoData = {

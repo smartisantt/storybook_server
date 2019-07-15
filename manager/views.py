@@ -2078,13 +2078,15 @@ def modify_user(request):
     tel = user.tel
     if not tel:
         return http_return(400, '没有用户手机号')
-    # 调用接口 管理员在后台 重置其他用户密码, 不能重置自己的
+    # 调用接口 管理员在后台 重置其他用户密码, 重置自己的密码清缓存
     if pwd:
         if not 5<len(str(pwd))<40:
             return http_return(400, '密码长度错误')
         api = Api()
         if not api.admin_reset_pwd(tel, pwd, request.auth):
             return http_return(400, "重置密码失败")
+        if request.user.uuid == uuid:
+            caches['default'].delete(request.auth)
 
     try:
         with transaction.atomic():

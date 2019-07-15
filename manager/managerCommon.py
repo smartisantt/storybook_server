@@ -20,15 +20,6 @@ from storybook_sever.config import *
 from utils.errors import ParamsException
 
 
-def random_string(size=6, chars=string.ascii_uppercase + string.digits):
-    """
-    随机字符串
-    :param size:
-    :param chars:
-    :return:
-    """
-    return ''.join(random.choice(chars) for _s in xrange(size))
-
 
 def get_uuid():
     """
@@ -37,20 +28,6 @@ def get_uuid():
     """
     return "".join(str(uuid.uuid4()).split("-")).upper()
 
-
-# def set_shop_session(request, info):
-#     """
-#     :param request:
-#     :param info: dict={'uuid', 'tel'......}
-#     :return:
-#     """
-#     request.session.set_expiry(SHOP_SESSION_OVER_TIME)
-#     uuid = info.get('uuid', '')
-#     if not uuid:
-#         return False
-#     request.session['shopInfo'] = info
-#     request.session['uuid'] = uuid
-#     return True
 
 
 def datetime_to_string(mydate, rule='%Y-%m-%d %H:%M:%S'):
@@ -65,17 +42,6 @@ def datetime_to_string(mydate, rule='%Y-%m-%d %H:%M:%S'):
         return mydate
 
 
-def string_to_datetime(mystr, rule='%Y-%m-%d %H:%M:%S'):
-    """
-    将string转为 datetime.datetime
-    :param mydate:
-    :return:
-    """
-    if isinstance(mystr, str) or isinstance(mystr, unicode):
-        return datetime.datetime.strptime(mystr, rule)
-    else:
-        return mystr
-
 
 def unix_time_to_str(unix_time, rule='%Y-%m-%d %H:%M:%S'):
     """
@@ -87,16 +53,6 @@ def unix_time_to_str(unix_time, rule='%Y-%m-%d %H:%M:%S'):
     date = unix_time_to_datetime(unix_time)
     return datetime_to_string(date, rule)
 
-
-def string_to_unix_time(_str, rule='%Y-%m-%d %H:%M:%S'):
-    """
-    str 转unix时间戳
-    :param _str:
-    :param rule:
-    :return:
-    """
-    _time = string_to_datetime(_str, rule)
-    return time.mktime(_time.timetuple()) * 1000
 
 
 def unix_time_to_datetime(unix_time):
@@ -262,10 +218,6 @@ def timestamp2datetime(startTimestamp, endTimestamp, convert=True):
 
     startTimestamp = startTimestamp / 1000
     endTimestamp = endTimestamp / 1000
-
-    # 结束小于2019-05-30 00:00:00的时间不合法
-    if endTimestamp <= 1559145600:
-        raise ParamsException('此时间没有数据')
 
 
     try:
@@ -435,7 +387,7 @@ def match_tel(tel):
     :param tel:
     :return:
     """
-    if re.match("^1[35678]\d{9}$", tel):
+    if re.match("^1[3456789]\d{9}$", tel):
         return True
     return False
 

@@ -165,6 +165,10 @@ def total_data(request):
         logging.error(str(e))
         return http_return(e.status_code, e.detail)
 
+    # 结束小于2019-05-30 00:00:00的时间不合法
+    if t2 < datetime(2019, 5, 30):
+        return http_return(200, '此时间没有数据', {'status':1})
+
 
     if (t2-t1).days > 31:
         return http_return(400, '超出时间范围')
@@ -802,7 +806,6 @@ def del_story(request):
         return http_return(400, '删除模板失败')
 
 
-
 class AudioStoryInfoView(ListAPIView):
     """模板音频"""
     queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),Q(isUpload=1),
@@ -817,7 +820,6 @@ class AudioStoryInfoView(ListAPIView):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering = ('-createTime',)
     ordering_fields = ('id', 'createTime')
-
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
@@ -919,8 +921,8 @@ def add_audio_story(request):
 
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
-    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0), Q(isUpload=1),
-                                         Q(checkStatus='check')|Q(checkStatus='exemption')) \
+    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0, isUpload=1,
+                                         checkStatus='check') \
         .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
 
@@ -1509,12 +1511,17 @@ def add_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
-    # if type == 0:
-    #     activity = Activity.objects.filter(uuid=target).first()
-    #     if activity:
-    #         target = activity.url
-    #     else:
-    #         return http_return(400, '没有此活动')
+    if type == 0:
+        if not Activity.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此活动')
+
+    if type == 2:  # 音频
+        if not AudioStory.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此音频')
+
+    if type == 4:  # 外部链接
+        if not target.startswith('http'):
+            return http_return(400, '跳转地址格式错误')
 
     try:
         uuid = get_uuid()
@@ -1581,7 +1588,17 @@ def modify_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
+    if type == 0:
+        if not Activity.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此活动')
 
+    if type == 2: # 音频
+        if not AudioStory.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此音频')
+
+    if type == 4: # 外部链接
+        if not target.startswith('http'):
+            return http_return(400, '跳转地址格式错误')
 
 
     try:
@@ -2499,12 +2516,18 @@ def add_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间参数错误')
 
-    if type == 4:
-        activity = Activity.objects.filter(uuid=target).first()
-        if activity:
-            target = activity.url
-        else:
+
+    if type == 0:
+        if not Activity.objects.filter(uuid=target).exists():
             return http_return(400, '没有此活动')
+
+    if type == 2: # 音频
+        if not AudioStory.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此音频')
+
+    if type == 4: # 外部链接
+        if not target.startswith('http'):
+            return http_return(400, '跳转地址格式错误')
 
     try:
         uuid = get_uuid()
@@ -2573,12 +2596,17 @@ def modify_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间错误')
 
-    # if type == 0:
-    #     activity = Activity.objects.filter(uuid=target).first()
-    #     if activity:
-    #         target = activity.url
-    #     else:
-    #         return http_return(400, '没有此活动')
+    if type == 0:
+        if not Activity.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此活动')
+
+    if type == 2:  # 音频
+        if not AudioStory.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此音频')
+
+    if type == 4:  # 外部链接
+        if not target.startswith('http'):
+            return http_return(400, '跳转地址格式错误')
     try:
         cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False)
         cycleBanner.update(

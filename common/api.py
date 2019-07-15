@@ -12,7 +12,7 @@ class Api(object):
     def __init__(self):
         # self.comm_host = 'http://wsdev.pymom.com'
         self.comm_host = 'http://casdev.pymom.com'
-        self.create_user_host = 'http://casdev.pymom.com'
+        # self.create_user_host = 'http://casdev.pymom.com'
         self.sts_token_host = 'https://aiupload.hbbclub.com'
 
         self.token_url = '/api/sso/token/check'
@@ -24,7 +24,7 @@ class Api(object):
 
         if version == 'ali_test':
             self.comm_host = 'https://castest.hbbclub.com/'
-            self.create_user_host = 'https://castest.hbbclub.com/'
+            # self.create_user_host = 'https://castest.hbbclub.com/'
 
     def check_token(self, token):
         url = '{0}{1}'.format(self.comm_host, self.token_url)
@@ -49,7 +49,7 @@ class Api(object):
         :param password:
         :return:
         """
-        url = '{0}{1}'.format(self.create_user_host, self.create_user_url)
+        url = '{0}{1}'.format(self.comm_host, self.create_user_url)
         data = {
             "loginId": tel,
             "phone": True,

@@ -73,7 +73,7 @@ def get_default_name(tel):
     return result
 
 
-def save_login_log(user_info, user):
+def save_login_log(user_info, user, request):
     """
     保存登陆日志
     :param user_info:
@@ -85,6 +85,7 @@ def save_login_log(user_info, user):
             uuid=get_uuid(),
             ipAddr=user_info.get('loginIp', ''),
             userUuid=user,
+            userAgent=request.META.get('HTTP_USER_AGENT', ''),
         )
         log.save()
     except Exception as e:
@@ -153,7 +154,7 @@ def check_identify(func):
         logDate = caches['api'].get(selfUuid)
         if logDate:
             if logDate != nowDate:  # 如果当天没有存日志则添加
-                if not save_login_log(user_info, selfUser):
+                if not save_login_log(user_info, selfUser,request):
                     return http_return(400, '存储登陆日志失败')
                 caches['api'].delete(selfUuid)
                 try:
@@ -167,7 +168,7 @@ def check_identify(func):
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '缓存错误')
-            if not save_login_log(user_info, selfUser):
+            if not save_login_log(user_info, selfUser,request):
                 return http_return(400, '存储登陆日志失败')
 
         # 禁止登陆

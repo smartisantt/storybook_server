@@ -958,9 +958,6 @@ class FreedomAudioStoryInfoView(ListAPIView):
             tag_info = Tag.objects.filter(uuid=tag, isDelete=False).first()
             if tag_info:
                 self.queryset = self.queryset.filter(tags__id=tag_info.id)
-            else:
-                self.queryset = self.queryset.filter(tags__id=0)
-
         return self.queryset
 
 

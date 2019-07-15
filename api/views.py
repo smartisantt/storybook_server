@@ -77,7 +77,7 @@ def recording_index_list(request):
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # latest最新 rank排行 recommended推荐
     if sort not in ['latest', 'rank', 'recommended']:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此排序类型')
     story = Story.objects.exclude(status="destroy")
     if sort == "latest":
         story = story.filter(isRecommd=False).order_by("isTop", "-updateTime")
@@ -590,13 +590,13 @@ def index_more(request):
         classList = {5: "绘本", 6: "经典故事", 7: "英语", 8: "国学"}
         audio = audio.filter(tags__name=classList[type])
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此参数类型')
     if sort == "latest":
         audio = audio.order_by('-createTime')
     elif sort == "rank":
         audio = audio.order_by('-playTimes')
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此排序类型')
     audios = audio.all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
@@ -681,7 +681,7 @@ def search_each(request):
             {"label": "最多音频", "value": "audioStoyrCount"}
         ]
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此搜索类型')
     return http_return(200, '成功', {"list": resultList, "total": total, "filter": filter})
 
 
@@ -812,7 +812,7 @@ def index_category_each(request):
             {"label": "最多音频", "value": "audioStoyrCount"}
         ]
     else:
-        return http_return(400, '参数错误')
+        return http_return(400, '无此筛选类型')
     return http_return(200, '成功', {"list": resultList, "total": total, "filter": filter})
 
 

@@ -921,8 +921,8 @@ def add_audio_story(request):
 
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
-    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=0), Q(isUpload=1),
-                                         Q(checkStatus='check')|Q(checkStatus='exemption')) \
+    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0, isUpload=1,
+                                         checkStatus='check') \
         .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
 

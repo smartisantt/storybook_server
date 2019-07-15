@@ -183,6 +183,7 @@ elif version == 'ali_test':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '39.97.233.65',  # 主机
             'PORT': '8002',  # 数据库使用的端口
+            'TIME_ZONE': 'Asia/Shanghai',
         }
     }
     # 缓存配置

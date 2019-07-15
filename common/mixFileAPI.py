@@ -1,5 +1,7 @@
 import requests
 
+from storybook_sever.config import version
+
 
 class MixAudio(object):
     """
@@ -8,6 +10,8 @@ class MixAudio(object):
 
     def __init__(self):
         self.host = 'http://192.168.100.235:8008'
+        if version == "ali_test":
+            self.host = 'http://huitong.hbbclub.com'
 
     def audio_product(self, uuid):
         """

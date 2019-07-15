@@ -1511,12 +1511,17 @@ def add_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
-    # if type == 0:
-    #     activity = Activity.objects.filter(uuid=target).first()
-    #     if activity:
-    #         target = activity.url
-    #     else:
-    #         return http_return(400, '没有此活动')
+    if type == 0:
+        if not Activity.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此活动')
+
+    if type == 2:  # 音频
+        if not AudioStory.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此音频')
+
+    if type == 4:  # 外部链接
+        if not target.startswith('http'):
+            return http_return(400, '跳转地址格式错误')
 
     try:
         uuid = get_uuid()
@@ -1583,7 +1588,17 @@ def modify_ad(request):
         logging.error(str(e))
         return http_return(400, '时间格式错误')
 
+    if type == 0:
+        if not Activity.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此活动')
 
+    if type == 2: # 音频
+        if not AudioStory.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此音频')
+
+    if type == 4: # 外部链接
+        if not target.startswith('http'):
+            return http_return(400, '跳转地址格式错误')
 
 
     try:
@@ -2501,12 +2516,18 @@ def add_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间参数错误')
 
-    if type == 4:
-        activity = Activity.objects.filter(uuid=target).first()
-        if activity:
-            target = activity.url
-        else:
+
+    if type == 0:
+        if not Activity.objects.filter(uuid=target).exists():
             return http_return(400, '没有此活动')
+
+    if type == 2: # 音频
+        if not AudioStory.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此音频')
+
+    if type == 4: # 外部链接
+        if not target.startswith('http'):
+            return http_return(400, '跳转地址格式错误')
 
     try:
         uuid = get_uuid()
@@ -2575,12 +2596,17 @@ def modify_cycle_banner(request):
         logging.error(str(e))
         return http_return(400, '时间错误')
 
-    # if type == 0:
-    #     activity = Activity.objects.filter(uuid=target).first()
-    #     if activity:
-    #         target = activity.url
-    #     else:
-    #         return http_return(400, '没有此活动')
+    if type == 0:
+        if not Activity.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此活动')
+
+    if type == 2:  # 音频
+        if not AudioStory.objects.filter(uuid=target).exists():
+            return http_return(400, '没有此音频')
+
+    if type == 4:  # 外部链接
+        if not target.startswith('http'):
+            return http_return(400, '跳转地址格式错误')
     try:
         cycleBanner = CycleBanner.objects.filter(uuid=uuid, isDelete=False)
         cycleBanner.update(

@@ -951,7 +951,6 @@ class FreedomAudioStoryInfoView(ListAPIView):
                 logging.error(str(e))
                 raise ParamsException(e.detail)
 
-
         if nickName:
             self.queryset = self.queryset.filter(userUuid__in=User.objects.filter(nickName__icontains=nickName).all())
 
@@ -962,7 +961,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
             else:
                 self.queryset = self.queryset.filter(tags__id=0)
 
-            return self.queryset
+        return self.queryset
 
 
 

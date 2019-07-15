@@ -1494,7 +1494,7 @@ def book_list(request):
 
     historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
     historyAudios = []
-    for his in historyBehav.order_by("updateTime").all()[:6]:
+    for his in historyBehav.order_by("-updateTime").all()[:6]:
         historyAudios.append(his.audioUuid)
     historyList = audioList_format(historyAudios, data)
     infoData = {

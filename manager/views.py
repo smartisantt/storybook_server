@@ -165,6 +165,10 @@ def total_data(request):
         logging.error(str(e))
         return http_return(e.status_code, e.detail)
 
+    # 结束小于2019-05-30 00:00:00的时间不合法
+    if t2 < datetime(2019, 5, 30):
+        return http_return(200, '此时间没有数据', {'status':1})
+
 
     if (t2-t1).days > 31:
         return http_return(400, '超出时间范围')
@@ -802,7 +806,6 @@ def del_story(request):
         return http_return(400, '删除模板失败')
 
 
-
 class AudioStoryInfoView(ListAPIView):
     """模板音频"""
     queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),Q(isUpload=1),
@@ -817,7 +820,6 @@ class AudioStoryInfoView(ListAPIView):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering = ('-createTime',)
     ordering_fields = ('id', 'createTime')
-
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')

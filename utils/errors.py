@@ -9,3 +9,10 @@ class ParamsException(APIException):
     def __init__(self, error):
         self.detail = error
 
+class OutoOfRangeTimeException(APIException):
+    status_code = 200
+    default_detail = '查询超出时间范围'
+
+    def __init__(self, error):
+        self.detail = error
+

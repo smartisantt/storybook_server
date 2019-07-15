@@ -104,7 +104,7 @@ def page_index(myList, page=1, limit=10):
     :param limit: 每一页显示条数
     :return: total + list
     """
-    page = page if page else 0
+    page = page if page and page>0 else 0
     limit = limit if limit else 20
 
     if not all([isinstance(page, int), isinstance(limit, int)]):

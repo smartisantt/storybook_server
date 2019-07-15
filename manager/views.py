@@ -101,6 +101,7 @@ def login(request):
 
             if not user:
                 return http_return(403, '没有权限')
+
             # 当前表中没有此用户信息则不在数据库中创建，你又不是管理员
             # if not user:
             #     user = User(
@@ -2088,6 +2089,14 @@ def modify_user(request):
         if request.user.uuid == uuid:
             caches['default'].delete(request.auth)
 
+    data = {}
+    if request.user.uuid == uuid:
+        data['nickName'] = nickName
+        if pwd:
+            data['changepwd'] = 1
+        else:
+            data['changepwd'] = 0
+
     try:
         with transaction.atomic():
             user.roles = roles
@@ -2095,7 +2104,7 @@ def modify_user(request):
             user.nickName = nickName
             user.gender = gender
             user.save()
-            return http_return(200, 'OK')
+            return http_return(200, 'OK', data)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')

@@ -547,8 +547,9 @@ def index_list(request):
                 "target": hot.audioUuid.uuid,
             })
     # 猜你喜欢
+    selfUuid = data['_cache']['uuid']
     likeList = []
-    audios = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+    audios = AudioStory.objects.exclude(userUuid__uuid=selfUuid).filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
         isDelete=False).order_by("?")[:6]
     if audios:
         for audio in audios:

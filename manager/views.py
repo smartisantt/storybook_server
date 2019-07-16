@@ -1462,7 +1462,8 @@ class AdView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.filter(startTime__gte=endtime, endTime__lte=starttime)
+                return self.queryset.exclude(Q(startTime__gt=endtime) & Q(endTime__gt=endtime) |
+                                             Q(endTime__lt=starttime) & Q(startTime__lt=starttime))
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)
@@ -2325,7 +2326,8 @@ class ActivityView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.filter(startTime__gte=starttime, endTime__lte=endtime)
+                return self.queryset.exclude(Q(startTime__gt=endtime) & Q(endTime__gt=endtime) |
+                                             Q(endTime__lt=starttime) & Q(startTime__lt=starttime))
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)
@@ -2468,7 +2470,8 @@ class CycleBannerView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.filter(startTime__gte=endtime, endTime__lte=starttime)
+                return self.queryset.exclude(Q(startTime__gt=endtime)&Q(endTime__gt=endtime)|
+                                             Q(endTime__lt=starttime)&Q(startTime__lt=starttime))
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)

@@ -202,6 +202,10 @@ def recording_send(request):
         return http_return(400, '请选择作品标签')
     if type not in [0, 1]:
         return http_return(400, '请选择录制类型')
+    if not name:
+        return http_return(400, '请输入标题')
+    if not icon:
+        return http_return(400, '请上传背景图片')
     tags = []
     for tagUuid in storyTagUuidList:
         tag = Tag.objects.filter(uuid=tagUuid).first()
@@ -554,7 +558,8 @@ def index_list(request):
     # 猜你喜欢
     selfUuid = data['_cache']['uuid']
     likeList = []
-    audios = AudioStory.objects.exclude(userUuid__uuid=selfUuid).filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+    audios = AudioStory.objects.exclude(userUuid__uuid=selfUuid).filter(
+        Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
         isDelete=False).order_by("?")[:6]
     if audios:
         for audio in audios:

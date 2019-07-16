@@ -208,7 +208,7 @@ def total_data(request):
     tagNameList = []
     tagsNumList = []
     userNumList = []
-    tags = Tag.objects.filter(code="SEARCHSORT", name='类型')[:6]  #
+    tags = Tag.objects.filter(code="SEARCHSORT", name='类型').order_by('sortNum')[:6]  #
     for tag in tags:
         tagNameList.append(tag.name)
         tagCount = tag.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()

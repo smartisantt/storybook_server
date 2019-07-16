@@ -199,11 +199,13 @@ def total_data(request):
 
     # 模板音频
     aduioStoryCount = AudioStory.objects.filter(
-        isDelete=False, audioStoryType=1, isUpload=1, createTime__range=(t1, t2)).count()
+        isDelete=False, audioStoryType=1, isUpload=1, createTime__range=(t1, t2),
+        checkStatus__in=["check", "exemption"]).count()
 
     # 自由录制
     freedomStoryCount = AudioStory.objects.filter(
-        isDelete=False, audioStoryType=0, isUpload=1, createTime__range=(t1, t2)).count()
+        isDelete=False, audioStoryType=0, isUpload=1, createTime__range=(t1, t2),
+        checkStatus='check').count()
 
     tagNameList = []
     tagsNumList = []

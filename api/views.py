@@ -1485,7 +1485,7 @@ def book_list(request):
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
         return http_return(400, '未获取到用户信息')
-    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).values('userUuid').distinct().count()
+    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by('audioUuid').distinct().count()
     collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
     collAudios = []
     for coll in collectionBehav.all()[:6]:

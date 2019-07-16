@@ -422,10 +422,10 @@ def modify_tags(request):
         with transaction.atomic():
             tag.sortNum = sortNum
             tag.icon = icon
-            tag.name = name
+            tag.name = myName       # 保存的还是老标签，一级标签不能修改
             tag.save()
             return http_return(200, 'OK', {
-                'name': name,
+                'name': myName,
                 'icon': icon,
                 'sortNum': sortNum,
             })

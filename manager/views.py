@@ -176,7 +176,8 @@ def total_data(request):
     # 用户总人数
     totalUsers = User.objects.exclude(status='destroy').count()
     # 音频总数
-    totalAudioStory = AudioStory.objects.filter(isDelete=False, isUpload=1).count()
+    totalAudioStory = AudioStory.objects.filter(isDelete=False, isUpload=1,
+                                                checkStatus__in=["check", "exemption"]).count()
     # 专辑总数
     totalAlbums = Album.objects.filter(isDelete=False).count()
     # 新增用户人数

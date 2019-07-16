@@ -265,8 +265,10 @@ def recording_tag_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-    tag = Tag.objects.filter(code="RECORDTYPE", isUsing=True, isDelete=False).order_by('sortNum')
+    tag = Tag.objects.filter(parent__name="类型", isDelete=False).order_by('sortNum')
     tags = tag.all()
+    if len(tags) >= 6:
+        tags = tags[:6]
     tagList = []
     for tag in tags:
         tagList.append({

@@ -205,11 +205,12 @@ def total_data(request):
     freedomStoryCount = AudioStory.objects.filter(
         isDelete=False, audioStoryType=0, isUpload=1, createTime__range=(t1, t2)).count()
 
-    tagNameList = ['儿歌', '父母学堂', '国学', '英文', '其他']
+    tagNameList = []
     tagsNumList = []
     userNumList = []
-    for tagName in tagNameList:
-        tag = Tag.objects.filter(code="RECORDTYPE", name=tagName).first()
+    tags = Tag.objects.filter(code="SEARCHSORT", parent__name='类型').order_by('sortNum')[:6]  #
+    for tag in tags:
+        tagNameList.append(tag.name)
         tagCount = tag.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)).count()
         tagsNumList.append(tagCount)
         userCount = tag.tagsAudioStory.filter(isDelete=False, createTime__range=(t1, t2)). \
@@ -1937,12 +1938,12 @@ def migrate_user(request):
     gender = data.get('gender', '')
 
 
-    if not all([gender in [0, 1, 2], nickName, city, roles in ['normalUser', 'adminUser']]):
+    if not all([gender in [0, 1, 2], nickName, roles in ['normalUser', 'adminUser']]):
         return http_return(400, '参数错误')
 
-
-    if not 1 < len(str(city)) < 40:
-        return http_return(400, '城市长度错误')
+    if city:
+        if not 1 < len(str(city)) < 40:
+            return http_return(400, '城市长度错误')
 
     if not 1 < len(str(nickName)) < 20:
         return http_return(400, '昵称长度错误')
@@ -2007,14 +2008,15 @@ def add_user(request):
     gender = data.get('gender', '')
     pwd = data.get('pwd', '')
 
-    if not all([gender in [0, 1, 2], nickName, city, roles in ['normalUser','adminUser'], pwd]):
+    if not all([gender in [0, 1, 2], nickName, roles in ['normalUser','adminUser'], pwd]):
         return http_return(400, '参数错误')
 
     if not 5<len(str(pwd))<40:
         return http_return(400, '密码长度错误')
 
-    if not 1<len(str(city))<40:
-        return http_return(400, '城市长度错误')
+    if city:
+        if not 1<len(str(city))<40:
+            return http_return(400, '城市长度错误')
 
     if not 1<len(str(nickName))<20:
         return http_return(400, '昵称长度错误')
@@ -2076,11 +2078,12 @@ def modify_user(request):
     roles = data.get('roles', '')
     gender = data.get('gender', '')
     pwd = data.get('pwd', '') # 没有填写密码则不用修改
-    if not all([gender in [0, 1, 2], uuid, nickName, city, roles in ['normalUser','adminUser']]):
+    if not all([gender in [0, 1, 2], uuid, nickName, roles in ['normalUser','adminUser']]):
         return http_return(400, '参数错误')
 
-    if not 1<len(str(city))<40:
-        return http_return(400, '城市长度错误')
+    if city:
+        if not 1<len(str(city))<40:
+            return http_return(400, '城市长度错误')
 
     if not 1<len(str(nickName))<20:
         return http_return(400, '昵称长度错误')

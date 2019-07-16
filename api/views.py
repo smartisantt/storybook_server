@@ -265,8 +265,10 @@ def recording_tag_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-    tag = Tag.objects.filter(code="RECORDTYPE", isUsing=True, isDelete=False).order_by('sortNum')
+    tag = Tag.objects.filter(parent__name="类型", isDelete=False).order_by('sortNum')
     tags = tag.all()
+    if len(tags) >= 6:
+        tags = tags[:6]
     tagList = []
     for tag in tags:
         tagList.append({
@@ -1485,7 +1487,7 @@ def book_list(request):
     selfUser = User.objects.filter(uuid=selfUuid).first()
     if not selfUser:
         return http_return(400, '未获取到用户信息')
-    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).values('userUuid').distinct().count()
+    playCount = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).values('audioUuid').distinct().count()
     collectionBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=3).order_by("-updateTime")
     collAudios = []
     for coll in collectionBehav.all()[:6]:

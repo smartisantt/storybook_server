@@ -426,6 +426,7 @@ def audio_play(request):
             selfUser.readDays = 1
     else:
         selfUser.readDays = 1
+        selfUser.readDate = today
     try:
         with transaction.atomic():
             selfUser.save()

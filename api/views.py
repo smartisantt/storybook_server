@@ -417,6 +417,7 @@ def audio_play(request):
     # 更新连续阅读天数
     readDate = selfUser.readDate
     today = datetime.date.today()
+    flag = True
     if readDate:
         if today - readDate == datetime.timedelta(days=1):
             selfUser.readDays = today
@@ -424,15 +425,18 @@ def audio_play(request):
         elif today - readDate > datetime.timedelta(days=1):
             selfUser.readDays = today
             selfUser.readDays = 1
+        else:
+            flag = False
     else:
         selfUser.readDays = 1
         selfUser.readDate = today
-    try:
-        with transaction.atomic():
-            selfUser.save()
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '更新阅读天数失败')
+    if flag:
+        try:
+            with transaction.atomic():
+                selfUser.save()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '更新阅读天数失败')
     audios = []
     audios.append(audio)
     playDict = audioList_format(audios, data)[0]

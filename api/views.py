@@ -424,10 +424,10 @@ def audio_play(request):
     flag = True
     if readDate:
         if today - readDate == datetime.timedelta(days=1):
-            selfUser.readDays = today
+            selfUser.readDate = today
             selfUser.readDays += 1
         elif today - readDate > datetime.timedelta(days=1):
-            selfUser.readDays = today
+            selfUser.readDate = today
             selfUser.readDays = 1
         else:
             flag = False

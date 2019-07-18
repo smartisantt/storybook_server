@@ -163,8 +163,8 @@ def total_data(request):
         currentTime =timezone.now()
         t1 = currentTime + timedelta(days=-8)
         t2 = currentTime + timedelta(days=-1)
-        t1 = datetime.datetime(t1.year, t1.month, t1.day)
-        t2 = datetime.datetime(t2.year, t2.month, t2.day, 23, 59, 59, 999999)
+        t1 = datetime(t1.year, t1.month, t1.day)
+        t2 = datetime(t2.year, t2.month, t2.day, 23, 59, 59, 999999)
     else:
         try:
             t1,t2 = timestamp2datetime(startTimestamp, endTimestamp)

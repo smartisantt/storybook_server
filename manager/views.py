@@ -854,7 +854,7 @@ class AudioStoryInfoView(ListAPIView):
         return self.queryset
 
 
-destroy
+
 class UserSearchView(ListAPIView):
     queryset = User.objects.only('uuid', 'nickName').exclude(status="destroy").order_by("nickName")
     serializer_class = UserSearchSerializer

@@ -1159,7 +1159,7 @@ def personal_audiostory(request):
     selfUuid = data['_cache']['uuid']
     if uuid:
         selfUuid = uuid
-    audio = AudioStory.objects.filter(checkStatus="check").filter(
+    audio = AudioStory.objects.exclude(checkStatus="exemption").filter(
         isDelete=False).filter(userUuid__uuid=selfUuid)
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)

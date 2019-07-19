@@ -407,14 +407,19 @@ def audio_play(request):
     # 记录播放历史
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
+    checkPlayHistory = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=4).first()
+    if checkPlayHistory:
+        checkPlayHistory.updateTime = datetime.datetime.now()
+    else:
+        checkPlayHistory = Behavior(
+            uuid=get_uuid(),
+            userUuid=selfUser,
+            audioUuid=audio,
+            type=4,
+        )
     try:
         with transaction.atomic():
-            Behavior.objects.create(
-                uuid=get_uuid(),
-                userUuid=selfUser,
-                audioUuid=audio,
-                type=4,
-            )
+            checkPlayHistory.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存记录失败')
@@ -1183,7 +1188,7 @@ def personal_history_list(request):
     selfUuid = data['_cache']['uuid']
     if uuid:
         selfUuid = uuid
-    behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by("audioUuid").distinct()
+    behav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
     behavs = behav.order_by("-updateTime").all()
     total, behavs = page_index(behavs, page, pageCount)
     palyHistoryList = []
@@ -1505,7 +1510,7 @@ def book_list(request):
         collAudios.append(coll.audioUuid)
     collectionList = audioList_format(collAudios, data)
 
-    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4).order_by("audioUuid").distinct()
+    historyBehav = Behavior.objects.filter(userUuid__uuid=selfUuid, type=4)
     historyAudios = []
     for his in historyBehav.order_by("-updateTime").all()[:6]:
         historyAudios.append(his.audioUuid)

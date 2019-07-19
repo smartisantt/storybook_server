@@ -892,7 +892,7 @@ def add_audio_story(request):
     if not story:
         return http_return(400, '模板错误')
 
-    user = User.objects.filter(uuid=userUuid).first()
+    user = User.objects.filter(uuid=userUuid).exclude(status="destroy").first()
     if not user:
         return http_return(400, '找不到用户')
 
@@ -903,7 +903,7 @@ def add_audio_story(request):
             return http_return(400, '无效标签')
         tags.append(tag)
     # 相同用户，相同模板，相同音频，则是重复上传
-    audioStory = AudioStory.objects.filter(userUuid=user, storyUuid=story, voiceUrl=url).first()
+    audioStory = AudioStory.objects.filter(userUuid=user, storyUuid=story, voiceUrl=url, isDelete=False).first()
     if audioStory:
         return http_return(400, '重复添加')
     try:

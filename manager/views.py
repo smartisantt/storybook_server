@@ -159,19 +159,26 @@ def total_data(request):
     startTimestamp = data.get('startTime', '')
     endTimestamp = data.get('endTime', '')
 
-    try:
-        t1,t2 = timestamp2datetime(startTimestamp, endTimestamp)
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(e.status_code, e.detail)
+    if not all([startTimestamp, endTimestamp]): # 最近7天数据，不包含今天的数据
+        currentTime =timezone.now()
+        t1 = currentTime + timedelta(days=-8)
+        t2 = currentTime + timedelta(days=-1)
+        t1 = datetime(t1.year, t1.month, t1.day)
+        t2 = datetime(t2.year, t2.month, t2.day, 23, 59, 59, 999999)
+    else:
+        try:
+            t1,t2 = timestamp2datetime(startTimestamp, endTimestamp)
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(e.status_code, e.detail)
 
-    # 结束小于2019-05-30 00:00:00的时间不合法
-    if t2 < datetime(2019, 5, 30):
-        return http_return(200, '此时间没有数据', {'status':1})
+        # 结束小于2019-05-30 00:00:00的时间不合法
+        if t2 < datetime(2019, 5, 30):
+            return http_return(200, '此时间没有数据', {'status':1})
 
 
-    if (t2-t1).days > 31:
-        return http_return(400, '超出时间范围')
+        if (t2-t1).days > 31:
+            return http_return(400, '超出时间范围')
 
     # 用户总人数
     totalUsers = User.objects.exclude(status='destroy').count()
@@ -854,9 +861,9 @@ class AudioStoryInfoView(ListAPIView):
         return self.queryset
 
 
-# 用户名模糊搜索
+
 class UserSearchView(ListAPIView):
-    queryset = User.objects.only('uuid', 'nickName').order_by("nickName")
+    queryset = User.objects.only('uuid', 'nickName').exclude(status="destroy").order_by("nickName")
     serializer_class = UserSearchSerializer
     filter_class = UserSearchFilter
     pagination_class = None
@@ -885,7 +892,7 @@ def add_audio_story(request):
     if not story:
         return http_return(400, '模板错误')
 
-    user = User.objects.filter(uuid=userUuid).first()
+    user = User.objects.filter(uuid=userUuid).exclude(status="destroy").first()
     if not user:
         return http_return(400, '找不到用户')
 
@@ -896,7 +903,7 @@ def add_audio_story(request):
             return http_return(400, '无效标签')
         tags.append(tag)
     # 相同用户，相同模板，相同音频，则是重复上传
-    audioStory = AudioStory.objects.filter(userUuid=user, storyUuid=story, voiceUrl=url).first()
+    audioStory = AudioStory.objects.filter(userUuid=user, storyUuid=story, voiceUrl=url, isDelete=False).first()
     if audioStory:
         return http_return(400, '重复添加')
     try:

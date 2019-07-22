@@ -218,23 +218,87 @@ elif version == 'ali_test':
         },
     }
 
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django.db.backends': {
+#             'handlers': ['console'],
+#             'propagate': True,
+#             'level': 'DEBUG',
+#         },
+#     }
+# }
+
+
 LOGGING = {
     'version': 1,
+    # 是否禁用已经存在的日志器
     'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
+    # 日志格式化器
+    'formatters': {
+        'simple': {
+            'format': '%(asctime)s %(module)s.%(funcName)s: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        # 详细
+        'verbose': {
+            'format': '%(asctime)s %(levelname)s [%(process)d-%(threadName)s] '
+                      '%(module)s.%(funcName)s line %(lineno)d: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        }
+    },
+    'filters': {
+        # 只有在Django配置文件中DEBUG值为True时才起作用
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
         },
     },
+    'handlers': {
+        # 输出到控制台
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'formatter': 'simple',
+        },
+        # 输出到文件(每周切割一次)
+        'file1': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'access.log',
+            'when': 'W0',
+            'backupCount': 12,              #备份份数
+            'formatter': 'simple',          #使用哪种formatters日志格式
+            'level': 'DEBUG',
+        },
+        # 输出到文件(每天切割一次)
+        'file2': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'error.log',
+            'when': 'D',
+            'backupCount': 31,
+            'formatter': 'verbose',
+            'level': 'WARNING',
+        },
+    },
+    # CRITICAL > ERROR > WARNING > INFO > DEBUG > NOTEST
     'loggers': {
-        'django.db.backends': {
-            'handlers': ['console'],
+        'django': {
+            # 需要使用的日志处理器
+            'handlers': ['console', 'file1', 'file2'],
+            # 是否向上传播日志信息
             'propagate': True,
             'level': 'DEBUG',
         },
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators

@@ -11,9 +11,22 @@ from common.api import Api
 from utils.errors import ParamsException
 
 
+logger = logging.getLogger('django')
+
+
 class CustomAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
+        # 日志消息
+        remote_info = ''
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            remote_info = 'HTTP_X_FORWARDED_FOR:' + x_forwarded_for.split(',')[0]
+        remote_addr = request.META.get('REMOTE_ADDR')
+        if remote_addr:
+            remote_info += ' REMOTE_ADDR:' + remote_addr
+        logger.info( remote_info + ' URL:' + request.path)
+
         token = request.META.get('HTTP_TOKEN')
         if not token:
             raise AuthenticationFailed('提供有效的身份认证标识')
@@ -52,10 +65,10 @@ class CustomAuthentication(BaseAuthentication):
             if not user_info:
                 raise AuthenticationFailed(detail='提供有效的token')
 
-
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
             exclude(status="destroy").first()
             if not user:
+                logger.warning('[Failed] ' + user.tel + ' failed to login! ' + remote_info)
                 raise AuthenticationFailed('没有管理员权限')
 
             loginIp = get_ip_address(request)

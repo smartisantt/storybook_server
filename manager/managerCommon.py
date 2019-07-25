@@ -394,6 +394,8 @@ def match_tel(tel):
 
 def get_ip_address(request):
     """获取请求的IP地址"""
+    # HTTP_X_FORWARDED_FOR也就是HTTP的请求端真实的IP，
+    # 只有在通过了HTTP 代理或者负载均衡服务器时才会添加该项。
     ip = request.META.get('HTTP_X_FORWARDED_FOR', None)
     return ip or request.META['REMOTE_ADDR']
 

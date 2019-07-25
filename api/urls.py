@@ -62,6 +62,14 @@ urlpatterns = [
     path('book/list', views.book_list, name='book_list'),  # 书架首页
     path('book/collection', views.collection_more, name='collection_more'),  # 收藏更多
 
-    path('logout/', views.logout, name='logout'),  # 退出登录
+    path('logout', views.logout, name='logout'),  # 退出登录
+
+    path('listen/create', views.listen_create, name='listen_create'),  # 新建听单
+    path('listen/list', views.listen_list, name='listen_list'),  # 听单列表
+    path('listen/change', views.listen_change, name='listen_change'),  # 编辑听单
+    path('listen/del', views.listen_del, name='listen_del'),  # 删除听单
+    path('listen/detail', views.listen_detail, name='listen_detail'),  # 听单详情
+    path('listen/audiostory/add', views.listen_audio_add, name='listen_audio_add'),  # 添加作品到听单
+    path('listen/audiostory/del', views.listen_audio_del, name='listen_audio_del'),  # 删除听单中作品
 
 ]

@@ -367,3 +367,32 @@ class ActivityConfig(BaseModle, models.Model):
 
     class Meta:
         db_table = 'tb_activity_config'
+
+
+class Listen(BaseModle, models.Model):
+    """
+    用户听单
+    """
+    userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userListenUuid', to_field='uuid',
+                                 null=True)
+    name = models.CharField(max_length=128, null=True)
+    icon = models.CharField(max_length=255, null=True)
+    intro = models.CharField(max_length=500, null=True)
+    status = models.IntegerField(null=True, default=0) #状态 0：正常 1：删除
+
+    class Meta:
+        db_table = 'tb_listen'
+
+
+class ListenAudio(BaseModle, models.Model):
+    """
+    听单列表
+    """
+    listenUuid = models.ForeignKey('Listen', on_delete=models.CASCADE, related_name='listListenUuid', to_field='uuid',
+                                   null=True)
+    audioUuid = models.ForeignKey('AudioStory', on_delete=models.CASCADE, related_name='listAudioUuid', to_field='uuid',
+                                  null=True)
+    status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：删除
+
+    class Meta:
+        db_table = 'tb_listen_audio'

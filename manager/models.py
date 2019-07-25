@@ -283,30 +283,29 @@ class Album(BaseModle, models.Model):
     """
     专辑
     """
-    title = models.CharField(max_length=64, verbose_name='专辑名称', null=False)
-    intro = models.CharField(max_length=256, verbose_name='专辑介绍', null=False)
+    title = models.CharField(max_length=64, verbose_name='专辑名称', null=False, default='专辑名称')
+    intro = models.CharField(max_length=256, verbose_name='专辑介绍', null=False, default='专辑介绍')
     listIcon = models.CharField(max_length=255, verbose_name='列表图', null=True)  # 专辑封面
     bgIcon = models.CharField(max_length=255, verbose_name='背景图', null=True)  # 专辑封面
-    creator = models.ForeignKey('User', on_delete=models.CASCADE, to_field='uuid', verbose_name='音频创建者', null=False)
-    author = models.ForeignKey('User', on_delete=models.CASCADE, to_field='uuid', verbose_name='作者', null=False)
+    creator = models.ForeignKey('User', on_delete=models.CASCADE, related_name='creatorUuid', to_field='uuid', verbose_name='音频创建者', null=True)
+    author = models.ForeignKey('User', on_delete=models.CASCADE, related_name='authorUuid', to_field='uuid', verbose_name='作者', null=True)
     isDelete = models.BooleanField(default=False)  # 1 删除   0 没有删除
     isManagerCreate = models.BooleanField(default=False, verbose_name='是否是官方上传')
     tags = models.ManyToManyField(Tag)  # 标签
-    audioStory = models.ManyToManyField(to='AudioStory', through="AlbumAudio")
+    audioStory = models.ManyToManyField(to='AudioStory', through='AlbumAudioStory')
 
     class Meta:
         db_table = 'tb_album'
 
 
-class AlbumAudio(BaseModle, models.Model):
+class AlbumAudioStory(BaseModle, models.Model):
     """专辑和音频的中间实体"""
     album = models.ForeignKey(to=Album, on_delete=models.CASCADE)
-    audioStory = models.ForeignKey(to=Album, on_delete=models.CASCADE)
+    audioStory = models.ForeignKey(to='AudioStory', on_delete=models.CASCADE)
     isUsing = models.BooleanField(default=False, verbose_name="是否停用")
 
     class Meta:
-        db_table = 'tb_album_audio'
-        unique_together = (('album', 'audioStory'), )
+        db_table = 'tb_album_audiostory'
 
 
 
@@ -330,8 +329,8 @@ class AudioStory(BaseModle, models.Model):
     tags = models.ManyToManyField('Tag', related_name="tagsAudioStory")  # 作品标签
     storyUuid = models.ForeignKey('Story', on_delete=models.CASCADE, related_name='storyAudioStory',
                                   to_field='uuid', null=True)  # 作品关联的模板（如果不是自由录制的作品）
-    albumUuid = models.ForeignKey('Album', on_delete=models.CASCADE, related_name='albumAudioUuid', to_field='uuid',
-                                  null=True)  # 专辑
+    # albumUuid = models.ForeignKey('Album', on_delete=models.CASCADE, related_name='albumAudioUuid', to_field='uuid',
+    #                               null=True)  # 专辑
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='useAudioUuid', to_field='uuid',
                                  null=True)  # 用户
     checkStatus = models.CharField(max_length=64,

@@ -290,7 +290,7 @@ class Album(BaseModle, models.Model):
     creator = models.ForeignKey('User', on_delete=models.CASCADE, to_field='uuid', verbose_name='音频创建者', null=False)
     author = models.ForeignKey('User', on_delete=models.CASCADE, to_field='uuid', verbose_name='作者', null=False)
     isDelete = models.BooleanField(default=False)  # 1 删除   0 没有删除
-    isManangerCreate = models.BooleanField(default=False, verbose_name='是否是官方上传')
+    isManagerCreate = models.BooleanField(default=False, verbose_name='是否是官方上传')
     tags = models.ManyToManyField(Tag)  # 标签
     audioStory = models.ManyToManyField(to='AudioStory', through="AlbumAudio")
 

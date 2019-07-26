@@ -1719,7 +1719,7 @@ def listen_audio_add(request):
     audioStoryUuid = data.get('audioStoryUuid', '')
     if not listenUuid:
         return http_return(400, '请选择要添加的听单')
-    listen = Listen.objects.filter(uuid=listenUuid).first()
+    listen = Listen.objects.filter(uuid=listenUuid, status=0).first()
     if not listen:
         return http_return(400, '听单信息不存在')
     if not audioStoryUuid:
@@ -1769,8 +1769,3 @@ def listen_audio_del(request):
             logging.error(str(e))
             return http_return(400, '删除失败')
     return http_return(400, '删除成功')
-
-
-
-
-

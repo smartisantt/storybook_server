@@ -295,7 +295,7 @@ class Album(BaseModle, models.Model):
     isDelete = models.BooleanField(default=False)               # 1 删除   0 没有删除
     isCheck = models.IntegerField(default=False)                # 2 审核不通过 1 已审核 0 待审核
     remark  = models.CharField(max_length=1024, null=True)      # 不通过的理由
-    isManagerCreate = models.BooleanField(default=False, verbose_name='是否是官方上传')
+    isManagerCreate = models.IntegerField(default=False, verbose_name='是否是官方上传')
     tags = models.ManyToManyField(Tag)  # 标签
     audioStory = models.ManyToManyField(to='AudioStory', through='AlbumAudioStory')
 

@@ -178,16 +178,16 @@ class FeedbackFilter(django_filters.FilterSet):
 
 class AlbumFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(field_name='title', lookup_expr='icontains')
-    creator = django_filters.CharFilter(method='filter_by_creator')
+    author = django_filters.CharFilter(method='filter_by_creator')
 
     @staticmethod
     def filter_by_creator(queryset, name, value):
-        # user = User.objects.filter(nickName__icontains=value)
-        return queryset.filter(creator__nickName__icontains=value)
+        # user = User.objects.filter(nickName__icontains=value).exclude(status="destroy").all()
+        return queryset.filter(author__nickName__icontains=value)
 
     class Meta:
         model = Album
-        fields = ('title', 'creator', 'isManagerCreate')
+        fields = ('title', 'author', 'isManagerCreate')
 
 
 

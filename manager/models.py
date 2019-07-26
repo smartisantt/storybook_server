@@ -240,6 +240,9 @@ class User(BaseModle, models.Model):
     class Meta:
         db_table = 'tb_user'
 
+    def __str__(self):
+        return self.nickName
+
 
 class Version(BaseModle, models.Model):
     """
@@ -289,7 +292,9 @@ class Album(BaseModle, models.Model):
     bgIcon = models.CharField(max_length=255, verbose_name='背景图', null=True)  # 专辑封面
     creator = models.ForeignKey('User', on_delete=models.CASCADE, related_name='creatorUuid', to_field='uuid', verbose_name='音频创建者', null=True)
     author = models.ForeignKey('User', on_delete=models.CASCADE, related_name='authorUuid', to_field='uuid', verbose_name='作者', null=True)
-    isDelete = models.BooleanField(default=False)  # 1 删除   0 没有删除
+    isDelete = models.BooleanField(default=False)               # 1 删除   0 没有删除
+    isCheck = models.IntegerField(default=False)                # 2 审核不通过 1 已审核 0 待审核
+    remark  = models.CharField(max_length=1024, null=True)      # 不通过的理由
     isManagerCreate = models.BooleanField(default=False, verbose_name='是否是官方上传')
     tags = models.ManyToManyField(Tag)  # 标签
     audioStory = models.ManyToManyField(to='AudioStory', through='AlbumAudioStory')
@@ -302,7 +307,7 @@ class AlbumAudioStory(BaseModle, models.Model):
     """专辑和音频的中间实体"""
     album = models.ForeignKey(to=Album, on_delete=models.CASCADE)
     audioStory = models.ForeignKey(to='AudioStory', on_delete=models.CASCADE)
-    isUsing = models.BooleanField(default=False, verbose_name="是否停用")
+    isUsing = models.BooleanField(default=True, verbose_name="是否停用")
 
     class Meta:
         db_table = 'tb_album_audiostory'

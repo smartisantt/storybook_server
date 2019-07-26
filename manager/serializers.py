@@ -2,7 +2,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
-    Feedback
+    Feedback, Album, AlbumAudioStory
 from utils.errors import ParamsException
 
 
@@ -156,7 +156,7 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
+        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm')
 
 
 
@@ -184,7 +184,7 @@ class AudioStoryDownloadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('name', 'bgIcon', 'tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm', 'isDelete')
+        exclude = ('name', 'bgIcon', 'tags', 'storyUuid', 'userUuid', 'bgm', 'isDelete')
 
 
 
@@ -230,7 +230,7 @@ class QualifiedAudioStoryInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
+        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm')
 
 
 class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
@@ -259,7 +259,7 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
+        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm')
 
 
 class BgmSerializer(serializers.ModelSerializer):
@@ -453,7 +453,22 @@ class FeedbackSerializer(serializers.ModelSerializer):
         return True
 
 
+class AlbumSerializer(serializers.ModelSerializer):
+    # authorInfo = serializers.SerializerMethodField()
+    #
+    # @staticmethod
+    # def get_authorInfo(album):
+    #     return UserSearchSerializer(album.author).data
+    author = serializers.StringRelatedField()
+    totalCount = serializers.SerializerMethodField()
 
+    @staticmethod
+    def get_totalCount(album):
+        return AlbumAudioStory.objects.filter(isUsing=True, album=album).count()
+
+    class Meta:
+        model = Album
+        fields = ("title", "id", "createTime", "author", "isManagerCreate", "totalCount")
 
 
 

@@ -2,7 +2,8 @@ from datetime import datetime
 
 import django_filters
 
-from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity, CycleBanner, Ad, Feedback
+from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity, CycleBanner, Ad, Feedback, \
+    Album
 from utils.errors import ParamsException
 
 
@@ -174,6 +175,19 @@ class FeedbackFilter(django_filters.FilterSet):
         model = Feedback
         fields = ("type", "status")# 反馈问题类型 1产品建议 2功能异常 3其他问题
 
+
+class AlbumFilter(django_filters.FilterSet):
+    title = django_filters.CharFilter(field_name='title', lookup_expr='icontains')
+    creator = django_filters.CharFilter(method='filter_by_creator')
+
+    @staticmethod
+    def filter_by_creator(queryset, name, value):
+        # user = User.objects.filter(nickName__icontains=value)
+        return queryset.filter(creator__nickName__icontains=value)
+
+    class Meta:
+        model = Album
+        fields = ('title', 'creator', 'isManagerCreate')
 
 
 

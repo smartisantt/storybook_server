@@ -7,7 +7,8 @@ from rest_framework.routers import SimpleRouter
 from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
-    ActivityView, CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView
+    ActivityView, CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView, \
+    AlbumView
 
 app_name = 'manager'
 
@@ -107,10 +108,15 @@ urlpatterns = [
     path('ad/modifyad/', views.modify_ad, name='modify_ad'),
     path('ad/delad/', views.del_ad, name='del_ad'),
 
-
-
     path('feedback/feedbacklist/', FeedbackView.as_view()),
     path('feedback/reply/', views.reply, name='reply'),
+
+    path('album/', AlbumView.as_view()),
+    path('album/addalbum/', views.add_album, name='add_album'),
+    path('album/modifyalbum/', views.modify_album, name='modify_album'),
+    path('album/delalbum/', views.del_album, name='del_album'),
+    path('album/addaudio2album/', views.add_audio2album, name='add_audio2album'),
+    path('album/disableaudiostory/', views.disable_audioStoty_in_album, name='disable_audioStoty_in_album'),
 ]
 
 # router = SimpleRouter()

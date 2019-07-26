@@ -13,7 +13,7 @@ from api.apiCommon import get_default_name
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, ActivityFilter, CycleBannerFilter, \
-    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter
+    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -21,7 +21,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
-    TagsSerialzer, QualifiedAudioStoryInfoSerializer
+    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime, timedelta
@@ -2743,3 +2743,224 @@ def reply(request):
         logging.error(str(e))
         return http_return(400, '回复失败')
 
+
+class AlbumView(ListAPIView):
+    queryset = Album.objects.filter(isDelete=False, isCheck=1).prefetch_related('audioStory')
+    serializer_class = AlbumSerializer
+    filter_class = AlbumFilter
+    pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+        return self.queryset
+
+
+@api_view(['POST'])
+# @authentication_classes((CustomAuthentication, ))
+def add_album(request):
+    # 创建专辑
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    title = data.get('title', '')
+    intro = data.get('intro', '')
+    listIcon = data.get('listicon', '')
+    isManagerCreate = data.get('ismanagercreate', '')
+    bgIcon = data.get('bgicon', '')
+    authorUuid = data.get('authoruuid', '')
+    tagsUuidList = data.get('tagsuuidlist', '')
+    if not all([title, intro, listIcon, authorUuid, isManagerCreate in [0, 1]]):
+        return http_return(400, '参数错误')
+
+    author = User.objects.exclude(status="destroy").filter(uuid=authorUuid).first()
+    if not author:
+        return http_return(400, '作者不存在')
+
+
+    if Album.objects.filter(title=title, isDelete=False).exists():
+        return http_return(400, '专辑名重复')
+
+    tags = []
+    for tagUuid in tagsUuidList:
+        tag = Tag.objects.filter(uuid=tagUuid).first()
+        if not tag:
+            return http_return(400, '无效标签')
+        tags.append(tag)
+
+    try:
+        uuid = get_uuid()
+        with transaction.atomic():
+            Album.objects.create(
+                uuid=uuid,
+                title=title,
+                intro=intro,
+                isManagerCreate=isManagerCreate,
+                listIcon=listIcon,
+                bgIcon=bgIcon,
+                author=author,
+                creator=''
+            ).tags.add(*tags)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+    return http_return(200, 'OK')
+
+
+@api_view(['POST'])
+# @authentication_classes((CustomAuthentication, ))
+def modify_album(request):
+    # 修改专辑
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    albumUuid = data.get('albumuuid', '')
+    title = data.get('title', '')
+    intro = data.get('intro', '')
+    listIcon = data.get('listicon', '')
+    bgIcon = data.get('bgicon', '')
+    tagsUuidList = data.get('tagsuuidlist', '')
+    if not all([albumUuid, title, intro, listIcon]):
+        return http_return(400, '参数错误')
+
+    if Album.objects.filter(title=title, isDelete=False).exclude(uuid=albumUuid).exists():
+        return http_return(400, '专辑名重复')
+
+    album = Album.objects.filter(uuid=albumUuid).first()
+    if not album:
+        return http_return(400, '没有专辑对象')
+
+    tags = []
+    for tagUuid in tagsUuidList:
+        tag = Tag.objects.filter(uuid=tagUuid).first()
+        if not tag:
+            return http_return(400, '无效标签')
+        tags.append(tag)
+
+    try:
+        with transaction.atomic():
+            album.title = title
+            album.intro = intro
+            album.listIcon = listIcon
+            album.bgIcon = bgIcon
+            album.tags.clear()
+            album.tags.add(*tags)
+            album.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加失败')
+    return http_return(200, 'OK')
+
+
+@api_view(['POST'])
+# @authentication_classes((CustomAuthentication, ))
+def del_album(request):
+    # 删除专辑
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    albumUuid = data.get('albumuuid', '')
+
+    album = Album.objects.filter(isDelete=False, uuid=albumUuid).first()
+    if not album:
+        return http_return(400, '没有专辑对象')
+
+    try:
+        with transaction.atomic():
+            album.isDelete = True
+            album.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+    return http_return(200, 'OK')
+
+
+@api_view(['POST'])
+# @authentication_classes((CustomAuthentication, ))
+def add_audio2album(request):
+    # 专辑添加音频
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    albumUuid = data.get('albumuuid', '')
+    audioStoryUuidList = data.get('audiostoryuuidlist', '')
+
+    if not all([albumUuid, audioStoryUuidList]):
+        return http_return(400, '参数有误')
+
+    album = Album.objects.filter(isDelete=False, uuid=albumUuid).first()
+    if not album:
+        return http_return(400, '没有专辑对象')
+
+    audioStoryList = []
+    for audioStoryUuid in audioStoryUuidList:
+        audioStory = AudioStory.objects.filter(isDelete=False, uuid=audioStoryUuid, checkStatus__in=["check", "exemption"]).first()
+        if not audioStory:
+            return http_return(400, '没有音频对象')
+
+        if album.author != audioStory.userUuid:
+            return http_return(400, "专辑里音频作者不统一")
+
+        if AlbumAudioStory.objects.filter(album=album, audioStory=audioStory).exists():
+            return http_return(400, "专辑里已添加此音乐", {"duplicateUuid": audioStoryUuid})
+
+        audioStoryList.append(audioStory)
+
+    try:
+        with transaction.atomic():
+            for audioStory in audioStoryList:
+                uuid = get_uuid()
+                AlbumAudioStory.objects.create(
+                    uuid=uuid,
+                    album=album,
+                    audioStory=audioStory)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '专辑添加音乐失败')
+    return http_return(200, 'OK')
+
+
+@api_view(['POST'])
+# @authentication_classes((CustomAuthentication, ))
+def disable_audioStoty_in_album(request):
+    # 停用恢复专辑里的音频
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    albumUuid = data.get('albumuuid', '')
+    audioStoryUuid = data.get('audiostoryuuid', '')
+    isUsing = data.get('isusing', '')
+
+    if not all([albumUuid, audioStoryUuid, isUsing in [0, 1]]):
+        return http_return(400, '参数有误')
+    album = Album.objects.filter(uuid=albumUuid).first()
+    if not album:
+        return http_return(400, '没有专辑对象')
+
+    audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
+    if not audioStory:
+        return http_return(400, '没有音频对象')
+
+    audioStotyInAlbum = AlbumAudioStory.objects.filter(album=album, audioStory=audioStory).first()
+    
+    try:
+        with transaction.atomic():
+            audioStotyInAlbum.isUsing = isUsing
+            audioStotyInAlbum.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '操作失败')
+    return http_return(200, 'OK', {"isUsing": isUsing})

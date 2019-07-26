@@ -111,7 +111,7 @@ class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('tags', 'storyUuid', 'albumUuid', 'userUuid', 'bgm')
+        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm')
 
 
 

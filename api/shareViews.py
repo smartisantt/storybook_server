@@ -56,6 +56,8 @@ def h5_listen_detail(request):
     if not uuid:
         return http_return(400, '请选择需要修改的听单')
     listen = Listen.objects.filter(uuid=uuid).first()
+    if not listen:
+        return http_return(400, '听单信息不存在')
     user = listen.userUuid
     users = []
     users.append(user)

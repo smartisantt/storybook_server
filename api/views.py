@@ -1544,3 +1544,228 @@ def collection_more(request):
     total, audios = page_index(collAudios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
     return http_return(200, '成功', {"total": total, "list": audioStoryList})
+
+
+@check_identify
+def listen_create(request):
+    """
+    新建听单
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    name = data.get('name', '')
+    if not name:
+        return http_return(400, '请输入听单名称')
+    selfUuid = data['_cache']['uuid']
+    checkName = Listen.objects.filter(userUuid__uuid=selfUuid, name=name).first()
+    if checkName:
+        return http_return(400, '听单名称已存在')
+    user = User.objects.filter(uuid=selfUuid).first()
+    icon = "http123.jpg"  # 默认头像地址
+    if data.get('icon', ''):
+        icon = data.get('icon', '')
+    listen = Listen(
+        uuid=get_uuid(),
+        name=name,
+        icon=icon,
+        userUuid=user
+    )
+    try:
+        with transaction.atomic():
+            listen.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '新建失败')
+    return http_return(200, '新建成功')
+
+
+@check_identify
+def listen_list(request):
+    """
+    听单列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    selfUuid = data['_cache']['uuid']
+    listens = Listen.objects.filter(userUuid__uuid=selfUuid, status=0).order_by("-updateTime").all()
+    listenList = []
+    for lis in listens:
+        listenList.append({
+            "uuid": lis.uuid,
+            "name": lis.name,
+            "icon": lis.icon,
+            "intro": lis.intro if lis.intro else '',
+        })
+    return http_return(200, '成功', listenList)
+
+
+@check_identify
+def listen_change(request):
+    """
+    修改听单
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '请选择需要修改的听单')
+    listen = Listen.objects.filter(uuid=uuid)
+    if not listen:
+        return http_return(400, '听单信息不存在')
+    name = data.get('name', '')
+    icon = data.get('icon', '')
+    intro = data.get('intro', '')
+    update_data = {}
+    if name:
+        checkName = Listen.objects.filter(userUuid__uuid=data['_cache']['uuid'], name=name).first()
+        if checkName and checkName != listen.first():
+            return http_return(400, '听单名称已存在')
+        update_data['name'] = name
+    if icon:
+        update_data['icon'] = icon
+    if intro:
+        update_data['intro'] = intro
+    try:
+        with transaction.atomic():
+            update_data['updateTime'] = datetime.datetime.now()
+            listen.update(**update_data)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
+    return http_return(200, '修改成功')
+
+
+@check_identify
+def listen_del(request):
+    """
+    删除听单
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '请选择需要修改的听单')
+    listen = Listen.objects.filter(uuid=uuid).first()
+    if not listen:
+        return http_return(400, '听单信息不存在')
+    listen.status = 1
+    try:
+        with transaction.atomic():
+            listen.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+    return http_return(200, '删除成功')
+
+
+@check_identify
+def listen_detail(request):
+    """
+    听单详情页
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '请选择需要修改的听单')
+    listen = Listen.objects.filter(uuid=uuid).first()
+    if not listen:
+        return http_return(400, '听单信息不存在')
+    selfUuid = data["_cache"]['uuid']
+    user = User.objects.filter(uuid=selfUuid).first()
+    users = []
+    users.append(user)
+    userInfo = userList_format(users)[0]
+    listenInfo = {
+        "uuid": listen.uuid,
+        "name": listen.name,
+        "icon": listen.icon,
+        "intro": listen.intro if listen.intro else '',
+    }
+    listenAudio = ListenAudio.objects.filter(listenUuid=uuid, status=0).order_by("-updateTime").all()
+    audios = []
+    for la in listenAudio:
+        audios.append(la.audioUuid)
+    audioList = audioList_format(audios, data)
+    return http_return(200, '成功', {"listenInfo": listenInfo, "userInfo": userInfo, "list": audioList, "type": 1})
+
+
+@check_identify
+def listen_audio_add(request):
+    """
+    添加音频到听单
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    listenUuid = data.get('listenUuid', '')
+    audioStoryUuid = data.get('audioStoryUuid', '')
+    if not listenUuid:
+        return http_return(400, '请选择要添加的听单')
+    listen = Listen.objects.filter(uuid=listenUuid).first()
+    if not listen:
+        return http_return(400, '听单信息不存在')
+    if not audioStoryUuid:
+        return http_return(400, '请选择要上传的音频')
+    audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
+    if not audioStory:
+        return http_return(400, '作品信息不存在')
+    checkLa = ListenAudio.objects.filter(listenUuid=listenUuid, audioUuid=audioStoryUuid, status=0).first()
+    if not checkLa:
+        listenAudio = ListenAudio(
+            uuid=get_uuid(),
+            listenUuid=listen,
+            audioUuid=audioStory,
+        )
+        try:
+            with transaction.atomic():
+                listenAudio.save()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '添加失败')
+    return http_return(200, '添加成功')
+
+
+@check_identify
+def listen_audio_del(request):
+    """
+    删除听单中音频
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    listenUuid = data.get('listenUuid', '')
+    audioStoryUuid = data.get('audioStoryUuid', '')
+    if not listenUuid:
+        return http_return(400, '请选择要删除作品所属听单')
+    if not audioStoryUuid:
+        return http_return(400, '请选择听单中要删除作品')
+    checkLa = ListenAudio.objects.filter(listenUuid=listenUuid, audioUuid=audioStoryUuid, status=0).first()
+    if checkLa:
+        checkLa.status = 1
+        try:
+            with transaction.atomic():
+                checkLa.save()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '删除失败')
+    return http_return(400, '删除成功')

@@ -21,7 +21,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
-    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer
+    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, AlbumDetailSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime, timedelta
@@ -2770,7 +2770,7 @@ class AlbumView(ListAPIView):
 
 
 @api_view(['POST'])
-# @authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication, ))
 def add_album(request):
     # 创建专辑
     data = request_body(request, 'POST')
@@ -2789,7 +2789,6 @@ def add_album(request):
     author = User.objects.exclude(status="destroy").filter(uuid=authorUuid).first()
     if not author:
         return http_return(400, '作者不存在')
-
 
     if Album.objects.filter(title=title, isDelete=False).exists():
         return http_return(400, '专辑名重复')
@@ -2812,7 +2811,7 @@ def add_album(request):
                 listIcon=listIcon,
                 bgIcon=bgIcon,
                 author=author,
-                creator=''
+                creator=request.user
             ).tags.add(*tags)
     except Exception as e:
         logging.error(str(e))
@@ -2821,7 +2820,7 @@ def add_album(request):
 
 
 @api_view(['POST'])
-# @authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication, ))
 def modify_album(request):
     # 修改专辑
     data = request_body(request, 'POST')
@@ -2866,7 +2865,7 @@ def modify_album(request):
 
 
 @api_view(['POST'])
-# @authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication, ))
 def del_album(request):
     # 删除专辑
     data = request_body(request, 'POST')
@@ -2889,7 +2888,7 @@ def del_album(request):
 
 
 @api_view(['POST'])
-# @authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication, ))
 def add_audio2album(request):
     # 专辑添加音频
     data = request_body(request, 'POST')
@@ -2901,7 +2900,7 @@ def add_audio2album(request):
     if not all([albumUuid, audioStoryUuidList]):
         return http_return(400, '参数有误')
 
-    album = Album.objects.filter(isDelete=False, uuid=albumUuid).first()
+    album = Album.objects.filter(isDelete=False, uuid=albumUuid, isCheck=1).first()
     if not album:
         return http_return(400, '没有专辑对象')
 
@@ -2934,7 +2933,7 @@ def add_audio2album(request):
 
 
 @api_view(['POST'])
-# @authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication, ))
 def disable_audioStoty_in_album(request):
     # 停用恢复专辑里的音频
     data = request_body(request, 'POST')
@@ -2964,3 +2963,21 @@ def disable_audioStoty_in_album(request):
         logging.error(str(e))
         return http_return(400, '操作失败')
     return http_return(200, 'OK', {"isUsing": isUsing})
+
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def album_detail(request):
+    # 专辑详情
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    albumUuid = data.get('albumuuid', '')
+
+    album = Album.objects.filter(uuid=albumUuid).first()
+    if not album:
+        return http_return(400, '没有专辑对象')
+
+    return Response(AlbumDetailSerializer(album).data)
+
+

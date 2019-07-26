@@ -472,6 +472,37 @@ class AlbumSerializer(serializers.ModelSerializer):
 
 
 
+class AlbumDetailSerializer(serializers.ModelSerializer):
+    # authorInfo = serializers.SerializerMethodField()
+    #
+    # @staticmethod
+    # def get_authorInfo(album):
+    #     return UserSearchSerializer(album.author).data
+    author = serializers.StringRelatedField()
+    totalCount = serializers.SerializerMethodField()
+    audioInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_totalCount(album):
+        return AlbumAudioStory.objects.filter(isUsing=True, album=album).count()
+
+    @staticmethod
+    def get_audioInfo(album):
+        return AlbumAudioStoryDetailSerializer(album.audioStory, many=True).data
+
+    class Meta:
+        model = Album
+        fields = ("title", "id", "createTime", "author", "isManagerCreate",
+                  "totalCount", "listIcon", "audioInfo")
 
 
+class AlbumAudioStoryDetailSerializer(serializers.ModelSerializer):
+    audioStoryInfo = serializers.SerializerMethodField()
 
+    @staticmethod
+    def get_audioStoryInfo(object):
+        return AudioStoryInfoSerializer(object).data
+
+    class Meta:
+        model = AlbumAudioStory
+        fields = ("isUsing", "audioStoryInfo", "createTime")

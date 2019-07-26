@@ -2786,6 +2786,8 @@ def add_album(request):
     if not all([title, intro, listIcon, authorUuid, isManagerCreate in [0, 1]]):
         return http_return(400, '参数错误')
 
+    isCheck = 1 if isManagerCreate else 0
+
     author = User.objects.exclude(status="destroy").filter(uuid=authorUuid).first()
     if not author:
         return http_return(400, '作者不存在')
@@ -2811,6 +2813,7 @@ def add_album(request):
                 listIcon=listIcon,
                 bgIcon=bgIcon,
                 author=author,
+                isCheck=isCheck,
                 creator=request.user
             ).tags.add(*tags)
     except Exception as e:

@@ -492,7 +492,7 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ("title", "id", "createTime", "author", "isManagerCreate",
+        fields = ("uuid", "title", "id", "createTime", "author", "isManagerCreate",
                   "totalCount", "listIcon", "audioInfo")
 
 
@@ -509,7 +509,7 @@ class AlbumAudioStoryDetailSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_audioStoryInfo(object):
-        return AudioStorySimpleSerializer(object).data
+        return AudioStorySimple2Serializer(object).data
 
     class Meta:
         model = AlbumAudioStory

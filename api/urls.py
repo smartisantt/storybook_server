@@ -3,7 +3,7 @@
 
 from django.urls import path
 
-from api import views
+from api import views,shareViews
 from api.apiCommon import check_identify
 
 app_name = 'api'
@@ -71,5 +71,9 @@ urlpatterns = [
     path('listen/detail', views.listen_detail, name='listen_detail'),  # 听单详情
     path('listen/audiostory/add', views.listen_audio_add, name='listen_audio_add'),  # 添加作品到听单
     path('listen/audiostory/del', views.listen_audio_del, name='listen_audio_del'),  # 删除听单中作品
+
+    path('share/listen', shareViews.h5_listen_detail, name='h5_listen_detail'),  # 听单详情
+    path('share/userinfo', shareViews.h5_personal_index, name='h5_personal_index'),  # 主播主页
+
 
 ]

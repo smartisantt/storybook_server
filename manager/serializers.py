@@ -288,7 +288,10 @@ class AdSerializer(serializers.ModelSerializer):
             except:
                 raise ParamsException({'code': 400, 'msg': '参数错误'})
         elif ad.type == 1:  # 专辑
-            pass
+            try:
+                linkObjectInfo = Album.objects.filter(uuid=ad.target).first().title
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
         elif ad.type == 2:  # 音频
             try:
                 audioStory = AudioStory.objects.filter(uuid=ad.target).first()
@@ -390,7 +393,10 @@ class CycleBannerSerializer(serializers.ModelSerializer):
             except:
                 raise ParamsException({'code': 400, 'msg': '数据库存储数据格式错误'})
         elif cycleBanner.type == 1: # 专辑
-            pass
+            try:
+                linkObjectInfo = Album.objects.filter(uuid=cycleBanner.target).first().title
+            except:
+                raise ParamsException({'code': 400, 'msg': '参数错误'})
         elif cycleBanner.type == 2: # 音频
             try:
                 audioStory = AudioStory.objects.filter(uuid=cycleBanner.target).first()

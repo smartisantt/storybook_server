@@ -1520,11 +1520,15 @@ def add_ad(request):
         return http_return(400, '时间格式错误')
 
     if type == 0:
-        if not Activity.objects.filter(uuid=target).exists():
+        if not Activity.objects.filter(uuid=target, status='normal').exists():
             return http_return(400, '没有此活动')
 
+    if type == 1:
+        if not Album.objects.filter(uuid=target, isDelete=False, isCheck__in=[1, 3]).exists():
+            return http_return(400, '没有此专辑')
+
     if type == 2:  # 音频
-        if not AudioStory.objects.filter(uuid=target).exists():
+        if not AudioStory.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此音频')
 
     if type == 4:  # 外部链接
@@ -1597,11 +1601,15 @@ def modify_ad(request):
         return http_return(400, '时间格式错误')
 
     if type == 0:
-        if not Activity.objects.filter(uuid=target).exists():
+        if not Activity.objects.filter(uuid=target, status='normal').exists():
             return http_return(400, '没有此活动')
 
+    if type == 1:
+        if not Album.objects.filter(uuid=target, isDelete=False, isCheck__in=[1, 3]).exists():
+            return http_return(400, '没有此专辑')
+
     if type == 2: # 音频
-        if not AudioStory.objects.filter(uuid=target).exists():
+        if not AudioStory.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此音频')
 
     if type == 4: # 外部链接
@@ -2530,11 +2538,15 @@ def add_cycle_banner(request):
 
 
     if type == 0:
-        if not Activity.objects.filter(uuid=target).exists():
+        if not Activity.objects.filter(uuid=target, status='normal').exists():
             return http_return(400, '没有此活动')
 
+    if type == 1:
+        if not Album.objects.filter(uuid=target, isDelete=False, isCheck__in=[1, 3]).exists():
+            return http_return(400, '没有此专辑')
+
     if type == 2: # 音频
-        if not AudioStory.objects.filter(uuid=target).exists():
+        if not AudioStory.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此音频')
 
     if type == 4: # 外部链接
@@ -2609,15 +2621,15 @@ def modify_cycle_banner(request):
         return http_return(400, '时间错误')
 
     if type == 0:
-        if not Activity.objects.filter(uuid=target).exists():
+        if not Activity.objects.filter(uuid=target, status='normal').exists():
             return http_return(400, '没有此活动')
 
     if type == 1:
-        if not Album.objects.filter(uuid=target).exists():
-            return http_return(400, '没有专辑')
+        if not Album.objects.filter(uuid=target, isDelete=False, isCheck__in=[1, 3]).exists():
+            return http_return(400, '没有此专辑')
 
     if type == 2:  # 音频
-        if not AudioStory.objects.filter(uuid=target).exists():
+        if not AudioStory.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此音频')
 
     if type == 4:  # 外部链接

@@ -387,3 +387,37 @@ def paginator(myList, page, pageCount=10):
         logging.error(str(e))
         return False
     return total, res_data
+
+
+def h5_audioList_format(audios):
+    """
+    分享返回模型
+    :param audios:
+    :return:
+    """
+    audioList = []
+    for audio in audios:
+        bgm = None
+        if audio.bgm:
+            bgmObj = audio.bgm
+            bgm = {
+                "uuid": bgmObj.uuid if bgmObj.uuid else '',
+                "url": bgmObj.url if bgmObj.url else '',
+                "name": bgmObj.name if bgmObj.name else '',
+                "duration": bgmObj.duration if bgmObj.duration else 0,
+            }
+        audioList.append({
+            "uuid": audio.uuid,
+            "remarks": audio.remarks if audio.remarks else '',
+            "name": audio.name if audio.name else '',
+            "icon": audio.bgIcon if audio.bgIcon else '',
+            "createTime": datetime_to_unix(audio.createTime) if audio.createTime else 0,
+            "audio": {
+                "url": audio.voiceUrl if audio.voiceUrl else '',
+                "duration": audio.duration if audio.duration else 0,
+            },
+            "bgm": bgm,
+            "audioVolume": audio.userVolume if audio.userVolume else 1.0,
+            "bgmVolume": audio.bgmVolume if audio.bgmVolume else 1.0,
+        })
+    return audioList

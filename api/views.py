@@ -1564,7 +1564,7 @@ def listen_create(request):
     if checkName:
         return http_return(400, '听单名称已存在')
     user = User.objects.filter(uuid=selfUuid).first()
-    icon = "http123.jpg"  # 默认头像地址
+    icon = "https://hbb-ads.oss-cn-beijing.aliyuncs.com/file3174123447290.jpg"  # 默认背景图片地址
     if data.get('icon', ''):
         icon = data.get('icon', '')
     listen = Listen(
@@ -1769,3 +1769,27 @@ def listen_audio_del(request):
             logging.error(str(e))
             return http_return(400, '删除失败')
     return http_return(400, '删除成功')
+
+
+@check_identify
+def album_create(request):
+    """
+    创建专辑
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    name = data.get('name', '')
+
+    intro = data.get('intro', '')
+    if not name:
+        return http_return(400, '请输入专辑名称')
+    checkName = Album.objects.filter(title=name, isDelete=False).first()
+    if checkName:
+        return http_return(400, '专辑名称已存在')
+    icon = "https://hbb-ads.oss-cn-beijing.aliyuncs.com/file3174123447290.jpg"
+    if data.get('icon'):
+        icon = data.get('icon')
+

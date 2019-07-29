@@ -33,16 +33,7 @@ def h5_personal_index(request):
     }
     audios = user.useAudioUuid.all()
     total, audios = page_index(audios, page, pageCount)
-    audioList = []
-    for audio in audios:
-        audioList.append({
-            "uuid": audio.uuid,
-            "remarks": audio.remarks if audio.remarks else '',
-            "name": audio.name if audio.name else '',
-            "icon": audio.bgIcon if audio.bgIcon else '',
-            "duration": audio.duration if audio.duration else 0,
-            "createTime": datetime_to_unix(audio.createTime) if audio.createTime else 0,
-        })
+    audioList = h5_audioList_format(audios)
     return http_return(200, '成功', {"userInfo": userDict, "total": total, "audioStoryList": audioList})
 
 
@@ -71,14 +62,9 @@ def h5_listen_detail(request):
         "intro": listen.intro if listen.intro else '',
     }
     listenAudio = ListenAudio.objects.filter(listenUuid=uuid, status=0).order_by("-updateTime").all()
-    audioList = []
+    audios = []
     for la in listenAudio:
         audio = la.audioUuid
-        audioList.append({
-            "uuid": audio.uuid,
-            "remarks": audio.remarks if audio.remarks else '',
-            "name": audio.name if audio.name else '',
-            "icon": audio.bgIcon if audio.bgIcon else '',
-            "duration": audio.duration if audio.duration else 0,
-        })
+        audios.append(audio)
+    audioList = h5_audioList_format(audios)
     return http_return(200, '成功', {"listenInfo": listenInfo, "userInfo": userInfo, "list": audioList, "type": 1})

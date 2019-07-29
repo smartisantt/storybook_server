@@ -21,7 +21,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
-    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, AlbumDetailSerializer
+    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, AlbumDetailSerializer, CheckAlbumSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime, timedelta
@@ -2778,12 +2778,12 @@ def add_album(request):
         return http_return(400, '参数错误')
     title = data.get('title', '')
     intro = data.get('intro', '')
-    listIcon = data.get('listicon', '')
+    faceIcon = data.get('faceicon', '')
     isManagerCreate = data.get('ismanagercreate', '')
     bgIcon = data.get('bgicon', '')
     authorUuid = data.get('authoruuid', '')
     tagsUuidList = data.get('tagsuuidlist', '')
-    if not all([title, intro, listIcon, authorUuid, isManagerCreate in [0, 1]]):
+    if not all([title, intro, faceIcon, authorUuid, isManagerCreate in [0, 1]]):
         return http_return(400, '参数错误')
 
     isCheck = 1 if isManagerCreate else 0
@@ -2810,7 +2810,7 @@ def add_album(request):
                 title=title,
                 intro=intro,
                 isManagerCreate=isManagerCreate,
-                listIcon=listIcon,
+                faceIcon=faceIcon,
                 bgIcon=bgIcon,
                 author=author,
                 isCheck=isCheck,
@@ -2832,10 +2832,10 @@ def modify_album(request):
     albumUuid = data.get('albumuuid', '')
     title = data.get('title', '')
     intro = data.get('intro', '')
-    listIcon = data.get('listicon', '')
+    faceIcon = data.get('faceicon', '')
     bgIcon = data.get('bgicon', '')
     tagsUuidList = data.get('tagsuuidlist', '')
-    if not all([albumUuid, title, intro, listIcon]):
+    if not all([albumUuid, title, intro, faceIcon]):
         return http_return(400, '参数错误')
 
     if Album.objects.filter(title=title, isDelete=False).exclude(uuid=albumUuid).exists():
@@ -2856,7 +2856,7 @@ def modify_album(request):
         with transaction.atomic():
             album.title = title
             album.intro = intro
-            album.listIcon = listIcon
+            album.listIcon = faceIcon
             album.bgIcon = bgIcon
             album.tags.clear()
             album.tags.add(*tags)
@@ -2984,3 +2984,26 @@ def album_detail(request):
     return Response(AlbumDetailSerializer(album).data)
 
 
+class CheckAlbumView(ListAPIView):
+    queryset = Album.objects.filter(isDelete=False).prefetch_related('tags')
+    serializer_class = CheckAlbumSerializer
+    filter_class = AlbumFilter
+    pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+        return self.queryset

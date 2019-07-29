@@ -471,6 +471,19 @@ class AlbumSerializer(serializers.ModelSerializer):
         fields = ("title", "id", "createTime", "author", "isManagerCreate", "totalCount", "uuid")
 
 
+class CheckAlbumSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField()
+
+
+    class Meta:
+        model = Album
+        fields = ("title", "id", "intro", "createTime", "author","faceIcon",
+                  "isCheck", "isManagerCreate", "uuid")
+
+
+
+
+
 
 class AlbumDetailSerializer(serializers.ModelSerializer):
     # authorInfo = serializers.SerializerMethodField()
@@ -495,7 +508,7 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Album
         fields = ("uuid", "title", "intro", "createTime", "author", "isManagerCreate",
-                  "totalCount", "listIcon", "audioInfo")
+                  "totalCount", "faceIcon", "audioInfo")
 
 
 class AudioStorySimple2Serializer(serializers.ModelSerializer):

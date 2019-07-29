@@ -187,7 +187,7 @@ class AlbumFilter(django_filters.FilterSet):
 
     class Meta:
         model = Album
-        fields = ('title', 'author', 'isManagerCreate')
+        fields = ('title', 'author', 'isManagerCreate', 'isCheck')
 
 
 

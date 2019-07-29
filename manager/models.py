@@ -288,7 +288,7 @@ class Album(BaseModle, models.Model):
     """
     title = models.CharField(max_length=64, verbose_name='专辑名称', null=False, default='专辑名称')
     intro = models.CharField(max_length=256, verbose_name='专辑介绍', null=False, default='专辑介绍')
-    listIcon = models.CharField(max_length=255, verbose_name='列表图', null=True)  # 专辑封面
+    faceIcon = models.CharField(max_length=255, verbose_name='列表图', null=True)  # 专辑封面
     bgIcon = models.CharField(max_length=255, verbose_name='背景图', null=True)  # 专辑封面
     creator = models.ForeignKey('User', on_delete=models.CASCADE, related_name='creatorUuid', to_field='uuid', verbose_name='音频创建者', null=True)
     author = models.ForeignKey('User', on_delete=models.CASCADE, related_name='authorUuid', to_field='uuid', verbose_name='作者', null=True)

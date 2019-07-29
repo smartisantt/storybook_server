@@ -122,7 +122,7 @@ def check_identify(func):
                     version = Version.objects.filter(status="dafault").first()
                     defaultIcon = user_info.get('wxAvatarUrl', '')
                     if defaultIcon == '':
-                        defaultIcon = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file110598494460.jpg'
+                        defaultIcon = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111746672834.png'
                     defaultName = user_info.get('wxNickname', '')
                     if defaultName == '':
                         defaultName = get_default_name(user_info.get('phone', ''))

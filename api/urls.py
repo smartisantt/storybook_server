@@ -75,5 +75,13 @@ urlpatterns = [
     path('share/listen', shareViews.h5_listen_detail, name='h5_listen_detail'),  # 听单详情
     path('share/userinfo', shareViews.h5_personal_index, name='h5_personal_index'),  # 主播主页
 
+    path('album/create', views.album_create, name='album_create'),  # 新建专辑
+    path('album/list', views.album_list, name='album_list'),  # 专辑列表
+    path('album/change', views.album_change, name='album_change'),  # 编辑专辑
+    path('album/del', views.album_del, name='album_del'),  # 删除专辑
+    path('album/detail', views.album_detail, name='album_detail'),  # 专辑详情
+    path('album/audiostory/add', views.album_audio_add, name='album_audio_add'),  # 添加作品到专辑
+    path('album/audiostory/del', views.album_audio_del, name='album_audio_del'),  # 从专辑中删除作品
+
 
 ]

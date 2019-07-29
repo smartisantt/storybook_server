@@ -3008,3 +3008,31 @@ class CheckAlbumView(ListAPIView):
                 logging.error(str(e))
                 raise ParamsException(e.detail)
         return self.queryset
+
+
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def check_album(request):
+    # 审核专辑
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    albumUuid = data.get('albumuuid', '')
+    isCheck = data.get('ischeck', '')
+
+    if isCheck not in [1, 2]:
+        return http_return(400, 'ischeck参数无效')
+
+    album = Album.objects.filter(isDelete=False, uuid=albumUuid, isCheck=0).first()
+    if not album:
+        return http_return(400, '没有此专辑或已被审核')
+
+    try:
+        with transaction.atomic():
+            album.isCheck = isCheck
+            album.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '审核失败')
+    return http_return(200, 'OK')

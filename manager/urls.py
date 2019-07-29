@@ -122,6 +122,7 @@ urlpatterns = [
     # 审核专辑
     path('checkalbum/', CheckAlbumView.as_view()),
     path('album/delalbum/', views.del_album, name='del_album'),
+    path('album/checkalbum/', views.check_album, name='check_album'),
 
 ]
 

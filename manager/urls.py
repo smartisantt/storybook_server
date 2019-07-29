@@ -116,12 +116,12 @@ urlpatterns = [
     path('album/addalbum/', views.add_album, name='add_album'),
     path('album/albumdetail/', views.album_detail, name='album_detail'),
     path('album/modifyalbum/', views.modify_album, name='modify_album'),
-    path('album/delalbum/', views.del_album, name='del_album'),
     path('album/addaudio2album/', views.add_audio2album, name='add_audio2album'),
     path('album/disableaudiostory/', views.disable_audioStoty_in_album, name='disable_audioStoty_in_album'),
 
     # 审核专辑
     path('checkalbum/', CheckAlbumView.as_view()),
+    path('album/delalbum/', views.del_album, name='del_album'),
 
 ]
 

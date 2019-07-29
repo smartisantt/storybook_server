@@ -1981,7 +1981,7 @@ def migrate_user(request):
                 uuid=uuid,
                 userID=userID,
                 nickName=nickName or tel,
-                avatar='https://hbb-ads.oss-cn-beijing.aliyuncs.com/file110598494460.jpg',
+                avatar='https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111746672834.png',
                 tel=tel,
                 gender=gender,  # 性别 0未知  1男  2女
                 status="normal",
@@ -2062,7 +2062,7 @@ def add_user(request):
                 uuid = uuid,
                 userID = userID,
                 nickName = nickName or tel,
-                avatar = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file110598494460.jpg',
+                avatar = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111746672834.png',
                 tel = tel,
                 gender = gender,  # 性别 0未知  1男  2女
                 status = "normal",
@@ -2612,6 +2612,10 @@ def modify_cycle_banner(request):
         if not Activity.objects.filter(uuid=target).exists():
             return http_return(400, '没有此活动')
 
+    if type == 1:
+        if not Album.objects.filter(uuid=target).exists():
+            return http_return(400, '没有专辑')
+
     if type == 2:  # 音频
         if not AudioStory.objects.filter(uuid=target).exists():
             return http_return(400, '没有此音频')
@@ -2779,14 +2783,11 @@ def add_album(request):
     title = data.get('title', '')
     intro = data.get('intro', '')
     faceIcon = data.get('faceicon', '')
-    isManagerCreate = data.get('ismanagercreate', '')
     bgIcon = data.get('bgicon', '')
     authorUuid = data.get('authoruuid', '')
     tagsUuidList = data.get('tagsuuidlist', '')
-    if not all([title, intro, faceIcon, authorUuid, isManagerCreate in [0, 1]]):
+    if not all([title, intro, faceIcon, authorUuid]):
         return http_return(400, '参数错误')
-
-    isCheck = 3 if isManagerCreate else 0
 
     author = User.objects.exclude(status="destroy").filter(uuid=authorUuid).first()
     if not author:
@@ -2809,11 +2810,11 @@ def add_album(request):
                 uuid=uuid,
                 title=title,
                 intro=intro,
-                isManagerCreate=isManagerCreate,
+                isManagerCreate=1,
                 faceIcon=faceIcon,
                 bgIcon=bgIcon,
                 author=author,
-                isCheck=isCheck,
+                isCheck=3,
                 creator=request.user
             ).tags.add(*tags)
     except Exception as e:

@@ -2957,9 +2957,9 @@ def disable_audioStoty_in_album(request):
         return http_return(400, '参数错误')
     albumUuid = data.get('albumuuid', '')
     audioStoryUuid = data.get('audiostoryuuid', '')
-    isUsing = data.get('isusing', '')
+    # isUsing = data.get('isusing', '')
 
-    if not all([albumUuid, audioStoryUuid, isUsing in [0, 1]]):
+    if not all([albumUuid, audioStoryUuid]):
         return http_return(400, '参数有误')
     album = Album.objects.filter(uuid=albumUuid).first()
     if not album:
@@ -2973,12 +2973,12 @@ def disable_audioStoty_in_album(request):
     
     try:
         with transaction.atomic():
-            audioStotyInAlbum.isUsing = isUsing
+            audioStotyInAlbum.isUsing = int(not audioStotyInAlbum.isUsing)
             audioStotyInAlbum.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '操作失败')
-    return http_return(200, 'OK', {"isUsing": isUsing})
+    return http_return(200, 'OK', {"isUsing": audioStotyInAlbum.isUsing})
 
 
 @api_view(['POST'])

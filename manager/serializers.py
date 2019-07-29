@@ -461,6 +461,12 @@ class AlbumSerializer(serializers.ModelSerializer):
     #     return UserSearchSerializer(album.author).data
     author = serializers.StringRelatedField()
     totalCount = serializers.SerializerMethodField()
+    tagsInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_tagsInfo(album):
+        tag = album.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
 
     @staticmethod
     def get_totalCount(album):
@@ -468,7 +474,8 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ("title", "id", "createTime", "author", "isManagerCreate", "totalCount", "uuid")
+        fields = ("title", "id", "createTime", "author",
+                  "isManagerCreate", "totalCount", "uuid", "tagsInfo")
 
 
 class CheckAlbumSerializer(serializers.ModelSerializer):
@@ -500,6 +507,7 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField()
     totalCount = serializers.SerializerMethodField()
     audioInfo = serializers.SerializerMethodField()
+    tagsInfo = serializers.SerializerMethodField()
 
     @staticmethod
     def get_totalCount(album):
@@ -510,11 +518,16 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
         queryset = AlbumAudioStory.objects.filter(album=album)
         return AlbumAudioStoryDetailSerializer(queryset, many=True).data
 
+    @staticmethod
+    def get_tagsInfo(album):
+        tag = album.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
+
 
     class Meta:
         model = Album
         fields = ("uuid", "title", "intro", "createTime", "author", "isManagerCreate",
-                  "totalCount", "faceIcon", "audioInfo")
+                  "totalCount", "faceIcon", "audioInfo", "tagsInfo")
 
 
 class AudioStorySimple2Serializer(serializers.ModelSerializer):

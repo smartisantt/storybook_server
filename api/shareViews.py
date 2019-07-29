@@ -45,7 +45,7 @@ def h5_listen_detail(request):
     """
     uuid = request.GET.get('uuid', '')
     if not uuid:
-        return http_return(400, '请选择需要修改的听单')
+        return http_return(400, '请选择需要查看的听单')
     listen = Listen.objects.filter(uuid=uuid).first()
     if not listen:
         return http_return(400, '听单信息不存在')
@@ -67,4 +67,37 @@ def h5_listen_detail(request):
         audio = la.audioUuid
         audios.append(audio)
     audioList = h5_audioList_format(audios)
-    return http_return(200, '成功', {"listenInfo": listenInfo, "userInfo": userInfo, "list": audioList, "type": 1})
+    return http_return(200, '成功', {"info": listenInfo, "userInfo": userInfo, "list": audioList, "type": 1})
+
+
+def h5_album_detail(request):
+    """
+    分享听单详情页
+    :param request:
+    :return:
+    """
+    uuid = request.GET.get('uuid', '')
+    if not uuid:
+        return http_return(400, '请选择需要查看的专辑')
+    album = Album.objects.filter(uuid=uuid).first()
+    if not album:
+        return http_return(400, '专辑信息不存在')
+    user = album.author
+    users = []
+    users.append(user)
+    userInfo = userList_format(users)[0]
+    if not album:
+        return http_return(400, '专辑信息不存在')
+    albumInfo = {
+        "uuid": album.uuid,
+        "name": album.title,
+        "icon": album.faceIcon,
+        "intro": album.intro if album.intro else '',
+    }
+    albumAudio = AlbumAudioStory.objects.filter(album__uuid=uuid, isUsing=True).order_by("-updateTime").all()
+    audios = []
+    for aa in albumAudio:
+        audio = aa.audioStory
+        audios.append(audio)
+    audioList = h5_audioList_format(audios)
+    return http_return(200, '成功', {"info": albumInfo, "userInfo": userInfo, "list": audioList, "type": 2})

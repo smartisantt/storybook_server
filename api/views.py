@@ -1564,7 +1564,7 @@ def listen_create(request):
     if checkName:
         return http_return(400, '听单名称已存在')
     user = User.objects.filter(uuid=selfUuid).first()
-    icon = "https://hbb-ads.oss-cn-beijing.aliyuncs.com/file3174123447290.jpg"  # 默认背景图片地址
+    icon = "https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111622402987.png"  # 默认背景图片地址
     if data.get('icon', ''):
         icon = data.get('icon', '')
     listen = Listen(
@@ -1656,7 +1656,7 @@ def listen_del(request):
         return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     if not uuid:
-        return http_return(400, '请选择需要修改的听单')
+        return http_return(400, '请选择需要删除的听单')
     listen = Listen.objects.filter(uuid=uuid).first()
     if not listen:
         return http_return(400, '听单信息不存在')
@@ -1682,7 +1682,7 @@ def listen_detail(request):
         return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     if not uuid:
-        return http_return(400, '请选择需要修改的听单')
+        return http_return(400, '请选择需要查看的听单')
     listen = Listen.objects.filter(uuid=uuid).first()
     if not listen:
         return http_return(400, '听单信息不存在')
@@ -1702,7 +1702,7 @@ def listen_detail(request):
     for la in listenAudio:
         audios.append(la.audioUuid)
     audioList = audioList_format(audios, data)
-    return http_return(200, '成功', {"listenInfo": listenInfo, "userInfo": userInfo, "list": audioList, "type": 1})
+    return http_return(200, '成功', {"info": listenInfo, "userInfo": userInfo, "list": audioList, "type": 1})
 
 
 @check_identify
@@ -1727,7 +1727,7 @@ def listen_audio_add(request):
     audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
     if not audioStory:
         return http_return(400, '作品信息不存在')
-    checkLa = ListenAudio.objects.filter(listenUuid=listenUuid, audioUuid=audioStoryUuid, status=0).first()
+    checkLa = ListenAudio.objects.filter(listenUuid__uuid=listenUuid, audioUuid__uuid=audioStoryUuid, status=0).first()
     if not checkLa:
         listenAudio = ListenAudio(
             uuid=get_uuid(),
@@ -1754,20 +1754,19 @@ def listen_audio_del(request):
     if not data:
         return http_return(400, '请求错误')
     listenUuid = data.get('listenUuid', '')
-    audioStoryUuid = data.get('audioStoryUuid', '')
+    audioStoryUuidStr = data.get('audioStoryUuidStr', '')
     if not listenUuid:
         return http_return(400, '请选择要删除作品所属听单')
-    if not audioStoryUuid:
+    if not audioStoryUuidStr:
         return http_return(400, '请选择听单中要删除作品')
-    checkLa = ListenAudio.objects.filter(listenUuid=listenUuid, audioUuid=audioStoryUuid, status=0).first()
-    if checkLa:
-        checkLa.status = 1
-        try:
-            with transaction.atomic():
-                checkLa.save()
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '删除失败')
+    audioStoryUuidList = audioStoryUuidStr.split(',')
+    checkLa = ListenAudio.objects.filter(listenUuid=listenUuid, audioUuid__uuid__in=audioStoryUuidList, status=0).all()
+    try:
+        with transaction.atomic():
+            checkLa.update(status=1)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
     return http_return(400, '删除成功')
 
 
@@ -1782,14 +1781,219 @@ def album_create(request):
     if not data:
         return http_return(400, '请求错误')
     name = data.get('name', '')
-
     intro = data.get('intro', '')
     if not name:
         return http_return(400, '请输入专辑名称')
     checkName = Album.objects.filter(title=name, isDelete=False).first()
     if checkName:
         return http_return(400, '专辑名称已存在')
-    icon = "https://hbb-ads.oss-cn-beijing.aliyuncs.com/file3174123447290.jpg"
-    if data.get('icon'):
+    icon = "https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111622402987.png"
+    if data.get('icon', ''):
         icon = data.get('icon')
+    selfUuid = data['_cache']['uuid']
+    user = User.objects.filter(uuid=selfUuid).first()
+    album = Album(
+        uuid=get_uuid(),
+        title=name,
+        intro=intro,
+        faceIcon=icon,
+        creator=user,
+        author=user,
+    )
+    try:
+        with transaction.atomic():
+            album.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '新建失败')
+    return http_return(200, '新建成功')
 
+
+@check_identify
+def album_list(request):
+    """
+    转接列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    selfUuid = data['_cache']['uuid']
+    albums = Album.objects.filter(author__uuid=selfUuid, isDelete=False, isCheck=1).order_by("-updateTime").all()
+    albumList = []
+    for albu in albums:
+        albumList.append({
+            "uuid": albu.uuid,
+            "name": albu.title,
+            "icon": albu.faceIcon,
+            "intro": albu.intro if albu.intro else '',
+        })
+    return http_return(200, '成功', albumList)
+
+
+@check_identify
+def album_change(request):
+    """
+    修改专辑资料
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '请选择需要修改的专辑')
+    album = Album.objects.filter(uuid=uuid, isDelete=False, isCheck=1)
+    if not album:
+        return http_return(400, '专辑信息不存在')
+    name = data.get('name', '')
+    icon = data.get('icon', '')
+    intro = data.get('intro', '')
+    update_data = {}
+    if name:
+        checkName = Album.objects.filter(title=name).first()
+        if checkName and checkName != album.first():
+            return http_return(400, '专辑名称已存在')
+        update_data['title'] = name
+    if icon:
+        update_data['faceIcon'] = icon
+    if intro:
+        update_data['intro'] = intro
+    try:
+        with transaction.atomic():
+            update_data['updateTime'] = datetime.datetime.now()
+            album.update(**update_data)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '修改失败')
+    return http_return(200, '修改成功')
+
+
+@check_identify
+def album_del(request):
+    """
+    删除专辑
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '请选择需要删除的专辑')
+    album = Album.objects.filter(uuid=uuid).first()
+    if not album:
+        return http_return(400, '专辑信息不存在')
+    album.isDelete = True
+    try:
+        with transaction.atomic():
+            album.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+    return http_return(200, '删除成功')
+
+
+@check_identify
+def album_audio_add(request):
+    """
+    添加音频到专辑
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    albumUuid = data.get('albumUuid', '')
+    albumStoryUuid = data.get('albumStoryUuid', '')
+    if not albumUuid:
+        return http_return(400, '请选择要添加的专辑')
+    album = Album.objects.filter(uuid=albumUuid, isDelete=False).first()
+    if not album:
+        return http_return(400, '听单信息不存在')
+    if not albumStoryUuid:
+        return http_return(400, '请选择要添加的音频')
+    audioStory = AudioStory.objects.filter(uuid=albumStoryUuid).first()
+    if not audioStory:
+        return http_return(400, '作品信息不存在')
+    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid=albumStoryUuid, isUsing=True).first()
+    if not checkAa:
+        albumAudio = AlbumAudioStory(
+            uuid=get_uuid(),
+            album=album,
+            audioStory=audioStory,
+        )
+        try:
+            with transaction.atomic():
+                albumAudio.save()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '添加失败')
+    return http_return(200, '添加成功')
+
+
+@check_identify
+def album_audio_del(request):
+    """
+    删除专辑中音频
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    albumUuid = data.get('albumUuid', '')
+    albumStoryUuidStr = data.get('albumStoryUuidStr', '')
+    if not albumUuid:
+        return http_return(400, '请选择要移除作品的专辑')
+    album = Album.objects.filter(uuid=albumUuid, isDelete=False).first()
+    if not album:
+        return http_return(400, '专辑信息不存在')
+    if not albumStoryUuidStr:
+        return http_return(400, '请选择要移除的音频')
+    albumStoryUuidList = albumStoryUuidStr.split(',')
+    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid__in=albumStoryUuidList, isUsing=True).all()
+    try:
+        with transaction.atomic():
+            checkAa.update(isUsing=False)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+    return http_return(400, '删除成功')
+
+
+@check_identify
+def album_detail(request):
+    """
+    专辑详情页
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '请选择需要查看的专辑')
+    album = Album.objects.filter(uuid=uuid).first()
+    if not Album:
+        return http_return(400, '专辑信息不存在')
+    user = album.author
+    users = []
+    users.append(user)
+    userInfo = userList_format(users)[0]
+    albumInfo = {
+        "uuid": album.uuid,
+        "name": album.title,
+        "icon": album.faceIcon,
+        "intro": album.intro if album.intro else '',
+    }
+    albumAudio = AlbumAudioStory.objects.filter(album__uuid=uuid, isUsing=True).order_by("-updateTime").all()
+    audios = []
+    for aa in albumAudio:
+        audios.append(aa.audioStory)
+    audioList = audioList_format(audios, data)
+    return http_return(200, '成功', {"info": albumInfo, "userInfo": userInfo, "list": audioList, "type": 2})

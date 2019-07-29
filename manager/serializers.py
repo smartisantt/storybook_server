@@ -473,12 +473,18 @@ class AlbumSerializer(serializers.ModelSerializer):
 
 class CheckAlbumSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField()
+    tagsInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_tagsInfo(album):
+        tag = album.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
 
 
     class Meta:
         model = Album
         fields = ("title", "id", "intro", "createTime", "author","faceIcon",
-                  "isCheck", "isManagerCreate", "uuid")
+                  "isCheck", "isManagerCreate", "uuid", "tagsInfo")
 
 
 

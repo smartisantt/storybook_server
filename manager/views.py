@@ -2745,7 +2745,7 @@ def reply(request):
 
 
 class AlbumView(ListAPIView):
-    queryset = Album.objects.filter(isDelete=False, isCheck=1).prefetch_related('audioStory')
+    queryset = Album.objects.filter(isDelete=False, isCheck__in=[1,3]).prefetch_related('audioStory')
     serializer_class = AlbumSerializer
     filter_class = AlbumFilter
     pagination_class = MyPagination
@@ -2786,7 +2786,7 @@ def add_album(request):
     if not all([title, intro, faceIcon, authorUuid, isManagerCreate in [0, 1]]):
         return http_return(400, '参数错误')
 
-    isCheck = 1 if isManagerCreate else 0
+    isCheck = 3 if isManagerCreate else 0
 
     author = User.objects.exclude(status="destroy").filter(uuid=authorUuid).first()
     if not author:
@@ -2903,7 +2903,7 @@ def add_audio2album(request):
     if not all([albumUuid, audioStoryUuidList]):
         return http_return(400, '参数有误')
 
-    album = Album.objects.filter(isDelete=False, uuid=albumUuid, isCheck=1).first()
+    album = Album.objects.filter(isDelete=False, uuid=albumUuid, isCheck__in=[1,3]).first()
     if not album:
         return http_return(400, '没有专辑对象')
 

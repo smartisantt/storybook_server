@@ -73,6 +73,7 @@ urlpatterns = [
     path('listen/audiostory/del', views.listen_audio_del, name='listen_audio_del'),  # 删除听单中作品
 
     path('share/listen', shareViews.h5_listen_detail, name='h5_listen_detail'),  # 听单详情
+    path('share/album', shareViews.h5_album_detail, name='h5_album_detail'),  # 专辑详情
     path('share/userinfo', shareViews.h5_personal_index, name='h5_personal_index'),  # 主播主页
 
     path('album/create', views.album_create, name='album_create'),  # 新建专辑

@@ -1979,7 +1979,7 @@ def album_detail(request):
     if not uuid:
         return http_return(400, '请选择需要查看的专辑')
     album = Album.objects.filter(uuid=uuid).first()
-    if not Album:
+    if not album:
         return http_return(400, '专辑信息不存在')
     user = album.author
     users = []

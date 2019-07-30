@@ -502,7 +502,7 @@ class CheckAlbumSerializer(serializers.ModelSerializer):
     class Meta:
         model = Album
         fields = ("title", "id", "intro", "createTime", "author","faceIcon",
-                  "isCheck", "isManagerCreate", "uuid", "tagsInfo")
+                  "checkStatus", "isManagerCreate", "uuid", "tagsInfo")
 
 
 

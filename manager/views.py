@@ -1525,7 +1525,7 @@ def add_ad(request):
             return http_return(400, '没有此活动')
 
     if type == 1:
-        if not Album.objects.filter(uuid=target, isDelete=False, isCheck__in=[1, 3]).exists():
+        if not Album.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此专辑')
 
     if type == 2:  # 音频
@@ -1606,7 +1606,7 @@ def modify_ad(request):
             return http_return(400, '没有此活动')
 
     if type == 1:
-        if not Album.objects.filter(uuid=target, isDelete=False, isCheck__in=[1, 3]).exists():
+        if not Album.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此专辑')
 
     if type == 2: # 音频
@@ -2543,7 +2543,7 @@ def add_cycle_banner(request):
             return http_return(400, '没有此活动')
 
     if type == 1:
-        if not Album.objects.filter(uuid=target, isDelete=False, isCheck__in=[1, 3]).exists():
+        if not Album.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此专辑')
 
     if type == 2: # 音频
@@ -2626,7 +2626,7 @@ def modify_cycle_banner(request):
             return http_return(400, '没有此活动')
 
     if type == 1:
-        if not Album.objects.filter(uuid=target, isDelete=False, isCheck__in=[1, 3]).exists():
+        if not Album.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此专辑')
 
     if type == 2:  # 音频
@@ -2762,7 +2762,8 @@ def reply(request):
 
 
 class AlbumView(ListAPIView):
-    queryset = Album.objects.filter(isDelete=False, isCheck__in=[1,3]).prefetch_related('audioStory')
+    queryset = Album.objects.filter(isDelete=False, checkStatus__in=["check", "exemption"]).\
+        prefetch_related('audioStory')
     serializer_class = AlbumSerializer
     filter_class = AlbumFilter
     pagination_class = MyPagination
@@ -2787,7 +2788,7 @@ class AlbumView(ListAPIView):
 
 
 class AuthorAudioStoryView(ListAPIView):
-    """只有此作者的音频"""
+    """只有此作者的音频 不包含已经添加的"""
     queryset = AudioStory.objects.filter(isDelete=False, isUpload=1,
                                          checkStatus__in=['check', 'exemption']) \
         .select_related('bgm', 'userUuid') \
@@ -2800,12 +2801,20 @@ class AuthorAudioStoryView(ListAPIView):
 
     def get_queryset(self):
         authorUuid = self.request.query_params.get('authoruuid', '')
+        albumUuid = self.request.query_params.get('albumuuid', '')
         if not authorUuid:
             raise ParamsException('参数不能为空')
         user = User.objects.filter(uuid=authorUuid).exclude(status='destroy').first()
         if not user:
             raise ParamsException('没有此用户')
-        return self.queryset.filter(userUuid=user)
+        album = Album.objects.filter(uuid=albumUuid, isDelete=False).first()
+        if not album:
+            raise ParamsException('没有此专辑')
+        res = []
+        audioStoryList = AlbumAudioStory.objects.filter(album=album)
+        for audioStory in audioStoryList:
+            res.append(audioStory.audioStory_id)
+        return self.queryset.filter(userUuid=user).exclude(id__in=res)
 
 
 
@@ -2852,7 +2861,7 @@ def add_album(request):
                 faceIcon=faceIcon,
                 bgIcon=bgIcon,
                 author=author,
-                isCheck=3,
+                checkStatus="exemption",
                 creator=request.user
             ).tags.add(*tags)
     except Exception as e:
@@ -2976,13 +2985,14 @@ def add_audio2album(request):
     if not all([albumUuid, audioStoryUuidList]):
         return http_return(400, '参数有误')
 
-    album = Album.objects.filter(isDelete=False, uuid=albumUuid, isCheck__in=[1,3]).first()
+    album = Album.objects.filter(isDelete=False, uuid=albumUuid, checkStatus__in=["check", "exemption"]).first()
     if not album:
         return http_return(400, '没有专辑对象')
 
     audioStoryList = []
     for audioStoryUuid in audioStoryUuidList:
-        audioStory = AudioStory.objects.filter(isDelete=False, uuid=audioStoryUuid, checkStatus__in=["check", "exemption"]).first()
+        audioStory = AudioStory.objects.filter(isDelete=False, uuid=audioStoryUuid,
+                                               checkStatus__in=["check", "exemption"]).first()
         if not audioStory:
             return http_return(400, '没有音频对象')
 
@@ -3091,18 +3101,18 @@ def check_album(request):
     if not data:
         return http_return(400, '参数错误')
     albumUuid = data.get('albumuuid', '')
-    isCheck = data.get('ischeck', '')
+    checkStatus = data.get('checkstatus')
 
-    if isCheck not in [1, 2]:
-        return http_return(400, 'ischeck参数无效')
+    if checkStatus not in ["check", "checkFail"]:
+        return http_return(400, '参数无效')
 
-    album = Album.objects.filter(isDelete=False, uuid=albumUuid, isCheck=0).first()
+    album = Album.objects.filter(isDelete=False, uuid=albumUuid, checkStatus="unCheck").first()
     if not album:
         return http_return(400, '没有此专辑或已被审核')
 
     try:
         with transaction.atomic():
-            album.isCheck = isCheck
+            album.checkStatus = checkStatus
             album.save()
     except Exception as e:
         logging.error(str(e))

@@ -293,7 +293,8 @@ class Album(BaseModle, models.Model):
     creator = models.ForeignKey('User', on_delete=models.CASCADE, related_name='creatorUuid', to_field='uuid', verbose_name='音频创建者', null=True)
     author = models.ForeignKey('User', on_delete=models.CASCADE, related_name='authorUuid', to_field='uuid', verbose_name='作者', null=True)
     isDelete = models.BooleanField(default=False)               # 1 删除   0 没有删除
-    isCheck = models.IntegerField(default=False)                #  3 免审核 2 审核不通过 1 已审核 0 待审核
+    checkStatus = models.CharField(max_length=64,
+                                   null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 后台创建免审核
     remark  = models.CharField(max_length=1024, null=True)      # 不通过的理由
     isManagerCreate = models.IntegerField(default=False, verbose_name='是否是官方上传')
     tags = models.ManyToManyField(Tag)  # 标签

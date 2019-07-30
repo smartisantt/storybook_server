@@ -177,6 +177,7 @@ class FeedbackFilter(django_filters.FilterSet):
 
 
 class AlbumFilter(django_filters.FilterSet):
+    checkstatus = django_filters.CharFilter(field_name='checkStatus')
     title = django_filters.CharFilter(field_name='title', lookup_expr='icontains')
     author = django_filters.CharFilter(method='filter_by_creator')
 
@@ -187,7 +188,7 @@ class AlbumFilter(django_filters.FilterSet):
 
     class Meta:
         model = Album
-        fields = ('title', 'author', 'isManagerCreate', 'isCheck')
+        fields = ('title', 'author', 'isManagerCreate', 'checkStatus')
 
 
 

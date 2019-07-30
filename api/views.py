@@ -1579,7 +1579,9 @@ def listen_create(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '新建失败')
-    return http_return(200, '新建成功')
+    intro = listen.intro if listen.intro else ''
+    return http_return(200, '新建成功',
+                       {"uuid": listen.uuid, "name": listen.name, "icon": listen.icon, "intro": intro})
 
 
 @check_identify
@@ -1820,11 +1822,12 @@ def album_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-    uuid = data.get('uuid','')
+    uuid = data.get('uuid', '')
     selfUuid = data['_cache']['uuid']
     if uuid:
         selfUuid = uuid
-    albums = Album.objects.filter(author__uuid=selfUuid, isDelete=False, checkStatus__in=["unCheck", "exemption"]).order_by("-updateTime").all()
+    albums = Album.objects.filter(author__uuid=selfUuid, isDelete=False,
+                                  checkStatus__in=["unCheck", "exemption"]).order_by("-updateTime").all()
     albumList = []
     for albu in albums:
         albumList.append({
@@ -1923,7 +1926,8 @@ def album_audio_add(request):
     audioStory = AudioStory.objects.filter(uuid=albumStoryUuid).first()
     if not audioStory:
         return http_return(400, '作品信息不存在')
-    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid=albumStoryUuid, isUsing=True).first()
+    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid=albumStoryUuid,
+                                             isUsing=True).first()
     if not checkAa:
         albumAudio = AlbumAudioStory(
             uuid=get_uuid(),
@@ -1959,7 +1963,8 @@ def album_audio_del(request):
     if not albumStoryUuidStr:
         return http_return(400, '请选择要移除的音频')
     albumStoryUuidList = albumStoryUuidStr.split(',')
-    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid__in=albumStoryUuidList, isUsing=True).all()
+    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid__in=albumStoryUuidList,
+                                             isUsing=True).all()
     try:
         with transaction.atomic():
             checkAa.update(isUsing=False)

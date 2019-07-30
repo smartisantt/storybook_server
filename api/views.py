@@ -1718,30 +1718,31 @@ def listen_audio_add(request):
     if not data:
         return http_return(400, '请求错误')
     listenUuid = data.get('listenUuid', '')
-    audioStoryUuid = data.get('audioStoryUuid', '')
+    audioStoryUuidStr = data.get('audioStoryUuidStr', '')
     if not listenUuid:
         return http_return(400, '请选择要添加的听单')
     listen = Listen.objects.filter(uuid=listenUuid, status=0).first()
     if not listen:
         return http_return(400, '听单信息不存在')
-    if not audioStoryUuid:
+    if not audioStoryUuidStr:
         return http_return(400, '请选择要上传的音频')
-    audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
-    if not audioStory:
-        return http_return(400, '作品信息不存在')
-    checkLa = ListenAudio.objects.filter(listenUuid__uuid=listenUuid, audioUuid__uuid=audioStoryUuid, status=0).first()
-    if not checkLa:
-        listenAudio = ListenAudio(
-            uuid=get_uuid(),
-            listenUuid=listen,
-            audioUuid=audioStory,
-        )
-        try:
-            with transaction.atomic():
-                listenAudio.save()
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '添加失败')
+    for audioStoryUuid in audioStoryUuidStr.split(','):
+        audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
+        if not audioStory:
+            return http_return(400, '作品信息不存在')
+        checkLa = ListenAudio.objects.filter(listenUuid__uuid=listenUuid, audioUuid__uuid=audioStoryUuid, status=0).first()
+        if not checkLa:
+            listenAudio = ListenAudio(
+                uuid=get_uuid(),
+                listenUuid=listen,
+                audioUuid=audioStory,
+            )
+            try:
+                with transaction.atomic():
+                    listenAudio.save()
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '添加失败')
     return http_return(200, '添加成功')
 
 

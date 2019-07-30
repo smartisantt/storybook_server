@@ -1799,6 +1799,7 @@ def album_create(request):
         faceIcon=icon,
         creator=user,
         author=user,
+        checkStatus="unCheck",
     )
     try:
         with transaction.atomic():
@@ -1819,8 +1820,11 @@ def album_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
+    uuid = data.get('uuid','')
     selfUuid = data['_cache']['uuid']
-    albums = Album.objects.filter(author__uuid=selfUuid, isDelete=False, isCheck=1).order_by("-updateTime").all()
+    if uuid:
+        selfUuid = uuid
+    albums = Album.objects.filter(author__uuid=selfUuid, isDelete=False, checkStatus__in=["unCheck", "exemption"]).order_by("-updateTime").all()
     albumList = []
     for albu in albums:
         albumList.append({
@@ -1845,7 +1849,7 @@ def album_change(request):
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '请选择需要修改的专辑')
-    album = Album.objects.filter(uuid=uuid, isDelete=False, isCheck=1)
+    album = Album.objects.filter(uuid=uuid, isDelete=False, checkStatus__in=["unCheck", "exemption"])
     if not album:
         return http_return(400, '专辑信息不存在')
     name = data.get('name', '')

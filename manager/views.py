@@ -13,7 +13,7 @@ from api.apiCommon import get_default_name
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, ActivityFilter, CycleBannerFilter, \
-    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter
+    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter, AuthorAudioStoryFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -21,7 +21,8 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
-    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, AlbumDetailSerializer, CheckAlbumSerializer
+    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, AlbumDetailSerializer, CheckAlbumSerializer, \
+    AuthorAudioStorySerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min, F
 from datetime import datetime, timedelta
@@ -2785,6 +2786,31 @@ class AlbumView(ListAPIView):
         return self.queryset
 
 
+class AuthorAudioStoryView(ListAPIView):
+    """只有此作者的音频"""
+    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1,
+                                         checkStatus__in=['check', 'exemption']) \
+        .select_related('bgm', 'userUuid') \
+        .prefetch_related('tags').order_by('-createTime')
+
+    serializer_class = AuthorAudioStorySerializer
+    filter_class = AuthorAudioStoryFilter
+    pagination_class = MyPagination
+
+
+    def get_queryset(self):
+        authorUuid = self.request.query_params.get('authoruuid', '')
+        if not authorUuid:
+            raise ParamsException('参数不能为空')
+        user = User.objects.filter(uuid=authorUuid).exclude(status='destroy').first()
+        if not user:
+            raise ParamsException('没有此用户')
+        return self.queryset.filter(userUuid=user)
+
+
+
+
+
 @api_view(['POST'])
 @authentication_classes((CustomAuthentication, ))
 def add_album(request):
@@ -2877,6 +2903,40 @@ def modify_album(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
+    return http_return(200, 'OK')
+
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def album_tags(request):
+    # 配置专辑标签
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    albumUuid = data.get('albumuuid', '')
+    tagsUuidList = data.get('tagsuuidlist')
+    if not tagsUuidList:
+        return http_return(400, '标签参数有误')
+
+    album = Album.objects.filter(uuid=albumUuid).first()
+    if not album:
+        return http_return(400, '没有专辑对象')
+
+    tags = []
+    for tagUuid in tagsUuidList:
+        tag = Tag.objects.filter(uuid=tagUuid).first()
+        if not tag:
+            return http_return(400, '无效标签')
+        tags.append(tag)
+
+    try:
+        with transaction.atomic():
+            album.tags.clear()
+            album.tags.add(*tags)
+            album.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '配置标签失败')
     return http_return(200, 'OK')
 
 

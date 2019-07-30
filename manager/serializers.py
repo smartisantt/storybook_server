@@ -466,8 +466,13 @@ class AlbumSerializer(serializers.ModelSerializer):
     # def get_authorInfo(album):
     #     return UserSearchSerializer(album.author).data
     author = serializers.StringRelatedField()
+    authorUuid = serializers.SerializerMethodField()
     totalCount = serializers.SerializerMethodField()
     tagsInfo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_authorUuid(album):
+        return album.author.uuid
 
     @staticmethod
     def get_tagsInfo(album):
@@ -481,7 +486,7 @@ class AlbumSerializer(serializers.ModelSerializer):
     class Meta:
         model = Album
         fields = ("title", "id", "createTime", "author",
-                  "isManagerCreate", "totalCount", "uuid", "tagsInfo")
+                  "isManagerCreate", "totalCount", "uuid", "authorUuid", "tagsInfo")
 
 
 class CheckAlbumSerializer(serializers.ModelSerializer):
@@ -514,6 +519,11 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
     totalCount = serializers.SerializerMethodField()
     audioInfo = serializers.SerializerMethodField()
     tagsInfo = serializers.SerializerMethodField()
+    authorUuid = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_authorUuid(album):
+        return album.author.uuid
 
     @staticmethod
     def get_totalCount(album):
@@ -533,7 +543,7 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Album
         fields = ("uuid", "title", "intro", "createTime", "author", "isManagerCreate",
-                  "totalCount", "faceIcon", "audioInfo", "tagsInfo")
+                  "totalCount", "faceIcon", "authorUuid", "audioInfo", "tagsInfo")
 
 
 class AudioStorySimple2Serializer(serializers.ModelSerializer):
@@ -565,3 +575,15 @@ class AlbumAudioStoryDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = AlbumAudioStory
         fields = ("isUsing", "createTime", "audioStoryInfo")
+
+
+class AuthorAudioStorySerializer(serializers.ModelSerializer):
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['sortNum'] = list(self.instance).index(instance)+1
+        return data
+
+    class Meta:
+        model = AudioStory
+        fields = ('name', 'createTime', 'uuid')

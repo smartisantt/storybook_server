@@ -8,7 +8,7 @@ from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
     ActivityView, CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView, \
-    AlbumView, CheckAlbumView
+    AlbumView, CheckAlbumView, AuthorAudioStoryView
 
 app_name = 'manager'
 
@@ -113,6 +113,7 @@ urlpatterns = [
 
     # 专辑
     path('album/', AlbumView.as_view()),
+    path('album/author/', AuthorAudioStoryView.as_view()),
     path('album/addalbum/', views.add_album, name='add_album'),
     path('album/albumdetail/', views.album_detail, name='album_detail'),
     path('album/modifyalbum/', views.modify_album, name='modify_album'),
@@ -120,8 +121,9 @@ urlpatterns = [
     path('album/disableaudiostory/', views.disable_audioStoty_in_album, name='disable_audioStoty_in_album'),
 
     # 审核专辑
-    path('checkalbum/', CheckAlbumView.as_view()),
+    path('album/albumlist/', CheckAlbumView.as_view()),
     path('album/delalbum/', views.del_album, name='del_album'),
+    path('album/albumtags/', views.album_tags, name='album_tags'),
     path('album/checkalbum/', views.check_album, name='check_album'),
 
 ]

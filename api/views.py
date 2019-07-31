@@ -1579,7 +1579,16 @@ def listen_create(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '新建失败')
-    return http_return(200, '新建成功')
+    intro = listen.intro if listen.intro else ''
+    AudioStoryCount = listen.listListenUuid.filter(status=0).count()
+    return http_return(200, '新建成功',
+                       {
+                           "uuid": listen.uuid,
+                           "name": listen.name,
+                           "icon": listen.icon,
+                           "intro": intro,
+                           "audioStoryCount": AudioStoryCount
+                       })
 
 
 @check_identify
@@ -1601,6 +1610,7 @@ def listen_list(request):
             "name": lis.name,
             "icon": lis.icon,
             "intro": lis.intro if lis.intro else '',
+            "audioStoryCount": lis.listListenUuid.filter(status=0).count()
         })
     return http_return(200, '成功', listenList)
 
@@ -1716,30 +1726,32 @@ def listen_audio_add(request):
     if not data:
         return http_return(400, '请求错误')
     listenUuid = data.get('listenUuid', '')
-    audioStoryUuid = data.get('audioStoryUuid', '')
+    audioStoryUuidStr = data.get('audioStoryUuidStr', '')
     if not listenUuid:
         return http_return(400, '请选择要添加的听单')
     listen = Listen.objects.filter(uuid=listenUuid, status=0).first()
     if not listen:
         return http_return(400, '听单信息不存在')
-    if not audioStoryUuid:
+    if not audioStoryUuidStr:
         return http_return(400, '请选择要上传的音频')
-    audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
-    if not audioStory:
-        return http_return(400, '作品信息不存在')
-    checkLa = ListenAudio.objects.filter(listenUuid__uuid=listenUuid, audioUuid__uuid=audioStoryUuid, status=0).first()
-    if not checkLa:
-        listenAudio = ListenAudio(
-            uuid=get_uuid(),
-            listenUuid=listen,
-            audioUuid=audioStory,
-        )
-        try:
-            with transaction.atomic():
-                listenAudio.save()
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '添加失败')
+    for audioStoryUuid in audioStoryUuidStr.split(','):
+        audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
+        if not audioStory:
+            return http_return(400, '作品信息不存在')
+        checkLa = ListenAudio.objects.filter(listenUuid__uuid=listenUuid, audioUuid__uuid=audioStoryUuid,
+                                             status=0).first()
+        if not checkLa:
+            listenAudio = ListenAudio(
+                uuid=get_uuid(),
+                listenUuid=listen,
+                audioUuid=audioStory,
+            )
+            try:
+                with transaction.atomic():
+                    listenAudio.save()
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '添加失败')
     return http_return(200, '添加成功')
 
 
@@ -1799,6 +1811,7 @@ def album_create(request):
         faceIcon=icon,
         creator=user,
         author=user,
+        checkStatus="unCheck",
     )
     try:
         with transaction.atomic():
@@ -1819,8 +1832,12 @@ def album_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
     selfUuid = data['_cache']['uuid']
-    albums = Album.objects.filter(author__uuid=selfUuid, isDelete=False, isCheck=1).order_by("-updateTime").all()
+    if uuid:
+        selfUuid = uuid
+    albums = Album.objects.filter(author__uuid=selfUuid, isDelete=False,
+                                  checkStatus__in=["unCheck", "exemption"]).order_by("-updateTime").all()
     albumList = []
     for albu in albums:
         albumList.append({
@@ -1845,7 +1862,7 @@ def album_change(request):
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '请选择需要修改的专辑')
-    album = Album.objects.filter(uuid=uuid, isDelete=False, isCheck=1)
+    album = Album.objects.filter(uuid=uuid, isDelete=False, checkStatus__in=["unCheck", "exemption"])
     if not album:
         return http_return(400, '专辑信息不存在')
     name = data.get('name', '')
@@ -1919,7 +1936,8 @@ def album_audio_add(request):
     audioStory = AudioStory.objects.filter(uuid=albumStoryUuid).first()
     if not audioStory:
         return http_return(400, '作品信息不存在')
-    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid=albumStoryUuid, isUsing=True).first()
+    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid=albumStoryUuid,
+                                             isUsing=True).first()
     if not checkAa:
         albumAudio = AlbumAudioStory(
             uuid=get_uuid(),
@@ -1955,7 +1973,8 @@ def album_audio_del(request):
     if not albumStoryUuidStr:
         return http_return(400, '请选择要移除的音频')
     albumStoryUuidList = albumStoryUuidStr.split(',')
-    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid__in=albumStoryUuidList, isUsing=True).all()
+    checkAa = AlbumAudioStory.objects.filter(album__uuid=albumUuid, audioStory__uuid__in=albumStoryUuidList,
+                                             isUsing=True).all()
     try:
         with transaction.atomic():
             checkAa.update(isUsing=False)

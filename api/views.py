@@ -1580,8 +1580,15 @@ def listen_create(request):
         logging.error(str(e))
         return http_return(400, '新建失败')
     intro = listen.intro if listen.intro else ''
+    AudioStoryCount = listen.listListenUuid.filter(status=0).count()
     return http_return(200, '新建成功',
-                       {"uuid": listen.uuid, "name": listen.name, "icon": listen.icon, "intro": intro})
+                       {
+                           "uuid": listen.uuid,
+                           "name": listen.name,
+                           "icon": listen.icon,
+                           "intro": intro,
+                           "AudioStoryCount": AudioStoryCount
+                       })
 
 
 @check_identify
@@ -1603,6 +1610,7 @@ def listen_list(request):
             "name": lis.name,
             "icon": lis.icon,
             "intro": lis.intro if lis.intro else '',
+            "AudioStoryCount": lis.listListenUuid.filter(status=0).count()
         })
     return http_return(200, '成功', listenList)
 
@@ -1730,7 +1738,8 @@ def listen_audio_add(request):
         audioStory = AudioStory.objects.filter(uuid=audioStoryUuid).first()
         if not audioStory:
             return http_return(400, '作品信息不存在')
-        checkLa = ListenAudio.objects.filter(listenUuid__uuid=listenUuid, audioUuid__uuid=audioStoryUuid, status=0).first()
+        checkLa = ListenAudio.objects.filter(listenUuid__uuid=listenUuid, audioUuid__uuid=audioStoryUuid,
+                                             status=0).first()
         if not checkLa:
             listenAudio = ListenAudio(
                 uuid=get_uuid(),

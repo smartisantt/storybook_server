@@ -1779,7 +1779,7 @@ def listen_audio_del(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
-    return http_return(400, '删除成功')
+    return http_return(200, '删除成功')
 
 
 @check_identify

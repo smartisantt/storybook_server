@@ -2,11 +2,17 @@ from rest_framework.pagination import PageNumberPagination
 
 
 class MyPagination(PageNumberPagination):
+
     page_size = 20
     page_query_param = 'page'
     page_size_query_param = 'page_size'
     max_page_size = 100
 
+    # def paginate_queryset(self, queryset, request, view=None):
+    #     return super().paginate_queryset(queryset, request, view=None)
+    #
+    # # def get_paginated_response(self, data):
+    # #     return super().get_paginated_response(data)
 
 # 可以在子类中定义的属性：
 # page_size 每页数目

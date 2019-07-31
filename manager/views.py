@@ -21,10 +21,10 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
-    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, AlbumDetailSerializer, CheckAlbumSerializer, \
-    AuthorAudioStorySerializer
+    TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, CheckAlbumSerializer, \
+    AuthorAudioStorySerializer, AlbumAudioStoryDetailSerializer
 from common.api import Api
-from django.db.models import Count, Q, Max, Min, F
+from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
 from utils.errors import ParamsException
 
@@ -2817,9 +2817,6 @@ class AuthorAudioStoryView(ListAPIView):
         return self.queryset.filter(userUuid=user).exclude(id__in=res)
 
 
-
-
-
 @api_view(['POST'])
 @authentication_classes((CustomAuthentication, ))
 def add_album(request):
@@ -3051,20 +3048,18 @@ def disable_audioStoty_in_album(request):
     return http_return(200, 'OK', {"isUsing": audioStotyInAlbum.isUsing})
 
 
-@api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
-def album_detail(request):
-    # 专辑详情
-    data = request_body(request, 'POST')
-    if not data:
-        return http_return(400, '参数错误')
-    albumUuid = data.get('albumuuid', '')
+class AlbumDetailView(ListAPIView):
+    queryset = AlbumAudioStory.objects.all().order_by('createTime')
+    serializer_class = AlbumAudioStoryDetailSerializer
+    pagination_class = MyPagination
 
-    album = Album.objects.filter(uuid=albumUuid).first()
-    if not album:
-        return http_return(400, '没有专辑对象')
+    def get_queryset(self):
+        albumUuid = self.request.query_params.get('albumuuid', '')
+        album = Album.objects.filter(uuid=albumUuid).first()
+        if not album:
+            return http_return(400, '没有专辑对象')
+        return self.queryset.filter(album=album)
 
-    return Response(AlbumDetailSerializer(album).data)
 
 
 class CheckAlbumView(ListAPIView):

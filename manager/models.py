@@ -288,12 +288,14 @@ class Album(BaseModle, models.Model):
     intro = models.CharField(max_length=256, verbose_name='专辑介绍', null=False, default='专辑介绍')
     faceIcon = models.CharField(max_length=255, verbose_name='列表图', null=True)  # 专辑封面
     bgIcon = models.CharField(max_length=255, verbose_name='背景图', null=True)  # 专辑封面
-    creator = models.ForeignKey('User', on_delete=models.CASCADE, related_name='creatorUuid', to_field='uuid', verbose_name='音频创建者', null=True)
-    author = models.ForeignKey('User', on_delete=models.CASCADE, related_name='authorUuid', to_field='uuid', verbose_name='作者', null=True)
-    isDelete = models.BooleanField(default=False)               # 1 删除   0 没有删除
+    creator = models.ForeignKey('User', on_delete=models.CASCADE, related_name='creatorUuid', to_field='uuid',
+                                verbose_name='音频创建者', null=True)
+    author = models.ForeignKey('User', on_delete=models.CASCADE, related_name='authorUuid', to_field='uuid',
+                               verbose_name='作者', null=True)
+    isDelete = models.BooleanField(default=False)  # 1 删除   0 没有删除
     checkStatus = models.CharField(max_length=64, null=True)
     # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 后台创建免审核
-    remark = models.CharField(max_length=1024, null=True)      # 不通过的理由
+    remark = models.CharField(max_length=1024, null=True)  # 不通过的理由
     isManagerCreate = models.IntegerField(default=False, verbose_name='是否是官方上传')
     tags = models.ManyToManyField(Tag)  # 标签
     audioStory = models.ManyToManyField(to='AudioStory', through='AlbumAudioStory')
@@ -310,7 +312,6 @@ class AlbumAudioStory(BaseModle, models.Model):
 
     class Meta:
         db_table = 'tb_album_audiostory'
-
 
 
 class AudioStory(BaseModle, models.Model):
@@ -341,6 +342,7 @@ class AudioStory(BaseModle, models.Model):
                                    null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 后台上传免审核
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
     isDelete = models.BooleanField(default=False)  # 软删除
+    fileSize = models.IntegerField(null=True)   # 音频文件大小
 
     class Meta:
         db_table = 'tb_audio_story'
@@ -382,7 +384,7 @@ class Listen(BaseModle, models.Model):
     name = models.CharField(max_length=128, null=True)
     icon = models.CharField(max_length=255, null=True)
     intro = models.CharField(max_length=500, null=True)
-    status = models.IntegerField(null=True, default=0) #状态 0：正常 1：删除
+    status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：删除
 
     class Meta:
         db_table = 'tb_listen'

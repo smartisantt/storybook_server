@@ -1587,7 +1587,7 @@ def listen_create(request):
                            "name": listen.name,
                            "icon": listen.icon,
                            "intro": intro,
-                           "AudioStoryCount": AudioStoryCount
+                           "audioStoryCount": AudioStoryCount
                        })
 
 
@@ -1610,7 +1610,7 @@ def listen_list(request):
             "name": lis.name,
             "icon": lis.icon,
             "intro": lis.intro if lis.intro else '',
-            "AudioStoryCount": lis.listListenUuid.filter(status=0).count()
+            "audioStoryCount": lis.listListenUuid.filter(status=0).count()
         })
     return http_return(200, '成功', listenList)
 

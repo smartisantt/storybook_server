@@ -1,3 +1,4 @@
+from django.core import paginator
 from rest_framework.pagination import PageNumberPagination
 
 
@@ -8,11 +9,16 @@ class MyPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
-    # def paginate_queryset(self, queryset, request, view=None):
-    #     return super().paginate_queryset(queryset, request, view=None)
-    #
-    # # def get_paginated_response(self, data):
-    # #     return super().get_paginated_response(data)
+    def paginate_queryset(self, queryset, request, view=None):
+        try:
+            return super().paginate_queryset(queryset, request, view=None)
+        except Exception:
+            paginator = self.django_paginator_class(queryset, self.page_size)
+            self.page = paginator.page(1)
+            return list(queryset[:self.get_page_size(request)])
+
+    # def get_paginated_response(self, data):
+    #     return super().get_paginated_response(data)
 
 # 可以在子类中定义的属性：
 # page_size 每页数目

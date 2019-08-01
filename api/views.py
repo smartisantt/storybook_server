@@ -1716,7 +1716,7 @@ def listen_detail(request):
     for la in listenAudio:
         audios.append(la.audioUuid)
     audioList = audioList_format(audios, data)
-    return http_return(200, '成功', {"info": listenInfo, "userInfo": userInfo, "list": audioList, "type": 1})
+    return http_return(200, '成功', {"info": listenInfo, "userInfo": userInfo, "list": audioList})
 
 
 @check_identify
@@ -2019,4 +2019,4 @@ def album_detail(request):
     for aa in albumAudio:
         audios.append(aa.audioStory)
     audioList = audioList_format(audios, data)
-    return http_return(200, '成功', {"info": albumInfo, "userInfo": userInfo, "list": audioList, "type": 2})
+    return http_return(200, '成功', {"info": albumInfo, "userInfo": userInfo, "list": audioList})

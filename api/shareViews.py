@@ -101,3 +101,29 @@ def h5_album_detail(request):
         audios.append(audio)
     audioList = h5_audioList_format(audios)
     return http_return(200, '成功', {"info": albumInfo, "userInfo": userInfo, "list": audioList, "type": 2})
+
+
+def h5_audio_play(request):
+    """
+    播放作品
+    :param request:
+    :return:
+    """
+    uuid = request.GET.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    if not audio:
+        return http_return(400, '故事信息不存在')
+    # 更新播放次数
+    audio.playTimes += 1
+    try:
+        with transaction.atomic():
+            audio.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新播放次数失败')
+    audios = []
+    audios.append(audio)
+    playDict = audioList_format(audios)[0]
+    return http_return(200, '成功', playDict)

@@ -1563,6 +1563,8 @@ def listen_create(request):
     name = data.get('name', '')
     if not name:
         return http_return(400, '请输入听单名称')
+    if len(name) > 14:
+        return http_return(400, "听单名字长度超过限制")
     selfUuid = data['_cache']['uuid']
     checkName = Listen.objects.filter(userUuid__uuid=selfUuid, name=name).first()
     if checkName:

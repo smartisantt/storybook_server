@@ -2876,6 +2876,9 @@ def add_album(request):
     if not all([title, intro, faceIcon, authorUuid]):
         return http_return(400, '参数错误')
 
+    if len(str(title)) > 14:
+        return http_return(400, '名字长度超过14个字符')
+
     author = User.objects.exclude(status="destroy").filter(uuid=authorUuid).first()
     if not author:
         return http_return(400, '作者不存在')
@@ -2925,6 +2928,9 @@ def modify_album(request):
     tagsUuidList = data.get('tagsuuidlist', '')
     if not all([albumUuid, title, intro, faceIcon]):
         return http_return(400, '参数错误')
+
+    if len(str(title)) > 14:
+        return http_return(400, '名字长度超过14个字符')
 
     if Album.objects.filter(title=title, isDelete=False).exclude(uuid=albumUuid).exists():
         return http_return(400, '专辑名重复')

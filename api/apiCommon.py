@@ -311,6 +311,7 @@ def audioList_format(audios, data):
             "audio": {
                 "url": audio.voiceUrl if audio.voiceUrl else '',
                 "duration": audio.duration if audio.duration else 0,
+                "fileSize": audio.fileSize if audio.fileSize else 0,
             },
             "bgm": bgm,
             "publisher": publisher,

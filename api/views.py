@@ -174,6 +174,7 @@ def recording_send(request):
     audioDuration = data.get('audioDuration', '')
     name = data.get('name', '')
     icon = data.get('icon', '')
+    fileSize = data.get('fileSize', '')
     story = None
     audioStoryType = False
     if storyUuid:
@@ -200,12 +201,14 @@ def recording_send(request):
         return http_return(400, '请选择用户音量')
     if not storyTagUuidList:
         return http_return(400, '请选择作品标签')
-    if type not in [0, 1]:
+    if not type or int(type) not in [0, 1]:
         return http_return(400, '请选择录制类型')
     if not name:
         return http_return(400, '请输入标题')
     if not icon:
         return http_return(400, '请上传背景图片')
+    if not fileSize:
+        return http_return(400, '文件大小参数缺失')
     tags = []
     for tagUuid in storyTagUuidList:
         tag = Tag.objects.filter(uuid=tagUuid).first()
@@ -231,7 +234,8 @@ def recording_send(request):
             bgIcon=icon,
             remarks=remarks,
             duration=audioDuration,
-            checkStatus="unCheck"
+            checkStatus="unCheck",
+            fileSize=fileSize,
         ).tags.add(*tags)
     except Exception as e:
         logging.error(str(e))

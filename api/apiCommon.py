@@ -13,7 +13,7 @@ from django.db.models import Q
 from common.common import http_return, get_uuid, datetime_to_unix, page_index
 from manager.models import *
 from common.api import Api
-from storybook_sever.config import USER_SESSION_OVER_TIME
+from storybook_sever.config import USER_SESSION_OVER_TIME, SHAREURL
 
 
 def match_tel(tel):
@@ -315,7 +315,7 @@ def audioList_format(audios, data=None):
         content = "我在听【" + audio.name + "】，你可能也喜欢，快来听吧"
         if selfUuid and selfUuid == audio.userUuid.uuid:
             content = "我录制了【" + audio.name + "】，快来听听看"
-        url = "http://192.168.100.235:8009/" + audio.uuid
+        url = SHAREURL + "/playDetails/" + audio.uuid
         share = share_format(audio.bgIcon, audio.name, url, content)
         audioStoryList.append({
             "uuid": audio.uuid,

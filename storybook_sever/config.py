@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-version = "test"
+version = "debug"
 
 # 用户端端session过期时间
 USER_SESSION_OVER_TIME = 30 * 24 * 60 * 60
@@ -17,3 +17,6 @@ if version == 'ali_test':
     IS_SEND = True
 else:
     IS_SEND = False
+
+# 分享域名
+SHAREURL = "http://192.168.100.235:8009"

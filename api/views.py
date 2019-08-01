@@ -11,7 +11,7 @@ from api.ssoSMS.sms import send_sms
 from common.common import *
 from api.apiCommon import *
 from common.mixFileAPI import MixAudio
-from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE
+from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL
 
 
 def identify_code(request):
@@ -1137,6 +1137,9 @@ def personal_index(request):
         follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
         selfUuid = uuid
     user = User.objects.filter(uuid=selfUuid).first()
+    url = SHAREURL + "/myAlbum/" + user.uuid
+    content = "这是【" + user.nickName + "】绘童个人主页，ta有很多优秀的作品，推荐你关注"
+    share = share_format(user.avatar, user.nickName, url, content)
     userDict = {
         "uuid": user.uuid,
         "nickname": user.nickName if user.nickName else '',
@@ -1147,7 +1150,8 @@ def personal_index(request):
         "intro": user.intro if user.intro else '',
         "createTime": datetime_to_unix(user.createTime),
         "followersCount": FriendShip.objects.filter(follows__uuid=uuid).count(),
-        "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count()
+        "followsCount": FriendShip.objects.filter(followers__uuid=uuid).count(),
+        "share": share,
     }
     return http_return(200, '成功', userDict)
 
@@ -1707,11 +1711,15 @@ def listen_detail(request):
     users = []
     users.append(user)
     userInfo = userList_format(users)[0]
+    url = SHAREURL + "/listen/" + listen.uuid
+    content = "我在听【" + listen.name + "】，你可能也喜欢，快来听吧"
+    share = share_format(listen.icon, listen.name, url, content)
     listenInfo = {
         "uuid": listen.uuid,
         "name": listen.name,
         "icon": listen.icon,
         "intro": listen.intro if listen.intro else '',
+        "share": share,
     }
     listenAudio = ListenAudio.objects.filter(listenUuid=uuid, status=0).order_by("-updateTime").all()
     audios = []

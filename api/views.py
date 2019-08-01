@@ -2018,11 +2018,17 @@ def album_detail(request):
     users = []
     users.append(user)
     userInfo = userList_format(users)[0]
+    url = SHAREURL + "/shareAlbum/" + album.uuid
+    content = "我在听【" + album.title + "】，你可能也喜欢，快来听吧"
+    if data['_cache']['uuid'] == album.author.uuid:
+        content = "我创建了【" + album.title + "】专辑，快来听我的作品吧"
+    share = share_format(album.faceIcon, album.title, url, content)
     albumInfo = {
         "uuid": album.uuid,
         "name": album.title,
         "icon": album.faceIcon,
         "intro": album.intro if album.intro else '',
+        "share": share,
     }
     albumAudio = AlbumAudioStory.objects.filter(album__uuid=uuid, isUsing=True).order_by("-updateTime").all()
     audios = []

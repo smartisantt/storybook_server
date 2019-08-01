@@ -883,11 +883,15 @@ def add_audio_story(request):
     remarks = data.get('remarks', '')
     duration = data.get('duration', '')
     url = data.get('url', '')
-    type = data.get('type', '')         # 录制形式 0宝宝录制 1爸妈录制
+    type = data.get('type', '')                 # 录制形式 0宝宝录制 1爸妈录制
     tagsUuidList = data.get('tagsuuidlist', '')
+    fileSize = data.get('filesize', '')         # 文件大小
 
     if not all([storyUuid, userUuid, remarks, url, duration, tagsUuidList, type in [0, 1]]):
         return http_return(400, '参数不能为空')
+
+    if not (isinstance(fileSize, int) and fileSize > 0):
+        return http_return(400, '文件大小参数有误')
 
     story = Story.objects.filter(uuid=storyUuid).first()
     if not story:
@@ -922,6 +926,7 @@ def add_audio_story(request):
             storyUuid=story,
             remarks=remarks,
             duration=duration,
+            fileSize=fileSize,
             checkStatus="exemption"
         ).tags.add(*tags)
     except Exception as e:

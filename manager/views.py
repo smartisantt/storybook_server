@@ -22,7 +22,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
     TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, CheckAlbumSerializer, \
-    AuthorAudioStorySerializer, AlbumAudioStoryDetailSerializer
+    AuthorAudioStorySerializer, AlbumAudioStoryDetailSerializer, AlbumDetailSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
@@ -882,6 +882,44 @@ def add_audio_story(request):
     userUuid = data.get('useruuid', '')
     remarks = data.get('remarks', '')
     duration = data.get('duration', '')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     url = data.get('url', '')
     type = data.get('type', '')                 # 录制形式 0宝宝录制 1爸妈录制
     tagsUuidList = data.get('tagsuuidlist', '')
@@ -3053,18 +3091,48 @@ def disable_audioStoty_in_album(request):
     return http_return(200, 'OK', {"isUsing": audioStotyInAlbum.isUsing})
 
 
-class AlbumDetailView(ListAPIView):
-    queryset = AlbumAudioStory.objects.all().order_by('createTime')
-    serializer_class = AlbumAudioStoryDetailSerializer
-    pagination_class = MyPagination
+# class AlbumDetailView(ListAPIView):
+#     queryset = AlbumAudioStory.objects.all().order_by('createTime')
+#     serializer_class = AlbumAudioStoryDetailSerializer
+#     pagination_class = MyPagination
+#
+#     def get_queryset(self):
+#         albumUuid = self.request.query_params.get('albumuuid', '')
+#         album = Album.objects.filter(uuid=albumUuid).first()
+#         if not album:
+#             return http_return(400, '没有专辑对象')
+#         return self.queryset.filter(album=album)
+#
+#     def get(self, request, *args, **kwargs):
+#         albumUuid = self.request.query_params.get('albumuuid', '')
+#         album = Album.objects.filter(uuid=albumUuid).first()
+#         if not album:
+#             return http_return(400, '没有专辑对象')
+#         self.queryset = self.queryset.filter(album=album)
+#         pg = MyPagination()
+#         page_data = pg.paginate_queryset(queryset=self.queryset,request=request,view=self)
+#         ser = AlbumAudioStoryDetailSerializer(instance=page_data, many=True)
+#         res = {}
+#         res['audioList'] = ser.data
+#         res['albumInfo'] = {'intro': '我是专辑介绍'}
+#         return Response(res)
 
-    def get_queryset(self):
-        albumUuid = self.request.query_params.get('albumuuid', '')
-        album = Album.objects.filter(uuid=albumUuid).first()
-        if not album:
-            return http_return(400, '没有专辑对象')
-        return self.queryset.filter(album=album)
 
+
+@api_view(['GET'])
+@authentication_classes((CustomAuthentication, ))
+def album_detail(request):
+    # 专辑详情
+    data = request_body(request, 'GET')
+    if not data:
+        return http_return(400, '参数错误')
+    albumUuid = data.get('albumuuid', '')
+
+    album = Album.objects.filter(uuid=albumUuid).first()
+    if not album:
+        return http_return(400, '没有专辑对象')
+
+    return Response(AlbumDetailSerializer(album).data)
 
 
 class CheckAlbumView(ListAPIView):

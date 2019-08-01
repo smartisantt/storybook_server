@@ -459,6 +459,43 @@ class FeedbackSerializer(serializers.ModelSerializer):
         return True
 
 
+class AlbumDetailSerializer(serializers.ModelSerializer):
+    # authorInfo = serializers.SerializerMethodField()
+    #
+    # @staticmethod
+    # def get_authorInfo(album):
+    #     return UserSearchSerializer(album.author).data
+    author = serializers.StringRelatedField()
+    totalCount = serializers.SerializerMethodField()
+    audioInfo = serializers.SerializerMethodField()
+    tagsInfo = serializers.SerializerMethodField()
+    authorUuid = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_authorUuid(album):
+        return album.author.uuid
+
+    @staticmethod
+    def get_totalCount(album):
+        return AlbumAudioStory.objects.filter(isUsing=True, album=album).count()
+
+    @staticmethod
+    def get_audioInfo(album):
+        queryset = AlbumAudioStory.objects.filter(album=album)
+        return AlbumAudioStoryDetailSerializer(queryset, many=True).data
+
+    @staticmethod
+    def get_tagsInfo(album):
+        tag = album.tags.filter(isDelete=False).all()
+        return TagsSimpleSerialzer(tag, many=True).data
+
+
+    class Meta:
+        model = Album
+        fields = ("uuid", "title", "intro", "createTime", "author", "isManagerCreate",
+                  "totalCount", "faceIcon", "authorUuid", "audioInfo", "tagsInfo")
+
+
 class AlbumSerializer(serializers.ModelSerializer):
     # authorInfo = serializers.SerializerMethodField()
     #

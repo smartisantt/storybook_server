@@ -288,6 +288,15 @@ LOGGING = {
             'formatter': 'verbose',
             'level': 'WARNING',
         },
+        # 输出到文件(每周切割一次) -- 用户访问IP和访问的路径
+        'file3': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'ipandpath.log',
+            'when': 'W0',
+            'backupCount': 12,              #备份份数
+            'formatter': 'simple',          #使用哪种formatters日志格式
+            'level': 'INFO',
+        },
     },
     # CRITICAL > ERROR > WARNING > INFO > DEBUG > NOTEST
     'loggers': {
@@ -297,6 +306,13 @@ LOGGING = {
             # 是否向上传播日志信息
             'propagate': True,
             'level': 'DEBUG',
+        },
+        'ipandpath': {
+            # 需要使用的日志处理器
+            'handlers': ['file3'],
+            # 是否向上传播日志信息
+            'propagate': False,
+            'level': 'INFO',
         },
     }
 }

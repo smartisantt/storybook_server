@@ -11,7 +11,7 @@ from common.api import Api
 from utils.errors import ParamsException
 
 
-logger = logging.getLogger('django')
+logger = logging.getLogger('ipandpath')
 
 
 class CustomAuthentication(BaseAuthentication):
@@ -25,7 +25,15 @@ class CustomAuthentication(BaseAuthentication):
         remote_addr = request.META.get('REMOTE_ADDR')
         if remote_addr:
             remote_info += ' REMOTE_ADDR:' + remote_addr
-        logger.info( remote_info + ' URL:' + request.path)
+        # nickName = 'None'
+        # if request.user:
+        #     nickName = request.user.nickName
+        token = request.META.get('HTTP_TOKEN')
+        user_agent = request.META.get('HTTP_USER_AGENT')
+
+
+        logger.info( remote_info + ' URL:' + request.path + ' METHOD:' + request.method +
+                     ' TOKEN:' + token + ' USER_AGENT:' + user_agent)
 
         token = request.META.get('HTTP_TOKEN')
         if not token:

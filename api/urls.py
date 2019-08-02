@@ -75,6 +75,7 @@ urlpatterns = [
     path('share/listen', shareViews.h5_listen_detail, name='h5_listen_detail'),  # 听单详情
     path('share/album', shareViews.h5_album_detail, name='h5_album_detail'),  # 专辑详情
     path('share/userinfo', shareViews.h5_personal_index, name='h5_personal_index'),  # 主播主页
+    path('share/audiostory/info', shareViews.h5_audio_play, name='h5_audio_play'),  # 播放主页
 
     path('album/create', views.album_create, name='album_create'),  # 新建专辑
     path('album/list', views.album_list, name='album_list'),  # 专辑列表

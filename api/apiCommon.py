@@ -13,7 +13,7 @@ from django.db.models import Q
 from common.common import http_return, get_uuid, datetime_to_unix, page_index
 from manager.models import *
 from common.api import Api
-from storybook_sever.config import USER_SESSION_OVER_TIME
+from storybook_sever.config import USER_SESSION_OVER_TIME, SHAREURL
 
 
 def match_tel(tel):
@@ -251,13 +251,27 @@ def forbbiden_say(func):
     return wrapper
 
 
-def audioList_format(audios, data):
+def share_format(icon, title, url, content):
+    """
+    分享模型
+    :param icon:
+    :param title:
+    :param url:
+    :param content:
+    :return:
+    """
+    return {"icon": icon, "title": title, "content": content, "url": url}
+
+
+def audioList_format(audios, data=None):
     """
     处理返回格式化
     :param audios:
     :return:
     """
-    selfUuid = data['_cache']['uuid']
+    selfUuid = None
+    if data:
+        selfUuid = data['_cache']['uuid']
     audioStoryList = []
     for audio in audios:
         checkPraise = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=audio.uuid, type=1).first()
@@ -298,6 +312,11 @@ def audioList_format(audios, data):
                 "createTime": datetime_to_unix(user.createTime) if user.createTime else 0,
                 "city": user.city if user.city else ''
             }
+        content = "我在听【" + audio.name + "】，你可能也喜欢，快来听吧"
+        if selfUuid and selfUuid == audio.userUuid.uuid:
+            content = "我录制了【" + audio.name + "】，快来听听看"
+        url = SHAREURL + "/playDetails/" + audio.uuid
+        share = share_format(audio.bgIcon, audio.name, url, content)
         audioStoryList.append({
             "uuid": audio.uuid,
             "remarks": audio.remarks if audio.remarks else '',
@@ -321,6 +340,7 @@ def audioList_format(audios, data):
             "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
             "commentsCount": 0,
             "tagList": tagList,
+            "share": share,
         })
     return audioStoryList
 

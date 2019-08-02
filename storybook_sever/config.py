@@ -17,3 +17,6 @@ if version == 'ali_test':
     IS_SEND = True
 else:
     IS_SEND = False
+
+# 分享域名
+SHAREURL = "http://192.168.100.235:8009"

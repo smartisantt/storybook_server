@@ -2950,7 +2950,7 @@ def modify_album(request):
         with transaction.atomic():
             album.title = title
             album.intro = intro
-            album.listIcon = faceIcon
+            album.faceIcon = faceIcon
             album.bgIcon = bgIcon
             album.tags.clear()
             album.tags.add(*tags)

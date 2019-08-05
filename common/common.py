@@ -14,6 +14,19 @@ def request_body(request, method='GET'):
     :param request:
     :return:
     """
+    logger = logging.getLogger('ipandpath')
+    remote_info = ''
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        remote_info = 'HTTP_X_FORWARDED_FOR:' + x_forwarded_for.split(',')[0]
+    remote_addr = request.META.get('REMOTE_ADDR')
+    if remote_addr:
+        remote_info += ' REMOTE_ADDR:' + remote_addr
+    token = request.META.get('HTTP_TOKEN')
+    user_agent = request.META.get('HTTP_USER_AGENT')
+
+    logger.info(remote_info + ' URL:' + request.path + ' METHOD:' + request.method +
+                ' TOKEN:' + token + ' USER_AGENT:' + user_agent)
     if not request:
         return request
     if request.method != method:

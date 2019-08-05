@@ -1661,7 +1661,15 @@ def listen_change(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
-    return http_return(200, '修改成功')
+    intro = listen.intro if listen.intro else ''
+    AudioStoryCount = listen.listListenUuid.filter(status=0).count()
+    return http_return(200, '修改成功', {
+        "uuid": listen.uuid,
+        "name": listen.name,
+        "icon": listen.icon,
+        "intro": intro,
+        "audioStoryCount": AudioStoryCount
+    })
 
 
 @check_identify

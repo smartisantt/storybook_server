@@ -456,7 +456,7 @@ def albumList_format(albums):
             "name": albu.title,
             "icon": albu.faceIcon,
             "intro": albu.intro if albu.intro else '',
-            "audioStoryCount": albu.audioStory.count(),
+            "audioStoryCount": albu.audioStory.count() if albu.audioStory else 0,
         })
     return albumList
 
@@ -473,6 +473,6 @@ def listenList_format(listens):
             "name": lis.name,
             "icon": lis.icon,
             "intro": lis.intro if lis.intro else '',
-            "audioStoryCount": lis.listListenUuid.filter(status=0).count()
+            "audioStoryCount": lis.listListenUuid.filter(status=0).count() if lis.listListenUuid else 0
         })
     return listenList

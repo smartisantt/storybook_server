@@ -17,6 +17,7 @@ urlpatterns = [
     path('recording/bgmusic', views.recording_bgmusic_list, name='recording_bgmusic_list'),  # 背景音乐列表
     path('recording/add', views.recording_send, name='recording_send'),  # 故事发布
     path('recording/taglist', views.recording_tag_list, name='recording_tag_list'),  # 故事发布标签列表
+    path('recording/album/list', views.recording_album_list, name='recording_album_list'),  # 录制首页专辑列表
 
     path('user/attention', views.become_fans, name='become_fans'),  # 关注用户
     path('user/friendlist', views.user_fans, name='user_fans'),  # 用户粉丝或关注用户列表

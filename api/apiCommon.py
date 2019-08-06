@@ -442,3 +442,37 @@ def h5_audioList_format(audios):
             "bgmVolume": audio.bgmVolume if audio.bgmVolume else 1.0,
         })
     return audioList
+
+def albumList_format(albums):
+    """
+    统一返回听单和转接模型
+    :param objList:
+    :return:
+    """
+    albumList = []
+    for albu in albums:
+        albumList.append({
+            "uuid": albu.uuid,
+            "name": albu.title,
+            "icon": albu.faceIcon,
+            "intro": albu.intro if albu.intro else '',
+            "audioStoryCount": albu.audioStory.count() if albu.audioStory else 0,
+        })
+    return albumList
+
+def listenList_format(listens):
+    """
+    听单列表返回模型
+    :param listens:
+    :return:
+    """
+    listenList = []
+    for lis in listens:
+        listenList.append({
+            "uuid": lis.uuid,
+            "name": lis.name,
+            "icon": lis.icon,
+            "intro": lis.intro if lis.intro else '',
+            "audioStoryCount": lis.listListenUuid.filter(status=0).count() if lis.listListenUuid else 0
+        })
+    return listenList

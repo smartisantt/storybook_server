@@ -313,15 +313,23 @@ class AdSerializer(serializers.ModelSerializer):
 
 class ModuleSerializer(serializers.ModelSerializer):
     audioStory = serializers.SerializerMethodField()
+    album = serializers.SerializerMethodField()
 
 
     @staticmethod
     def get_audioStory(module):
-        return AudioStorySimpleSerializer(module.audioUuid).data
+        if module.contentType in [1, 2]:
+            return AudioStorySimpleSerializer(module.audioUuid).data
+        return {}
 
+    @staticmethod
+    def get_album(module):
+        if module.contentType == 3:
+            return AlbumSerializer(module.albumUuid).data
+        return {}
     class Meta:
         model = Module
-        exclude = ('audioUuid', 'id', 'createTime', 'updateTime', 'isDelete')
+        exclude = ('audioUuid', 'albumUuid', 'id', 'createTime', 'updateTime', 'isDelete')
 
 
 class GameInfoSerializer(serializers.ModelSerializer):

@@ -536,32 +536,15 @@ def index_list(request):
                 "target": ever.audioUuid.uuid,
             })
     # 抢先听
-    firstList = []
+
     firsts = Module.objects.filter(type='MOD2', isDelete=False, audioUuid__isDelete=False).order_by("orderNum").all()[
              :6]
     if firsts:
-        for first in firsts:
-            firstList.append({
-                "uuid": first.audioUuid.uuid,
-                "name": first.audioUuid.name if first.audioUuid.name else '',
-                "icon": first.audioUuid.bgIcon if first.audioUuid.bgIcon else '',
-                "content": first.audioUuid.remarks if first.audioUuid.remarks else '',
-                "type": 2,
-                "target": first.audioUuid.uuid,
-            })
+        firstList = indexList_format(firsts)
     # 热门推荐
-    hotList = []
     hots = Module.objects.filter(type='MOD3', isDelete=False, audioUuid__isDelete=False).order_by("orderNum").all()[:4]
     if hots:
-        for hot in hots:
-            hotList.append({
-                "uuid": hot.audioUuid.uuid,
-                "name": hot.audioUuid.name if hot.audioUuid.name else '',
-                "icon": hot.audioUuid.bgIcon if hot.audioUuid.bgIcon else '',
-                "content": hot.audioUuid.remarks if hot.audioUuid.remarks else '',
-                "type": 2,
-                "target": hot.audioUuid.uuid,
-            })
+        hotList = indexList_format(hots)
     # 猜你喜欢
     selfUuid = data['_cache']['uuid']
     likeList = []

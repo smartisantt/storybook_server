@@ -5,11 +5,9 @@
 # Create your views here.
 from urllib.parse import urljoin
 
-from django.db.models import Q
-
+from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
 from common.common import *
-from api.apiCommon import *
 from common.mixFileAPI import MixAudio
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL
 
@@ -1589,16 +1587,9 @@ def listen_create(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '新建失败')
-    intro = listen.intro if listen.intro else ''
-    AudioStoryCount = listen.listListenUuid.filter(status=0).count()
-    return http_return(200, '新建成功',
-                       {
-                           "uuid": listen.uuid,
-                           "name": listen.name,
-                           "icon": listen.icon,
-                           "intro": intro,
-                           "audioStoryCount": AudioStoryCount
-                       })
+    listenList = []
+    listenList.append(listen)
+    return http_return(200, '新建成功', listenList_format(listenList)[0])
 
 
 @check_identify
@@ -1613,15 +1604,7 @@ def listen_list(request):
         return http_return(400, '请求错误')
     selfUuid = data['_cache']['uuid']
     listens = Listen.objects.filter(userUuid__uuid=selfUuid, status=0).order_by("-updateTime").all()
-    listenList = []
-    for lis in listens:
-        listenList.append({
-            "uuid": lis.uuid,
-            "name": lis.name,
-            "icon": lis.icon,
-            "intro": lis.intro if lis.intro else '',
-            "audioStoryCount": lis.listListenUuid.filter(status=0).count()
-        })
+    listenList = listenList_format(listens)
     return http_return(200, '成功', listenList)
 
 
@@ -1661,16 +1644,9 @@ def listen_change(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
-    listen = listen.first()
-    intro = listen.intro if listen.intro else ''
-    AudioStoryCount = listen.listListenUuid.filter(status=0).count()
-    return http_return(200, '修改成功', {
-        "uuid": listen.uuid,
-        "name": listen.name,
-        "icon": listen.icon,
-        "intro": intro,
-        "audioStoryCount": AudioStoryCount
-    })
+    listenList = []
+    listenList.append(listen.first())
+    return http_return(200, '修改成功', listenList_format(listenList)[0])
 
 
 @check_identify
@@ -1842,7 +1818,9 @@ def album_create(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '新建失败')
-    return http_return(200, '新建成功')
+    albumList = []
+    albumList.append(album)
+    return http_return(200, '新建成功',albumList_format(albumList)[0])
 
 
 @check_identify
@@ -1861,14 +1839,7 @@ def album_list(request):
         selfUuid = uuid
     albums = Album.objects.filter(author__uuid=selfUuid, isDelete=False,
                                   checkStatus__in=["unCheck", "exemption"]).order_by("-updateTime").all()
-    albumList = []
-    for albu in albums:
-        albumList.append({
-            "uuid": albu.uuid,
-            "name": albu.title,
-            "icon": albu.faceIcon,
-            "intro": albu.intro if albu.intro else '',
-        })
+    albumList = albumList_format(albums)
     return http_return(200, '成功', albumList)
 
 
@@ -1908,7 +1879,9 @@ def album_change(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
-    return http_return(200, '修改成功')
+    albumList = []
+    albumList.append(album.first())
+    return http_return(200, '修改成功',albumList_format(albumList)[0])
 
 
 @check_identify
@@ -2045,3 +2018,22 @@ def album_detail(request):
         audios.append(aa.audioStory)
     audioList = audioList_format(audios, data)
     return http_return(200, '成功', {"info": albumInfo, "userInfo": userInfo, "list": audioList})
+
+
+@check_identify
+def recording_album_list(request):
+    """
+    录制首页专辑列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    albums = Album.objects.filter(isDelete=False, checkStatus__in=["unCheck", "exemption"]).order_by(
+        "-updateTime").all()
+    total, albums = page_index(albums, page, pageCount)
+    albumList = albumList_format(albums)
+    return http_return(200, '成功', {"total": total, "list": albumList})

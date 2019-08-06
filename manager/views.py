@@ -1819,7 +1819,7 @@ def change_story_in_module(request):
         return http_return(400, '参数错误')
     moduleUuid = data.get('moduleuuid', '')              # 要替换哪条uuid
     targetUuid = data.get('targetuuid', '')              # 替换uuid
-    contentType = data.get('contentype', '')
+    contentType = data.get('contenttype', '')
 
     if not all([moduleUuid, targetUuid, contentType in [1,2,3]]):
         return http_return(400, '参数错误')

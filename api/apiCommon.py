@@ -451,13 +451,12 @@ def albumList_format(albums):
     """
     albumList = []
     for albu in albums:
-        audioCount = albu.audioStory.count()
         albumList.append({
             "uuid": albu.uuid,
             "name": albu.title,
             "icon": albu.faceIcon,
             "intro": albu.intro if albu.intro else '',
-            "audioStoryCount": audioCount,
+            "audioStoryCount": albu.audioStory.count(),
         })
     return albumList
 

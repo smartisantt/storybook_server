@@ -17,6 +17,11 @@ logger = logging.getLogger('ipandpath')
 class CustomAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
+
+        token = request.META.get('HTTP_TOKEN')
+        if not token:
+            raise AuthenticationFailed('提供有效的身份认证标识')
+
         # 日志消息
         remote_info = ''
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -35,9 +40,6 @@ class CustomAuthentication(BaseAuthentication):
         logger.info( remote_info + ' URL:' + request.path + ' METHOD:' + request.method +
                      ' TOKEN:' + token + ' USER_AGENT:' + user_agent)
 
-        token = request.META.get('HTTP_TOKEN')
-        if not token:
-            raise AuthenticationFailed('提供有效的身份认证标识')
 
         try:
             user_info = caches['default'].get(token)

@@ -1711,8 +1711,8 @@ def del_ad(request):
 # 模块配置
 class ModuleView(ListAPIView):
     """显示模块类型 MOD1每日一读  MOD2抢先听  MOD3热门推荐"""
-    queryset = Module.objects.filter(isDelete=False, audioUuid__isDelete=False).\
-        select_related('audioUuid').order_by('orderNum')
+    queryset = Module.objects.filter(isDelete=False).\
+        select_related('audioUuid', 'albumUuid').order_by('orderNum')
     serializer_class = ModuleSerializer
     # pagination_class = MyPagination
 
@@ -1766,18 +1766,32 @@ def add_story_into_module(request):
     if not data:
         return http_return(400, '参数错误')
     type = data.get('type', '')
-    audioUuid = data.get('audiouuid', '')
-    if not all([type in ['MOD1', 'MOD2', 'MOD3'], audioUuid]):
+    contentType = data.get('contenttype', '')   # 1 自由音频 2 模板音频 3 专辑
+    # audioUuid = data.get('audiouuid', '')
+    targetUuid = data.get('targetuuid', '')
+    if not all([type in ['MOD1', 'MOD2', 'MOD3'], targetUuid, contentType in [1,2,3]]):
         return http_return(400, '参数错误')
+    if type=='MOD1' and contentType != 2:
+        return http_return(400, '每日一读只能添加模板音频')
 
-    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),Q(isUpload=1),
-                                           Q(checkStatus='check')|Q(checkStatus='exemption')).first()
-    if not audioStory:
-        return http_return(400, '没有对象')
-
-    module = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type).first()
-    if module:
-        return http_return(400, '已经添加')
+    audioStory = None
+    album = None
+    if contentType in [1,2]:
+        audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=targetUuid),Q(isUpload=1),
+                                               Q(checkStatus='check')|Q(checkStatus='exemption')).first()
+        if not audioStory:
+            return http_return(400, '没有对象')
+        module = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type, contentType=contentType).first()
+        if module:
+            return http_return(400, '已经添加')
+    else:
+        album = Album.objects.filter(uuid=targetUuid, isDelete=False,
+                                     checkStatus__in=["check", "exemption"]).first()
+        if not album:
+            return http_return(400, '没有对象')
+        module = Module.objects.filter(isDelete=False, albumUuid=album, type=type, contentType=contentType).first()
+        if module:
+            return http_return(400, '已经添加')
 
     maxOrderNum = Module.objects.filter(isDelete=False, type=type).aggregate(Max('orderNum'))['orderNum__max'] or 0
     try:
@@ -1786,8 +1800,10 @@ def add_story_into_module(request):
             Module.objects.create(
                 uuid=uuid,
                 type=type,
+                contentType=contentType,
                 orderNum=maxOrderNum+1,
                 audioUuid=audioStory,
+                albumUuid=album
             )
         return http_return(200, 'OK')
     except Exception as e:
@@ -3164,7 +3180,6 @@ class CheckAlbumView(ListAPIView):
                 logging.error(str(e))
                 raise ParamsException(e.detail)
         return self.queryset
-
 
 
 @api_view(['POST'])

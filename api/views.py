@@ -1615,6 +1615,8 @@ def listen_change(request):
         checkName = Listen.objects.filter(userUuid__uuid=data['_cache']['uuid'], name=name).first()
         if checkName and checkName != listen.first():
             return http_return(400, '听单名称已存在')
+        if len(name) > 14:
+            return http_return(400, "听单名字长度超过限制")
         update_data['name'] = name
     if icon:
         update_data['icon'] = icon
@@ -1778,6 +1780,8 @@ def album_create(request):
     intro = data.get('intro', '')
     if not name:
         return http_return(400, '请输入专辑名称')
+    if len(name) > 14:
+        return http_return(400, "专辑名字长度超过限制")
     checkName = Album.objects.filter(title=name, isDelete=False).first()
     if checkName:
         return http_return(400, '专辑名称已存在')
@@ -1850,6 +1854,8 @@ def album_change(request):
         checkName = Album.objects.filter(title=name).first()
         if checkName and checkName != album.first():
             return http_return(400, '专辑名称已存在')
+        if len(name) > 14:
+            return http_return(400, "专辑名字长度超过限制")
         update_data['title'] = name
     if icon:
         update_data['faceIcon'] = icon

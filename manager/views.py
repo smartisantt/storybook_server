@@ -3037,6 +3037,19 @@ def del_album(request):
     if not album:
         return http_return(400, '没有专辑对象')
 
+    """删除专辑 影响到的范围 """
+    module = Module.objects.filter(albumUuid=album, isDelete=False).first()
+    if module:
+        return http_return(400, '该专辑已关联模块配置')
+    # 音频关联广告
+    ad = Ad.objects.filter(target=albumUuid, isDelete=False).first()
+    if ad:
+        return http_return(400, '该专辑已关联广告')
+    # 音频关联轮播图
+    banner = CycleBanner.objects.filter(target=albumUuid, isDelete=False).first()
+    if banner:
+        return http_return(400, '该专辑已关联轮播图')
+
     try:
         with transaction.atomic():
             album.isDelete = True

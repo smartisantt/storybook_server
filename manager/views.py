@@ -1818,29 +1818,42 @@ def change_story_in_module(request):
     if not data:
         return http_return(400, '参数错误')
     moduleUuid = data.get('moduleuuid', '')              # 要替换哪条uuid
-    audioUuid = data.get('audiouuid', '')                # 替换成哪个音频
+    targetUuid = data.get('targetuuid', '')              # 替换uuid
+    contentType = data.get('contenttype', '')
 
-    if not all([moduleUuid, audioUuid]):
+    if not all([moduleUuid, targetUuid, contentType in [1,2,3]]):
         return http_return(400, '参数错误')
 
     module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
     if not module:
         return http_return(400, '没有对象')
 
-    audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=audioUuid),Q(isUpload=1),
-                                         Q(checkStatus='check')|Q(checkStatus='exemption')).first()
-    if not audioStory:
-        return http_return(400, '没有对象')
-
-    # 替换的对象在这个模块中是否存在
+    audioStory = None
+    album = None
     type = module.type
-    module2 = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type).first()
-    if module2:
-        return http_return(400, '已经添加')
+    if contentType in [1, 2]:
+        audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=targetUuid), Q(isUpload=1),
+                                               Q(checkStatus='check') | Q(checkStatus='exemption')).first()
+        if not audioStory:
+            return http_return(400, '没有对象')
+        module = Module.objects.filter(isDelete=False, audioUuid=targetUuid, type=type, contentType=contentType).first()
+        if module:
+            return http_return(400, '已经添加')
+    else:
+        album = Album.objects.filter(uuid=targetUuid, isDelete=False,
+                                     checkStatus__in=["check", "exemption"]).first()
+        if not album:
+            return http_return(400, '没有对象')
+        module = Module.objects.filter(isDelete=False, albumUuid=targetUuid, type=type, contentType=contentType).first()
+        if module:
+            return http_return(400, '已经添加')
 
+    module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
     try:
         with transaction.atomic():
             module.audioUuid = audioStory
+            module.albumUuid = album
+            module.contentType = contentType
             module.save()
         return http_return(200, 'OK')
     except Exception as e:
@@ -3023,6 +3036,19 @@ def del_album(request):
     album = Album.objects.filter(isDelete=False, uuid=albumUuid).first()
     if not album:
         return http_return(400, '没有专辑对象')
+
+    """删除专辑 影响到的范围 """
+    module = Module.objects.filter(albumUuid=album, isDelete=False).first()
+    if module:
+        return http_return(400, '该专辑已关联模块配置')
+    # 音频关联广告
+    ad = Ad.objects.filter(target=albumUuid, isDelete=False).first()
+    if ad:
+        return http_return(400, '该专辑已关联广告')
+    # 音频关联轮播图
+    banner = CycleBanner.objects.filter(target=albumUuid, isDelete=False).first()
+    if banner:
+        return http_return(400, '该专辑已关联轮播图')
 
     try:
         with transaction.atomic():

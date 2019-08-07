@@ -46,7 +46,7 @@ def h5_listen_detail(request):
     uuid = request.GET.get('uuid', '')
     if not uuid:
         return http_return(400, '请选择需要查看的听单')
-    listen = Listen.objects.filter(uuid=uuid).first()
+    listen = Listen.objects.filter(uuid=uuid,status=0).first()
     if not listen:
         return http_return(400, '听单信息不存在')
     user = listen.userUuid
@@ -79,7 +79,7 @@ def h5_album_detail(request):
     uuid = request.GET.get('uuid', '')
     if not uuid:
         return http_return(400, '请选择需要查看的专辑')
-    album = Album.objects.filter(uuid=uuid).first()
+    album = Album.objects.filter(uuid=uuid,isDelete=False).first()
     if not album:
         return http_return(400, '专辑信息不存在')
     user = album.author

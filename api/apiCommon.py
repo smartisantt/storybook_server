@@ -491,7 +491,6 @@ def indexList_format(objList):
         if obj.albumUuid:
             album = obj.albumUuid
             resultList.append({
-                "contentType": 2,
                 "uuid": album.uuid,
                 "name": album.title,
                 "icon": album.faceIcon,
@@ -503,7 +502,6 @@ def indexList_format(objList):
         if obj.audioUuid:
             audio = obj.audioUuid
             resultList.append({
-                "contentType": 1,
                 "uuid": audio.uuid,
                 "name": audio.name if audio.name else '',
                 "icon": audio.bgIcon if audio.bgIcon else '',

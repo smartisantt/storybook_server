@@ -199,7 +199,7 @@ def recording_send(request):
         return http_return(400, '请选择用户音量')
     if not storyTagUuidList:
         return http_return(400, '请选择作品标签')
-    if not type or int(type) not in [0, 1]:
+    if type not in [0, 1]:
         return http_return(400, '请选择录制类型')
     if not name:
         return http_return(400, '请输入标题')
@@ -1807,7 +1807,7 @@ def album_create(request):
         return http_return(400, '新建失败')
     albumList = []
     albumList.append(album)
-    return http_return(200, '新建成功',albumList_format(albumList)[0])
+    return http_return(200, '新建成功', albumList_format(albumList)[0])
 
 
 @check_identify
@@ -1870,7 +1870,7 @@ def album_change(request):
         return http_return(400, '修改失败')
     albumList = []
     albumList.append(album.first())
-    return http_return(200, '修改成功',albumList_format(albumList)[0])
+    return http_return(200, '修改成功', albumList_format(albumList)[0])
 
 
 @check_identify

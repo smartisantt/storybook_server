@@ -412,6 +412,12 @@ def audio_play(request):
     checkPlayHistory = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=4).first()
     if checkPlayHistory:
         checkPlayHistory.updateTime = datetime.datetime.now()
+        try:
+            with transaction.atomic():
+                checkPlayHistory.save()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '保存记录失败')
     else:
         checkPlayHistory = Behavior(
             uuid=get_uuid(),
@@ -419,12 +425,12 @@ def audio_play(request):
             audioUuid=audio,
             type=4,
         )
-    try:
-        with transaction.atomic():
-            checkPlayHistory.save()
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '保存记录失败')
+        try:
+            with transaction.atomic():
+                checkPlayHistory.save()
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '保存记录失败')
     # 更新连续阅读天数
     readDate = selfUser.readDate
     today = datetime.date.today()

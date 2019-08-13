@@ -443,6 +443,7 @@ def h5_audioList_format(audios):
         })
     return audioList
 
+
 def albumList_format(albums):
     """
     统一返回听单和转接模型
@@ -460,6 +461,7 @@ def albumList_format(albums):
         })
     return albumList
 
+
 def listenList_format(listens):
     """
     听单列表返回模型
@@ -473,6 +475,38 @@ def listenList_format(listens):
             "name": lis.name,
             "icon": lis.icon,
             "intro": lis.intro if lis.intro else '',
-            "audioStoryCount": lis.listListenUuid.filter(status=0).count() if lis.listListenUuid else 0
+            "audioStoryCount": lis.listListenUuid.filter(status=0).count() if lis.listListenUuid else 0,
         })
     return listenList
+
+
+def indexList_format(objList):
+    """
+    定义首页返回列表模型
+    :param objList:
+    :return:
+    """
+    resultList = []
+    for obj in objList:
+        if obj.albumUuid:
+            album = obj.albumUuid
+            resultList.append({
+                "uuid": album.uuid,
+                "name": album.title,
+                "icon": album.faceIcon,
+                "intro": album.intro if album.intro else '',
+                "audioStoryCount": album.audioStory.count() if album.audioStory else 0,
+                "type": 1,
+                "target": album.uuid,
+            })
+        if obj.audioUuid:
+            audio = obj.audioUuid
+            resultList.append({
+                "uuid": audio.uuid,
+                "name": audio.name if audio.name else '',
+                "icon": audio.bgIcon if audio.bgIcon else '',
+                "content": audio.remarks if audio.remarks else '',
+                "type": 2,
+                "target": audio.uuid,
+            })
+    return resultList

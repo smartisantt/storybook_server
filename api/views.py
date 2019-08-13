@@ -199,7 +199,7 @@ def recording_send(request):
         return http_return(400, '请选择用户音量')
     if not storyTagUuidList:
         return http_return(400, '请选择作品标签')
-    if not type or int(type) not in [0, 1]:
+    if type not in [0, 1]:
         return http_return(400, '请选择录制类型')
     if not name:
         return http_return(400, '请输入标题')
@@ -400,12 +400,6 @@ def audio_play(request):
         return http_return(400, '故事信息不存在')
     # 更新播放次数
     audio.playTimes += 1
-    try:
-        with transaction.atomic():
-            audio.save()
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '更新播放次数失败')
     # 记录播放历史
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
@@ -419,12 +413,6 @@ def audio_play(request):
             audioUuid=audio,
             type=4,
         )
-    try:
-        with transaction.atomic():
-            checkPlayHistory.save()
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '保存记录失败')
     # 更新连续阅读天数
     readDate = selfUser.readDate
     today = datetime.date.today()
@@ -441,16 +429,18 @@ def audio_play(request):
     else:
         selfUser.readDays = 1
         selfUser.readDate = today
-    if flag:
-        try:
-            with transaction.atomic():
-                selfUser.save()
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '更新阅读天数失败')
     audios = []
     audios.append(audio)
     playDict = audioList_format(audios, data)[0]
+    try:
+        with transaction.atomic():
+            audio.save()
+            checkPlayHistory.save()
+            if flag:
+                selfUser.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '数据库错误')
     return http_return(200, '成功', playDict)
 
 
@@ -536,32 +526,15 @@ def index_list(request):
                 "target": ever.audioUuid.uuid,
             })
     # 抢先听
-    firstList = []
+
     firsts = Module.objects.filter(type='MOD2', isDelete=False, audioUuid__isDelete=False).order_by("orderNum").all()[
              :6]
     if firsts:
-        for first in firsts:
-            firstList.append({
-                "uuid": first.audioUuid.uuid,
-                "name": first.audioUuid.name if first.audioUuid.name else '',
-                "icon": first.audioUuid.bgIcon if first.audioUuid.bgIcon else '',
-                "content": first.audioUuid.remarks if first.audioUuid.remarks else '',
-                "type": 2,
-                "target": first.audioUuid.uuid,
-            })
+        firstList = indexList_format(firsts)
     # 热门推荐
-    hotList = []
     hots = Module.objects.filter(type='MOD3', isDelete=False, audioUuid__isDelete=False).order_by("orderNum").all()[:4]
     if hots:
-        for hot in hots:
-            hotList.append({
-                "uuid": hot.audioUuid.uuid,
-                "name": hot.audioUuid.name if hot.audioUuid.name else '',
-                "icon": hot.audioUuid.bgIcon if hot.audioUuid.bgIcon else '',
-                "content": hot.audioUuid.remarks if hot.audioUuid.remarks else '',
-                "type": 2,
-                "target": hot.audioUuid.uuid,
-            })
+        hotList = indexList_format(hots)
     # 猜你喜欢
     selfUuid = data['_cache']['uuid']
     likeList = []
@@ -1170,7 +1143,7 @@ def personal_audiostory(request):
     selfUuid = data['_cache']['uuid']
     if uuid:
         selfUuid = uuid
-    audio = AudioStory.objects.exclude(checkStatus="exemption").filter(
+    audio = AudioStory.objects.filter(
         isDelete=False).filter(userUuid__uuid=selfUuid)
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
@@ -1632,6 +1605,8 @@ def listen_change(request):
         checkName = Listen.objects.filter(userUuid__uuid=data['_cache']['uuid'], name=name).first()
         if checkName and checkName != listen.first():
             return http_return(400, '听单名称已存在')
+        if len(name) > 14:
+            return http_return(400, "听单名字长度超过限制")
         update_data['name'] = name
     if icon:
         update_data['icon'] = icon
@@ -1795,6 +1770,8 @@ def album_create(request):
     intro = data.get('intro', '')
     if not name:
         return http_return(400, '请输入专辑名称')
+    if len(name) > 14:
+        return http_return(400, "专辑名字长度超过限制")
     checkName = Album.objects.filter(title=name, isDelete=False).first()
     if checkName:
         return http_return(400, '专辑名称已存在')
@@ -1820,7 +1797,7 @@ def album_create(request):
         return http_return(400, '新建失败')
     albumList = []
     albumList.append(album)
-    return http_return(200, '新建成功',albumList_format(albumList)[0])
+    return http_return(200, '新建成功', albumList_format(albumList)[0])
 
 
 @check_identify
@@ -1867,6 +1844,8 @@ def album_change(request):
         checkName = Album.objects.filter(title=name).first()
         if checkName and checkName != album.first():
             return http_return(400, '专辑名称已存在')
+        if len(name) > 14:
+            return http_return(400, "专辑名字长度超过限制")
         update_data['title'] = name
     if icon:
         update_data['faceIcon'] = icon
@@ -1881,7 +1860,7 @@ def album_change(request):
         return http_return(400, '修改失败')
     albumList = []
     albumList.append(album.first())
-    return http_return(200, '修改成功',albumList_format(albumList)[0])
+    return http_return(200, '修改成功', albumList_format(albumList)[0])
 
 
 @check_identify

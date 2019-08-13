@@ -400,24 +400,12 @@ def audio_play(request):
         return http_return(400, '故事信息不存在')
     # 更新播放次数
     audio.playTimes += 1
-    try:
-        with transaction.atomic():
-            audio.save()
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '更新播放次数失败')
     # 记录播放历史
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
     checkPlayHistory = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=4).first()
     if checkPlayHistory:
         checkPlayHistory.updateTime = datetime.datetime.now()
-        try:
-            with transaction.atomic():
-                checkPlayHistory.save()
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '保存记录失败')
     else:
         checkPlayHistory = Behavior(
             uuid=get_uuid(),
@@ -425,12 +413,6 @@ def audio_play(request):
             audioUuid=audio,
             type=4,
         )
-        try:
-            with transaction.atomic():
-                checkPlayHistory.save()
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '保存记录失败')
     # 更新连续阅读天数
     readDate = selfUser.readDate
     today = datetime.date.today()
@@ -447,16 +429,18 @@ def audio_play(request):
     else:
         selfUser.readDays = 1
         selfUser.readDate = today
-    if flag:
-        try:
-            with transaction.atomic():
-                selfUser.save()
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '更新阅读天数失败')
     audios = []
     audios.append(audio)
     playDict = audioList_format(audios, data)[0]
+    try:
+        with transaction.atomic():
+            audio.save()
+            checkPlayHistory.save()
+            if flag:
+                selfUser.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '数据库错误')
     return http_return(200, '成功', playDict)
 
 

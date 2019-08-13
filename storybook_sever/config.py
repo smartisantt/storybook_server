@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-version = "test"
+version = "ali_test"
 
 # 用户端端session过期时间
 USER_SESSION_OVER_TIME = 30 * 24 * 60 * 60

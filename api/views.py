@@ -1108,6 +1108,8 @@ def personal_index(request):
         follow = FriendShip.objects.filter(followers__uuid=selfUuid, follows__uuid=uuid).first()
         selfUuid = uuid
     user = User.objects.filter(uuid=selfUuid).first()
+    if not user:
+        return http_return(400, "用户信息不存在")
     url = SHAREURL + "/myAlbum/" + user.uuid
     content = "这是【" + user.nickName + "】绘童个人主页，ta有很多优秀的作品，推荐你关注"
     share = share_format(user.avatar, user.nickName, url, content)

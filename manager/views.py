@@ -243,16 +243,19 @@ def total_data(request):
             'recordCount': item['audioStory_count_by_user']
         }
         data1_list.append(data)
-    # 热门录制排行
+    # 热门录制排行 模板在选定的时间范围内的录制次数排行
     data2_list = []
-    res = Story.objects.filter(status="normal", createTime__range=(t1, t2)).order_by('-recordNum')[:5]
-    for index,item in enumerate(res.values()):
+    # res = Story.objects.filter(status="normal", createTime__range=(t1, t2)).order_by('-recordNum')[:5]
+    res = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2), isUpload=1, audioStoryType=1).\
+        values('storyUuid').annotate(storycount=Count('storyUuid')).order_by('-storycount')[:5]
+    for index,item in enumerate(res):
         data = {
             'orderNum': index + 1 or -1,
-            'name': item['name'] or '',
-            'recordNum': item['recordNum'] or 0
+            'name': Story.objects.filter(uuid=item['storyUuid']).first().name if item['storyUuid'] else '',
+            'recordNum': item['storycount'] or 0
         }
         data2_list.append(data)
+
 
     # 热门播放排行
     data3_list = []

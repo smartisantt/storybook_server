@@ -27,8 +27,8 @@ class CustomAuthentication(BaseAuthentication):
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             remote_info = ' HTTP_X_FORWARDED_FOR:' + x_forwarded_for.split(',')[0]
-        remote_addr = request.META.get('REMOTE_ADDR')
-        if remote_addr:
+        else:
+            remote_addr = request.META.get('REMOTE_ADDR')
             remote_info += ' REMOTE_ADDR:' + remote_addr
         # nickName = 'None'
         # if request.user:

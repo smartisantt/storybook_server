@@ -103,17 +103,17 @@ def check_identify(func):
 
     def wrapper(request):
         token = request.META.get('HTTP_TOKEN')
-        try:
-            user_info = caches['api'].get(token)
-        except Exception as e:
-            logging.error(str(e))
-            return http_return(400, '服务器连接redis失败')
+        api = Api()
+        user_info = api.check_token(token)
         if not user_info:
-            api = Api()
-            user_info = api.check_token(token)
-            if not user_info:
-                return http_return(401, '登录失效')
-            else:
+            return http_return(401, '登录失效,请重新登录')
+        else:
+            try:
+                session_user = caches['api'].get(token)
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '服务器连接redis失败')
+            if not session_user:
                 # 记录登录ip,存入缓存
                 loginIP = user_info.get('loginIp', '')
                 user_data = User.objects.filter(userID=user_info.get('userId', '')).first()

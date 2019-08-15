@@ -2093,6 +2093,11 @@ def add_user(request):
     if not re.match("^1[3456789]\d{9}$", tel):
         return http_return(400, '手机号码错误')
 
+    # 2019年8月15日微信 沟通结果 删除的用户无法再从后台添加
+    user = User.objects.filter(tel=tel, status='destroy').first()
+    if user:
+        return http_return(400, '此用户已删除，不允许添加')
+
     user = User.objects.filter(tel=tel).exclude(status='destroy').first()
     if user:
         return http_return(400, '此手机号已经注册')

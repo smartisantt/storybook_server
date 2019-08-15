@@ -164,7 +164,7 @@ def check_identify(func):
                     user_data = user
                 # 处理缓存信息，更新或者添加
                 if not create_session(user_data, token, user_info):
-                    return http_return(401, '用户不存在')
+                    return http_return(401, '缓存错误，请稍后重试')
             # 如果有登陆出现，则存登录日志
         nowDate = datetime.date.today()
         userID = user_info.get('userId', '')

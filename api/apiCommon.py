@@ -144,6 +144,8 @@ def check_identify(func):
                         logging.error(str(e))
                         return http_return(401, '保存失败')
                     user_data = user
+                if user_data.status == "destroy":
+                    return http_return(400, "登录错误，请联系管理员")
                 if not create_session(user_data, token, loginIP):
                     return http_return(401, '用户不存在')
             # 如果有登陆出现，则存登录日志

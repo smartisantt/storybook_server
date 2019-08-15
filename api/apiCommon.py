@@ -37,7 +37,7 @@ def random_string(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _s in range(size))
 
 
-def create_session(user_info, token, loginIP):
+def create_session(user_data, token, user_info):
     """
     用户信息保存至caches
     :param request:
@@ -45,17 +45,37 @@ def create_session(user_info, token, loginIP):
     :return:
     """
     user = {
-        'nickName': user_info.nickName if user_info.nickName else None,
-        'uuid': user_info.uuid,
-        'userId': user_info.userID,
-        'tel': user_info.tel,
-        'loginIp': loginIP,
+        'nickName': user_data.nickName if user_data.nickName else None,
+        'uuid': user_data.uuid,
+        'userId': user_data.userID,
+        'tel': user_data.tel,
+        'loginIp': user_info.get('loginIp', ''),
     }
     try:
         caches['api'].set(token, user, USER_SESSION_OVER_TIME)
     except Exception as e:
         logging.error(str(e))
         return False
+    objKey = user_data.userID+"-"+user_info.get('platform', '')
+    try:
+        objToken = caches['api'].get(objKey)
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    if objToken:
+        if objToken != token:
+            try:
+                caches['api'].delete(objToken)
+                caches['api'].set(objKey, token, USER_SESSION_OVER_TIME)
+            except Exception as e:
+                logging.error(str(e))
+                return False
+    else:
+        try:
+            caches['api'].set(objKey, token, USER_SESSION_OVER_TIME)
+        except Exception as e:
+            logging.error(str(e))
+            return False
     return True
 
 
@@ -103,19 +123,17 @@ def check_identify(func):
 
     def wrapper(request):
         token = request.META.get('HTTP_TOKEN')
-        api = Api()
-        user_info = api.check_token(token)
+        try:
+            user_info = caches['api'].get(token)
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '服务器连接redis失败')
         if not user_info:
-            return http_return(401, '登录失效,请重新登录')
-        else:
-            try:
-                session_user = caches['api'].get(token)
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '服务器连接redis失败')
-            if not session_user:
-                # 记录登录ip,存入缓存
-                loginIP = user_info.get('loginIp', '')
+            api = Api()
+            user_info = api.check_token(token)
+            if not user_info:
+                return http_return(401, '登录失效')
+            else:
                 user_data = User.objects.filter(userID=user_info.get('userId', '')).first()
                 if not user_data:
                     user_uuid = get_uuid()
@@ -144,7 +162,8 @@ def check_identify(func):
                         logging.error(str(e))
                         return http_return(401, '保存失败')
                     user_data = user
-                if not create_session(user_data, token, loginIP):
+                # 处理缓存信息，更新或者添加
+                if not create_session(user_data, token, user_info):
                     return http_return(401, '用户不存在')
             # 如果有登陆出现，则存登录日志
         nowDate = datetime.date.today()

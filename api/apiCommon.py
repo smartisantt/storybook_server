@@ -116,7 +116,7 @@ def check_identify(func):
             else:
                 # 记录登录ip,存入缓存
                 loginIP = user_info.get('loginIp', '')
-                user_data = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
+                user_data = User.objects.filter(userID=user_info.get('userId', '')).first()
                 if not user_data:
                     user_uuid = get_uuid()
                     version = Version.objects.filter(status="dafault").first()
@@ -151,7 +151,7 @@ def check_identify(func):
         userID = user_info.get('userId', '')
         selfUser = User.objects.filter(userID=user_info.get('userId', ''), status='normal').first()
         if not selfUser:
-            return http_return(400, '用户状态异常，请重新登录')
+            return http_return(400, '登录错误，请联系管理员')
         selfUuid = selfUser.uuid
         logDate = caches['api'].get(selfUuid)
         if logDate:

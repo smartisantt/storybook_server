@@ -75,10 +75,14 @@ class CustomAuthentication(BaseAuthentication):
             if not user_info:
                 raise AuthenticationFailed(detail='提供有效的token')
 
+            user = User.objects.filter(userID=user_info.get('userId', '')).\
+                exclude(status="destroy").first()
+            if not user:
+                raise AuthenticationFailed('改用户已删除，请联系管理员！')
+
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
             exclude(status="destroy").first()
             if not user:
-                # logger.warning('[Failed] ' + user.tel + ' failed to login! ' + remote_info)
                 raise AuthenticationFailed('没有管理员权限')
 
             loginIp = get_ip_address(request)

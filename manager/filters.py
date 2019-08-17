@@ -106,7 +106,7 @@ class UserFilter(django_filters.FilterSet):
 
     class Meta:
         model = User
-        fields = ('id', 'nickName', 'tel', 'status', 'city')
+        fields = ('id', 'nickName', 'tel', 'status', 'city', 'roles')
 
 
 class GameInfoFilter(django_filters.FilterSet):

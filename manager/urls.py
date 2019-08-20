@@ -7,7 +7,7 @@ from rest_framework.routers import SimpleRouter
 from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
-    ActivityView, CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView, \
+    CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView, \
     AlbumView, CheckAlbumView, AuthorAudioStoryView
 
 app_name = 'manager'
@@ -93,13 +93,6 @@ urlpatterns = [
     path('user/forbiddenuser/', views.forbidden_user, name='forbidden_user'),
     path('user/cancelforbid/', views.cancel_forbid, name='cancel_forbid'),
     path('user/modifyuser/', views.modify_user, name='modify_user'),
-
-
-    # 活动管理
-    path('activity/activitylist/', ActivityView.as_view()),
-    path('activity/rankactivity/', views.activity_rank, name='activity_rank'),
-    path('activity/createactivity/', views.create_activity, name='create_activity'),
-    path('activity/modifyactivity/', views.modify_activity, name='modify_activity'),
 
 
     # 首页弹屏

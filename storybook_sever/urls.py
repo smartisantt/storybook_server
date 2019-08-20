@@ -17,9 +17,11 @@ from django.contrib import admin
 from django.urls import path, include
 from api import urls as apiUrl
 from manager import urls as managerUrl
+from manager_activity import urls as activityUrl
 
 urlpatterns = [
     # path('admin/', admin.site.urls),
     path('api/ht/', include((apiUrl, 'api'), namespace='api')),
     path('api/manage/', include((managerUrl, 'manager'), namespace='manager')),
+    path('api/manage/activity/', include((activityUrl, 'manager_activity'), namespace='manager_activity')),
 ]

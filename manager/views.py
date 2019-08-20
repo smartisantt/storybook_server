@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from api.apiCommon import get_default_name
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
-    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, ActivityFilter, CycleBannerFilter, \
+    UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
     AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter, AuthorAudioStoryFilter
 from manager.models import *
 from manager.managerCommon import *
@@ -20,9 +20,9 @@ from manager.paginations import MyPagination
 from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer, CheckAudioStoryInfoSerializer, \
     AudioStoryInfoSerializer, TagsSimpleSerialzer, StorySimpleSerializer, UserSearchSerializer, BgmSerializer, \
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
-    AudioStorySimpleSerializer, ActivitySerializer, CycleBannerSerializer, FeedbackSerializer, TagsChildSerialzer, \
+    AudioStorySimpleSerializer, CycleBannerSerializer, FeedbackSerializer, \
     TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, CheckAlbumSerializer, \
-    AuthorAudioStorySerializer, AlbumAudioStoryDetailSerializer, AlbumDetailSerializer
+    AuthorAudioStorySerializer, AlbumDetailSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
@@ -2334,231 +2334,7 @@ def cancel_forbid(request):
         return http_return(400, '恢复失败')
 
 
-# 活动
-# class GameInfoView(ListAPIView):
-#     queryset = GameInfo.objects.all()
-#     serializer_class = GameInfoSerializer
-#     filter_class = GameInfoFilter
-#     pagination_class = MyPagination
-#
-#     def get_queryset(self):
-#         activityuuid = self.request.query_params.get('activityuuid', '')
-#         if not activityuuid:
-#             raise ParamsException({'code': 400, 'msg': '参数错误'})
-#
-#         act = Activity.objects.filter(uuid=activityuuid).first()
-#         if not act:
-#             raise ParamsException({'code': 400, 'msg': '活动信息不存在'})
-#
-#         self.queryset = self.queryset.filter(activityUuid__uuid=activityuuid).all()
-#
-#         self.queryset = sorted(self.queryset,
-#                        key=lambda x: 0.75 * x.audioUuid.bauUuid.filter(type=1).count() + 0.25 * x.audioUuid.playTimes,
-#                        reverse=True)
-#         self.queryset.order_by()
-#         return self.queryset
-
-
-@api_view(['GET'])
-@authentication_classes((CustomAuthentication, ))
-def activity_rank(request):
-    """活动排行"""
-    data = request_body(request)
-    if not data:
-        return http_return(400, '参数错误')
-    activityUuid = data.get('activityuuid', '')
-    page = data.get('page', '')
-    page_size = data.get('page_size', '')
-    if not uuid:
-        return http_return(400, '参数错误')
-    act = Activity.objects.filter(uuid=activityUuid).first()
-    if not act:
-        return http_return(400, '活动信息不存在')
-    config = ActivityConfig.objects.filter(status=0).first()
-    if not config:
-        return http_return(400, '未获取到参数配置')
-    praiseNum = config.praiseNum / 100
-    playTimesNum = config.playTimesNum / 100
-    games = GameInfo.objects.filter(activityUuid__uuid=activityUuid).all()
-    games = sorted(games,
-                   key=lambda x: praiseNum * x.audioUuid.bauUuid.filter(
-                       type=1).count() + playTimesNum * x.audioUuid.playTimes,
-                   reverse=True)
-    total, games = page_index(games, page, page_size)
-    activityRankList = []
-    for index,game in enumerate(games):
-        name = game.audioUuid.name
-        if game.audioUuid.audioStoryType:
-            name = game.audioUuid.storyUuid.name
-        activityRankList.append({
-            "rank": index+1+(int(page)-1)*int(page_size) if page else index+1,
-            "publisher": {
-                "uuid": game.userUuid.uuid or '',
-                "nickname": game.userUuid.nickName or '',
-                "avatar": game.userUuid.avatar or '',
-                "tel": game.userUuid.tel or '',
-            },
-            "audio": {
-                "id": game.audioUuid.id or '',
-                "uuid": game.audioUuid.uuid or '',
-                "bgmUrl":  game.audioUuid.bgm.url if game.audioUuid.bgm else '',
-                "voiceUrl": game.audioUuid.voiceUrl or '',
-                "name": name or '',
-            },
-            "score": praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes,
-        })
-    return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
-
-
-
-class ActivityView(ListAPIView):
-    queryset = Activity.objects.all().prefetch_related('activityRankUuid').order_by('-createTime')
-    serializer_class = ActivitySerializer
-    filter_class = ActivityFilter
-    pagination_class = MyPagination
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    ordering = ('-createTime',)
-    ordering_fields = ('id', 'createTime')
-
-
-    def get_queryset(self):
-        startTimestamp = self.request.query_params.get('starttime', '')
-        endTimestamp = self.request.query_params.get('endtime', '')
-
-        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
-            raise ParamsException('时间错误')
-        if startTimestamp and endTimestamp:
-            try:
-                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.exclude(Q(startTime__gt=endtime) & Q(endTime__gt=endtime) |
-                                             Q(endTime__lt=starttime) & Q(startTime__lt=starttime))
-            except Exception as e:
-                logging.error(str(e))
-                raise ParamsException(e.detail)
-
-        return self.queryset
-
-
-
-@api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
-def create_activity(request):
-    # 创建活动
-    data = request_body(request, 'POST')
-    if not data:
-        return http_return(400, '参数错误')
-    name = data.get('name', '')
-    intro = data.get('intro', '')
-    startTime = data.get('starttime', '')
-    endTime = data.get('endtime', '')
-    url = data.get('url', '')
-    icon = data.get('icon', '')         # 非必填
-    if not all([url, name, intro, startTime, endTime]):
-        return http_return(400, '参数错误')
-    if Activity.objects.filter(name=name).exists():
-        return http_return(400, '重复活动名')
-
-    if startTime > endTime:
-        return http_return(400, '时间错误')
-
-    if not all([isinstance(startTime, int), isinstance(endTime, int)]):
-        return http_return(400, '时间错误')
-
-    if not isinstance(url ,str):
-        return http_return(400, 'url错误')
-
-    if not url.startswith( 'http' ):
-        return http_return('url格式错误')
-
-    startTime = startTime/1000
-    endTime = endTime/1000
-
-    try:
-        startTime = datetime.fromtimestamp(startTime)
-        endTime = datetime.fromtimestamp(endTime)
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '时间参数错误')
-
-    try:
-        with transaction.atomic():
-            uuid = get_uuid()
-            Activity.objects.create(
-                uuid = uuid,
-                name = name,
-                url = url,
-                startTime = startTime,
-                endTime = endTime,
-                intro = intro,
-                icon = icon,
-                status = "normal"
-            )
-            return http_return(200, 'OK')
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '创建失败')
-
-
-
-@api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
-def modify_activity(request):
-    data = request_body(request, 'POST')
-    if not data:
-        return http_return(400, '参数错误')
-    uuid = data.get('uuid', '')
-    name = data.get('name', '')
-    intro = data.get('intro', '')
-    icon = data.get('icon', '') # 没有icon
-    startTime = data.get('starttime', '')
-    endTime = data.get('endtime', '')
-    url = data.get('url', '')
-    if not all([uuid, name, intro, startTime, endTime, url]):
-        return http_return(400, '参数错误')
-    activity = Activity.objects.filter(uuid=uuid).first()
-    if not activity:
-        return http_return(400, '没有对象')
-    myName = activity.name
-    if myName != name:
-        if Activity.objects.filter(name=name).exists():
-            return http_return(400, '重复活动名')
-
-    if not all([isinstance(startTime, int), isinstance(endTime, int)]):
-        return http_return(400, '时间错误')
-
-    if startTime > endTime:
-        return http_return(400, '时间错误')
-
-    if not url.startswith( 'http' ):
-        return http_return('url格式错误')
-
-    startTime = startTime/1000
-    endTime = endTime/1000
-    try:
-        startTime = datetime.fromtimestamp(startTime)
-        endTime = datetime.fromtimestamp(endTime)
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '时间错误')
-
-    activity = Activity.objects.filter(uuid=uuid).first()
-    try:
-        with transaction.atomic():
-            activity.name = name
-            activity.startTime = startTime
-            activity.endTime = endTime
-            activity.icon = icon
-            activity.intro = intro
-            activity.url = url
-            activity.save()
-            return http_return(200, 'OK')
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '修改失败')
-
-
 # 配置轮播图
-
 class CycleBannerView(ListAPIView):
     queryset = CycleBanner.objects.filter(isDelete=False)
     serializer_class = CycleBannerSerializer

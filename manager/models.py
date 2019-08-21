@@ -120,7 +120,7 @@ class Module(BaseModle, models.Model):
 
     orderNum = models.IntegerField(verbose_name='排序编号', null=True)
     type = models.CharField(max_length=32, null=True)  # 显示模块类型 MOD1每日一读  MOD2抢先听  MOD3热门推荐
-    contentType = models.IntegerField(null=True)       # 1 自由音频 2 模板音频 3 专辑
+    contentType = models.IntegerField(null=True)  # 1 自由音频 2 模板音频 3 专辑
     audioUuid = models.ForeignKey('AudioStory', on_delete=models.CASCADE, related_name='moduleAudioUuid',
                                   to_field='uuid', null=True)
     albumUuid = models.ForeignKey('Album', on_delete=models.CASCADE, related_name='moduleAlbumUuid',
@@ -138,10 +138,39 @@ class GameInfo(BaseModle, models.Model):
                                      to_field='uuid')
     audioUuid = models.ForeignKey('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid',
                                   to_field='uuid')
+    votes = models.IntegerField(null=True)
     status = models.IntegerField(default=0)  # 状态 0正常 1禁用 2删除
+    invitationType = models.IntegerField(null=True)  # 邀请类型 为空则没有邀请人，1：用户邀请 2：门店邀请
+    inviteMark = models.CharField(max_length=32, null=True)
 
     class Meta:
         db_table = 'tb_gameinfo'
+
+
+class VoteBehavior(BaseModle, models.Model):
+    """
+    投票行为表
+    """
+    userUuid = models.ForeignKey('User', models.CASCADE, null=True, related_name='userVoteBehavior', to_field='uuid')
+    gameUuid = models.ForeignKey('GameInfo', models.CASCADE, null=True, related_name='gameVoteBehavior',
+                                 to_field='uuid')
+    voteDate = models.DateField(null=True)
+
+    class Meta:
+        db_table = 'tb_voteBehavior'
+
+
+class Shop(BaseModle, models.Model):
+    """
+    门店信息表
+    """
+    owner = models.CharField(max_length=32, null=True)  # 店主姓名
+    tel = models.IntegerField(max_length=11, null=True)  # 店主号码
+    shopNo = models.CharField(max_length=32, null=True)  # 门店编号
+    shopName = models.CharField(max_length=32, null=True)  # 门店名称
+
+    class Meta:
+        db_table = 'tb_shop'
 
 
 class FriendShip(BaseModle, models.Model):
@@ -345,7 +374,7 @@ class AudioStory(BaseModle, models.Model):
                                    null=True)  # 审核状态 unCheck待审核 check审核通过 checkFail审核不通过 exemption 后台上传免审核
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
     isDelete = models.BooleanField(default=False)  # 软删除
-    fileSize = models.IntegerField(null=True)   # 音频文件大小
+    fileSize = models.IntegerField(null=True)  # 音频文件大小
 
     class Meta:
         db_table = 'tb_audio_story'

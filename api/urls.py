@@ -3,8 +3,8 @@
 
 from django.urls import path
 
-from api import views,shareViews
-from api.apiCommon import check_identify
+from api import views, shareViews, activity
+
 
 app_name = 'api'
 
@@ -42,11 +42,6 @@ urlpatterns = [
 
     path('audiostory/praise', views.audiostory_praise, name='audiostory_praise'),  # 点赞作品
     path('audiostory/collection', views.audiostory_collection, name='audiostory_cancel_collection'),  # 收藏作品
-
-    path('activity/detail', views.activity_detail, name='activity_detail'),  # 活动详情
-    path('activity/ranklist', views.activity_rank, name='activity_rank'),  # 活动排行
-    path('activity/audiostorylist', views.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
-    path('activity/join', views.activity_join, name='activity_join'),  # 参与比赛
 
     path('personal/index', views.personal_index, name='personal_index'),  # 个人主页
     path('personal/audiostorylist', views.personal_audiostory, name='personal_audiostory'),  # 个人作品
@@ -86,5 +81,9 @@ urlpatterns = [
     path('album/audiostory/add', views.album_audio_add, name='album_audio_add'),  # 添加作品到专辑
     path('album/audiostory/del', views.album_audio_del, name='album_audio_del'),  # 从专辑中删除作品
 
+    path('activity/detail', activity.activity_detail, name='activity_detail'),  # 活动详情
+    path('activity/ranklist', activity.activity_rank, name='activity_rank'),  # 活动排行
+    path('activity/audiostorylist', activity.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
+    path('activity/join', activity.activity_join, name='activity_join'),  # 参与比赛
 
 ]

@@ -165,7 +165,7 @@ class Shop(BaseModle, models.Model):
     门店信息表
     """
     owner = models.CharField(max_length=32, null=True)  # 店主姓名
-    tel = models.IntegerField(max_length=20, null=True)  # 店主号码
+    tel = models.CharField(max_length=20, null=True)  # 店主号码
     shopNo = models.CharField(max_length=32, null=True)  # 门店编号
     shopName = models.CharField(max_length=64, null=True)  # 门店名称
 

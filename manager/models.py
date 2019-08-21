@@ -468,7 +468,7 @@ class Prize(BaseModle):
     isDelete = models.BooleanField(verbose_name='软删除', default=False)
     type = models.IntegerField(default=0)  # 0 好呗呗课程卡 1 实物商品
     probability = models.FloatField(default=0.0, verbose_name="中奖概率")
-    backup = models.BooleanField(default=False, verbose_name="是否备用")  # 其他奖品库存为0 之后，当前商品填补到其他商品
+    backup = models.CharField(max_length=32, null=True, verbose_name="备用奖品")  # 其他奖品库存为0 之后，当前商品填补到其他商品
 
     class Meta:
         db_table = "tb_prize"

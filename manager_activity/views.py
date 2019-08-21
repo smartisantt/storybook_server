@@ -216,6 +216,7 @@ def activity_rank(request):
     return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
 
 
+# 查询快递
 @api_view(['GET'])
 @authentication_classes((CustomAuthentication, ))
 @cache_page(60*10)

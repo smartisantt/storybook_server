@@ -405,3 +405,43 @@ class ListenAudio(BaseModle, models.Model):
 
     class Meta:
         db_table = 'tb_listen_audio'
+
+
+class Delivery(BaseModle):
+    orderNum = models.CharField(max_length=255, verbose_name='订单号', null=True)
+    userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userDeliveryUuid', to_field='uuid',
+                                 null=True, verbose_name="中奖用户")
+    deliveryNum = models.CharField(max_length=255, verbose_name='运单号', null=True)
+    prizeUuid = models.ForeignKey('Prize', on_delete=models.CASCADE, related_name='prizeUuid', to_field='uuid',
+                                 null=True, verbose_name="奖品")
+    contact = models.CharField(min_length=2, null=False)
+    tel = models.CharField(max_length=20, null=True)
+    addressUuid = models.ForeignKey('shippingAddress', on_delete=models.CASCADE, related_name='shippingAddressUuid', to_field='uuid',
+                                 null=True, verbose_name="地址")
+
+    class Meta:
+        db_table = 'tb_delivery'
+
+
+class Prize(BaseModle):
+    name = models.CharField(max_length=128, null=True)
+    icon = models.CharField(max_length=255, verbose_name='奖品图', null=True)
+    inventory = models.PositiveIntegerField(default=0)
+    status = models.IntegerField(default=1) # 1 启用  0 禁用
+    isDelete = models.BooleanField(verbose_name='软删除', default=False)
+    type = models.IntegerField(default=0)  # 0 好呗呗课程卡 1 实物商品
+    probability = models.FloatField(default=0.0, verbose_name="中奖概率")
+    backup = models.BooleanField(default=False, verbose_name="是否备用")    # 其他奖品库存为0 之后，当前商品填补到其他商品
+
+    class Meta:
+        db_table = "tb_prize"
+
+
+class shippingAddress(BaseModle):
+    userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userShippingAddressUuid', to_field='uuid',
+                                 null=True, verbose_name="用户")
+    addres = models.CharField(max_length=255, verbose_name='收货地址', null=True)
+    defaultAddress = models.BooleanField(default=0) # 0 不是默认地址  1 是默认地址
+
+    class Meta:
+        db_table = "tb_shipping_address"

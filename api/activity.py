@@ -145,9 +145,22 @@ def activity_sign(request):
     activityUuid = data.get('activityUuid', '')
     if not activityUuid:
         return http_return(400, '请选择要报名的活动')
+    act = Activity.objects.filter(uuid=activityUuid).first()
+    if not act:
+        return http_return(400,'活动信息不存在')
     inviter = data.get("inviter")
-
-    selfUuid = data['_cache']['uuid']
+    try:
+        GameInfo.objects.create(
+            uuid=get_uuid(),
+            userUuid=User.objects.filter(uuid=data['_cache']['uuid']).first(),
+            activityUuid=act,
+            inviter=inviter
+        )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '报名失败')
+    return http_return(200, '报名成功')
+        
 
 
 @check_identify

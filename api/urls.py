@@ -82,6 +82,7 @@ urlpatterns = [
     path('album/audiostory/del', views.album_audio_del, name='album_audio_del'),  # 从专辑中删除作品
 
     path('activity/detail', activity.activity_detail, name='activity_detail'),  # 活动详情
+    path('activity/index', activity.activity_index, name='activity_index'),  # 活动首页
     path('activity/ranklist', activity.activity_rank, name='activity_rank'),  # 活动排行
     path('activity/audiostorylist', activity.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
     path('activity/join', activity.activity_join, name='activity_join'),  # 参与比赛

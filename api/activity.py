@@ -3,6 +3,27 @@ from common.common import request_body
 
 
 @check_identify
+def activity_index(request):
+    """活动首页"""
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '请选择要查看的活动')
+    keyword = data.get('keyword', '')
+    game = GameInfo.objects.filter(audioUuid__isnull=False)
+    if keyword:
+        game = game.filter(Q(audioUuid__name__contains=keyword) | Q(userUuid__nickName__contains=keyword))
+    games = game.order_by("?").all()
+    page = data.get('page', '')
+    pageCount = data.get('pageCount', '')
+    total, games = page_index(games, page, pageCount)
+    activityRankList = activityRankList_format(games)
+    return http_return(200, '成功', {"total": total, "list": activityRankList})
+
+
+@check_identify
 def activity_detail(request):
     """
     活动详情
@@ -14,7 +35,7 @@ def activity_detail(request):
         return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
     if not uuid:
-        return http_return(400, '参数错误')
+        return http_return(400, '请选择要查看的活动')
     act = Activity.objects.filter(uuid=uuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
@@ -74,20 +95,7 @@ def activity_rank(request):
     games = GameInfo.objects.filter(audioUuid__isnull=False).all()
     games = sorted(games, key=lambda x: x.votes, reverse=True)
     total, games = page_index(games, page, pageCount)
-    activityRankList = []
-    for game in games:
-        activityRankList.append({
-            "publisher": {
-                "uuid": game.userUuid.uuid if game.userUuid else '',
-                "nickname": game.userUuid.nickName if game.userUuid else '',
-                "avatar": game.userUuid.avatar if game.userUuid else '',
-            },
-            "audio": {
-                "uuid": game.audioUuid.uuid if game.audioUuid else '',
-                "name": game.audioUuid.name if game.audioUuid else '',
-            },
-            "score": game.votes,
-        })
+    activityRankList = activityRankList_format(games)
     return http_return(200, '成功', {"total": total, "list": activityRankList})
 
 
@@ -110,9 +118,7 @@ def activity_audiostory_list(request):
     games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
     for game in games:
         activityUuidList.append(game.audioUuid.uuid)
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
-        isDelete=False).filter(
-        userUuid__uuid=data['_cache']['uuid'])
+    audio = AudioStory.objects.filter(isDelete=False, userUuid__uuid=data['_cache']['uuid'])
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:
@@ -124,6 +130,24 @@ def activity_audiostory_list(request):
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audio, data)
     return http_return(200, '成功', {"list": audioStoryList, "total": total})
+
+
+@check_identify
+def activity_sign(request):
+    """
+    活动报名
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    activityUuid = data.get('activityUuid', '')
+    if not activityUuid:
+        return http_return(400, '请选择要报名的活动')
+    inviter = data.get("inviter")
+
+    selfUuid = data['_cache']['uuid']
 
 
 @check_identify

@@ -140,8 +140,7 @@ class GameInfo(BaseModle, models.Model):
                                   to_field='uuid')
     votes = models.IntegerField(null=True, default=0)
     status = models.IntegerField(default=0)  # 状态 0正常 1禁用 2删除
-    invitationType = models.IntegerField(null=True)  # 邀请类型 为空则没有邀请人，1：用户邀请 2：门店邀请
-    inviteMark = models.CharField(max_length=32, null=True)
+    inviter = models.CharField(max_length=32, null=True)
 
     class Meta:
         db_table = 'tb_gameinfo'

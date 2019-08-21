@@ -529,3 +529,26 @@ def indexList_format(objList):
                 "target": audio.uuid,
             })
     return resultList
+
+
+def activityRankList_format(games):
+    """
+    活动排行返回模型
+    :param objList:
+    :return:
+    """
+    resultList = []
+    for game in games:
+        resultList.append({
+            "publisher": {
+                "uuid": game.userUuid.uuid if game.userUuid else '',
+                "nickname": game.userUuid.nickName if game.userUuid else '',
+                "avatar": game.userUuid.avatar if game.userUuid else '',
+            },
+            "audio": {
+                "uuid": game.audioUuid.uuid if game.audioUuid else '',
+                "name": game.audioUuid.name if game.audioUuid else '',
+            },
+            "score": game.votes,
+        })
+    return resultList

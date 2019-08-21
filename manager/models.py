@@ -157,7 +157,7 @@ class VoteBehavior(BaseModle, models.Model):
     voteDate = models.DateField(null=True)
 
     class Meta:
-        db_table = 'tb_voteBehavior'
+        db_table = 'tb_vote_behavior'
 
 
 class Shop(BaseModle, models.Model):
@@ -165,9 +165,9 @@ class Shop(BaseModle, models.Model):
     门店信息表
     """
     owner = models.CharField(max_length=32, null=True)  # 店主姓名
-    tel = models.IntegerField(max_length=11, null=True)  # 店主号码
+    tel = models.IntegerField(max_length=20, null=True)  # 店主号码
     shopNo = models.CharField(max_length=32, null=True)  # 门店编号
-    shopName = models.CharField(max_length=32, null=True)  # 门店名称
+    shopName = models.CharField(max_length=64, null=True)  # 门店名称
 
     class Meta:
         db_table = 'tb_shop'
@@ -436,41 +436,55 @@ class ListenAudio(BaseModle, models.Model):
         db_table = 'tb_listen_audio'
 
 
-class Delivery(BaseModle):
+class UserPrize(BaseModle):
+    """
+    用户奖品
+    """
     orderNum = models.CharField(max_length=255, verbose_name='订单号', null=True)
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userDeliveryUuid', to_field='uuid',
                                  null=True, verbose_name="中奖用户")
     deliveryNum = models.CharField(max_length=255, verbose_name='运单号', null=True)
     prizeUuid = models.ForeignKey('Prize', on_delete=models.CASCADE, related_name='prizeUuid', to_field='uuid',
-                                 null=True, verbose_name="奖品")
-    contact = models.CharField(min_length=2, null=False)
-    tel = models.CharField(max_length=20, null=True)
-    addressUuid = models.ForeignKey('shippingAddress', on_delete=models.CASCADE, related_name='shippingAddressUuid', to_field='uuid',
-                                 null=True, verbose_name="地址")
+                                  null=True, verbose_name="奖品")
+    receiveUuid = models.ForeignKey('ReceivingInfo', on_delete=models.CASCADE, related_name='receivePrizeUuid',
+                                    to_field='uuid',
+                                    null=True, verbose_name="收货信息")
 
     class Meta:
-        db_table = 'tb_delivery'
+        db_table = 'tb_user_prize'
 
 
 class Prize(BaseModle):
-    name = models.CharField(max_length=128, null=True)
+    """
+    奖品设置表
+    """
+    activityUuid = models.ForeignKey("Activity", on_delete=models.CASCADE, related_name='activityPrizeUuid',
+                                     to_field='uuid',
+                                     null=True, )
+    name = models.CharField(max_length=128, null=True)  # 奖品名称
     icon = models.CharField(max_length=255, verbose_name='奖品图', null=True)
-    inventory = models.PositiveIntegerField(default=0)
-    status = models.IntegerField(default=1) # 1 启用  0 禁用
+    inventory = models.PositiveIntegerField(default=0)  # 库存
+    status = models.IntegerField(default=1)  # 1 启用  0 禁用
     isDelete = models.BooleanField(verbose_name='软删除', default=False)
     type = models.IntegerField(default=0)  # 0 好呗呗课程卡 1 实物商品
     probability = models.FloatField(default=0.0, verbose_name="中奖概率")
-    backup = models.BooleanField(default=False, verbose_name="是否备用")    # 其他奖品库存为0 之后，当前商品填补到其他商品
+    backup = models.BooleanField(default=False, verbose_name="是否备用")  # 其他奖品库存为0 之后，当前商品填补到其他商品
 
     class Meta:
         db_table = "tb_prize"
 
 
-class shippingAddress(BaseModle):
-    userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userShippingAddressUuid', to_field='uuid',
+class ReceivingInfo(BaseModle):
+    """
+    收货信息
+    """
+    userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userShippingAddressUuid',
+                                 to_field='uuid',
                                  null=True, verbose_name="用户")
-    addres = models.CharField(max_length=255, verbose_name='收货地址', null=True)
-    defaultAddress = models.BooleanField(default=0) # 0 不是默认地址  1 是默认地址
+    address = models.CharField(max_length=255, verbose_name='收货地址', null=True)
+    defaultAddress = models.BooleanField(default=0)  # 0 不是默认地址  1 是默认地址
+    contact = models.CharField(max_length=32, null=False)  # 收件人
+    tel = models.CharField(max_length=20, null=True)
 
     class Meta:
-        db_table = "tb_shipping_address"
+        db_table = "tb_receiving_info"

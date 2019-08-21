@@ -168,6 +168,7 @@ class Shop(BaseModle, models.Model):
     tel = models.CharField(max_length=20, null=True)  # 店主号码
     shopNo = models.CharField(max_length=32, null=True)  # 门店编号
     shopName = models.CharField(max_length=64, null=True)  # 门店名称
+    isDelete = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'tb_shop'

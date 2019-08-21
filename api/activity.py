@@ -29,24 +29,19 @@ def activity_detail(request):
         "endTime": datetime_to_unix(act.endTime),
     }
     # 返回参赛状态，如果参赛再返回排名
-    status = False
+    status = 1
+    # 定义参赛状态：1：未报名 2：已报名未上传参赛作品 3：已上传参赛作品
     rank = None
     score = None
     game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
     if game:
-        status = True
-        config = ActivityConfig.objects.filter(status=0).first()
-        if not config:
-            return http_return(400, '未获取到参数配置')
-        praiseNum = config.praiseNum / 100
-        playTimesNum = config.playTimesNum / 100
-        games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
-        games = sorted(games,
-                       key=lambda x: praiseNum * x.audioUuid.bauUuid.filter(
-                           type=1).count() + playTimesNum * x.audioUuid.playTimes,
-                       reverse=True)
+        status = 2
+        if game.audioUuid != None:
+            status = 3
+        games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).all()
+        games = sorted(games, key=lambda x: x.votes, reverse=True)
         rank = games.index(game) + 1
-        score = praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes
+        score = game.votes
     userInfo = {
         "uuid": user.uuid,
         "avatar": user.avatar if user.avatar else '',
@@ -76,20 +71,11 @@ def activity_rank(request):
     act = Activity.objects.filter(uuid=uuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
-    config = ActivityConfig.objects.filter(status=0).first()
-    if not config:
-        return http_return(400, '未获取到参数配置')
-    praiseNum = config.praiseNum / 100
-    playTimesNum = config.playTimesNum / 100
-    games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
-    games = sorted(games,
-                   key=lambda x: praiseNum * x.audioUuid.bauUuid.filter(
-                       type=1).count() + playTimesNum * x.audioUuid.playTimes,
-                   reverse=True)
+    games = GameInfo.objects.filter(audioUuid__isnull=False).all()
+    games = sorted(games, key=lambda x: x.votes, reverse=True)
     total, games = page_index(games, page, pageCount)
     activityRankList = []
     for game in games:
-        score = praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes
         activityRankList.append({
             "publisher": {
                 "uuid": game.userUuid.uuid if game.userUuid else '',
@@ -100,7 +86,7 @@ def activity_rank(request):
                 "uuid": game.audioUuid.uuid if game.audioUuid else '',
                 "name": game.audioUuid.name if game.audioUuid else '',
             },
-            "score": score,
+            "score": game.votes,
         })
     return http_return(200, '成功', {"total": total, "list": activityRankList})
 

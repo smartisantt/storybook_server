@@ -1,7 +1,7 @@
 from django.urls import path
 
 from manager_activity import views
-from manager_activity.views import ActivityView, ShopView, PrizeView
+from manager_activity.views import ActivityView, ShopView, PrizeView, UserPrizeView
 
 urlpatterns = [
     path('activitylist/', ActivityView.as_view()),
@@ -24,6 +24,6 @@ urlpatterns = [
     path('delprize/', views.del_prize, name='delprize'),
 
     # 发货管理
-
+    path('userprizelist/', UserPrizeView.as_view()),
 
 ]

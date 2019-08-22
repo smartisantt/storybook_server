@@ -336,7 +336,7 @@ class GameInfoSerializer(serializers.ModelSerializer):
     # userInfo = serializers.SerializerMethodField()
     audioInfo = serializers.SerializerMethodField()
     score = serializers.SerializerMethodField()
-
+    # todo:
     @staticmethod
     def get_score(gameInfo):
         return 0.75 * gameInfo.audioUuid.bauUuid.filter(type=1).count() + 0.25 * gameInfo.audioUuid.playTimes

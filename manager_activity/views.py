@@ -17,11 +17,11 @@ from common.expressage import Express100
 from manager.auths import CustomAuthentication
 from manager.filters import ActivityFilter
 from manager.managerCommon import request_body, http_return, timestamp2datetime
-from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize
+from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize, UserPrize
 from manager.paginations import MyPagination
 from manager.serializers import ActivitySerializer
 from manager_activity.filters import ShopFilter, PrizeFilter
-from manager_activity.serializers import ShopSerializer, PrizeSerializer
+from manager_activity.serializers import ShopSerializer, PrizeSerializer, UserPrizeSerializer
 from utils.errors import ParamsException
 
 
@@ -340,9 +340,10 @@ def add_prize(request):
         return http_return(400, "重复名字")
 
     total = Prize.objects.filter(isDelete=False, status=1).aggregate(nums=Sum('probability'))['nums']
-    if probability + total > 1:
-        temp = 1 - total
-        return http_return(400, "当前启用奖品概率之和已经大于1，建议当前取值小于等于{:.10}".format(temp))
+    if total:
+        if probability + total > 1:
+            temp = 1 - total
+            return http_return(400, "当前启用奖品概率之和已经大于1，建议当前取值小于等于{:.10}".format(temp))
 
     try:
         with transaction.atomic():
@@ -392,9 +393,10 @@ def modify_prize(request):
 
     total = Prize.objects.filter(isDelete=False, status=1).\
         exclude(uuid = prizeUuid).aggregate(nums=Sum('probability'))['nums']
-    if probability + total > 1:
-        temp = 1- total
-        return http_return(400, "当前启用奖品概率之和已经大于1，建议当前取值小于等于{:.10}".format(temp))
+    if total:
+        if probability + total > 1:
+            temp = 1- total
+            return http_return(400, "当前启用奖品概率之和已经大于1，建议当前取值小于等于{:.10}".format(temp))
 
     if Prize.objects.filter(name=name, isDelete=False).exclude(uuid = prizeUuid).exists():
         return http_return(400, "重复名字")
@@ -459,3 +461,29 @@ def del_prize(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
+
+
+class UserPrizeView(ListAPIView):
+    queryset = UserPrize.objects.all()
+    serializer_class = UserPrizeSerializer
+    # filter_class = UserPrizeFilter
+    pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+
+        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+
+        return self.queryset

@@ -81,6 +81,9 @@ urlpatterns = [
     path('album/audiostory/add', views.album_audio_add, name='album_audio_add'),  # 添加作品到专辑
     path('album/audiostory/del', views.album_audio_del, name='album_audio_del'),  # 从专辑中删除作品
 
+
+
+    path('activity/invite', activity.invite_user, name='invite_user'),  # 邀请注册关系建立
     path('activity/detail', activity.activity_detail, name='activity_detail'),  # 活动详情
     path('activity/index', activity.activity_index, name='activity_index'),  # 活动首页
     path('activity/ranklist', activity.activity_rank, name='activity_rank'),  # 活动排行

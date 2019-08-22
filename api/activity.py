@@ -220,7 +220,7 @@ def invite_user(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '请求错误')
-    inviter = request.POST.get("inviter", "")
+    inviter = data.get("inviter", "")
     if not inviter:
         return http_return(400,'邀请参数错误')
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()

@@ -20,7 +20,7 @@ from manager.managerCommon import request_body, http_return, timestamp2datetime
 from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize, UserPrize
 from manager.paginations import MyPagination
 from manager.serializers import ActivitySerializer
-from manager_activity.filters import ShopFilter, PrizeFilter
+from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter
 from manager_activity.serializers import ShopSerializer, PrizeSerializer, UserPrizeSerializer
 from utils.errors import ParamsException
 
@@ -321,20 +321,20 @@ def add_prize(request):
     name = data.get('name', '')
     probability = data.get('probability', '')
 
+    if not all([name, icon, type in [1, 2]]):
+        return http_return(400, "参数有误")
+
     if not isinstance(inventory, int):
         return http_return(400, "库存数量格式错误")
+
+    if not inventory >= 0:
+        return http_return(400, "库存数量应大于等于0")
 
     if not (isinstance(probability, float) or (isinstance(probability, int))):
         return http_return(400, "概率格式错误")
 
     if not 0 <= probability <= 1:
         return http_return(400, "概率在0到1之间")
-
-    if not 0 <= probability <= 1:
-        return http_return(400, "概率在0到1之间")
-
-    if not all([name, inventory >= 0, icon, type in [1, 2], probability]):
-        return http_return(400, "参数有误")
 
     if Prize.objects.filter(name=name, isDelete=False).exists():
         return http_return(400, "重复名字")
@@ -375,17 +375,20 @@ def modify_prize(request):
     name = data.get('name', '')
     probability = data.get('probability', '')
 
+    if not all([prizeUuid, name, icon, type in [1, 2]]):
+        return http_return(400, "参数有误")
+
     if not isinstance(inventory, int):
         return http_return(400, "库存数量格式错误")
+
+    if not inventory >= 0:
+        return http_return(400, "库存数量应大于等于0")
 
     if not (isinstance(probability, float) or (isinstance(probability, int))):
         return http_return(400, "概率格式错误")
 
     if not 0 <= probability <= 1:
         return http_return(400, "概率在0到1之间")
-
-    if not all([prizeUuid, name, inventory >= 0, icon, type in [1, 2], probability]):
-        return http_return(400, "参数有误")
 
     prize = Prize.objects.filter(uuid = prizeUuid, isDelete=False).first()
     if not prize:
@@ -464,9 +467,9 @@ def del_prize(request):
 
 
 class UserPrizeView(ListAPIView):
-    queryset = UserPrize.objects.all()
+    queryset = UserPrize.objects.filter(prizeUuid__type=2) # 只显示实物奖品
     serializer_class = UserPrizeSerializer
-    # filter_class = UserPrizeFilter
+    filter_class = UserPrizeFilter
     pagination_class = MyPagination
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering = ('-createTime',)

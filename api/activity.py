@@ -237,8 +237,8 @@ def prize_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-    uuid = data.get('uuid', '')
-    prizes = Prize.objects.filter(isDelete=False, activityUuid__uuid=uuid, status=1).all()[:8]
+    # uuid = data.get('uuid', '') 如果多个活动，则要关联，第一个版本不做
+    prizes = Prize.objects.filter(isDelete=False, status=1).all()[:8]
     prizeList = []
     for prize in prizes:
         prizeList.append({
@@ -247,3 +247,16 @@ def prize_list(request):
             "icon": prize.icon if prize.icon else "",
         })
     return http_return(200, prizeList)
+
+@check_identify
+def prize_draw(request):
+    """
+    抽奖
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+
+

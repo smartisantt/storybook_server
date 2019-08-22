@@ -316,6 +316,7 @@ def add_prize(request):
     if not data:
         return http_return(400, '参数错误')
     type = data.get('type', '')
+    card_type = data.get('card_type', '')
     inventory = data.get('inventory', '')
     icon = data.get('icon', '')
     name = data.get('name', '')
@@ -323,6 +324,10 @@ def add_prize(request):
 
     if not all([name, icon, type in [1, 2]]):
         return http_return(400, "参数有误")
+
+    if type == 1:
+        if card_type not in range(1,5):
+            return http_return(400, "课程卡参数错误")
 
     if not isinstance(inventory, int):
         return http_return(400, "库存数量格式错误")
@@ -354,6 +359,7 @@ def add_prize(request):
                 type=type,
                 inventory=inventory,
                 probability=probability,
+                card_type=card_type,
                 name=name
             )
         return http_return(200, 'OK')
@@ -370,6 +376,7 @@ def modify_prize(request):
         return http_return(400, '参数错误')
     prizeUuid = data.get('prizeUuid', '')
     type = data.get('type', '')
+    card_type = data.get('card_type', '')
     inventory = data.get('inventory', '')
     icon = data.get('icon', '')
     name = data.get('name', '')
@@ -377,6 +384,10 @@ def modify_prize(request):
 
     if not all([prizeUuid, name, icon, type in [1, 2]]):
         return http_return(400, "参数有误")
+
+    if type == 1:
+        if card_type not in range(1,5):
+            return http_return(400, "课程卡参数错误")
 
     if not isinstance(inventory, int):
         return http_return(400, "库存数量格式错误")
@@ -412,6 +423,7 @@ def modify_prize(request):
             prize.icon=icon
             prize.name=name
             prize.probability=probability
+            prize.card_type=card_type
             prize.save()
         return http_return(200, 'OK')
     except Exception as e:

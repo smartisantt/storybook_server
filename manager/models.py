@@ -469,6 +469,7 @@ class Prize(BaseModle):
     status = models.IntegerField(default=1)  # 1 启用  0 禁用
     isDelete = models.BooleanField(verbose_name='软删除', default=False)
     type = models.IntegerField(default=1)  # 1 好呗呗课程卡 2 实物商品
+    card_type = models.IntegerField(null=True) # 1 月卡 2 季度卡 3 半年卡 4 年卡
     probability = models.FloatField(default=0.0, verbose_name="中奖概率")
     backup = models.CharField(max_length=32, null=True, verbose_name="备用奖品")  # 其他奖品库存为0 之后，当前商品填补到其他商品
 

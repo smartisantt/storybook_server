@@ -190,20 +190,12 @@ def activity_join(request):
         return http_return(400, '作品信息不存在')
     if audioStory.createTime <= activity.startTime or audioStory.createTime >= activity.endTime:
         return http_return(400, '参赛作品录制时间不在比赛时间内')
-    selfUuid = data['_cache']['uuid']
-    user = User.objects.filter(uuid=selfUuid).first()
-    if not user:
-        return http_return(400, '未获取到用户信息')
-    checkUser = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=selfUuid).first()
-    if checkUser:
-        return http_return(400, '你已参与过该活动')
+    game = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=data['_cache']['uuid']).first()
+    if not game:
+        return http_return(400, '请报名后再上传作品')
     try:
-        GameInfo.objects.create(
-            uuid=get_uuid(),
-            userUuid=user,
-            activityUuid=activity,
-            audioUuid=audioStory,
-        )
+        game.audioUuid = audioStory
+        game.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '参赛失败')
@@ -222,7 +214,7 @@ def invite_user(request):
         return http_return(400, '请求错误')
     inviter = data.get("inviter", "")
     if not inviter:
-        return http_return(400,'邀请参数错误')
+        return http_return(400, '邀请参数错误')
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     if not user:
         return http_return(400, "未获取到用户信息")

@@ -490,3 +490,30 @@ class UserPrizeView(ListAPIView):
                 raise ParamsException(e.detail)
 
         return self.queryset
+
+
+#
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def add_user_prize(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    userPrizeUuid = data.get('userPrizeUuid', '')
+    deliveryNum = data.get('deliveryNum', '')
+
+    if not all([userPrizeUuid, deliveryNum]):
+        return http_return(400, '参数错误')
+
+    userPrize = UserPrize.objects.filter(uuid=userPrizeUuid).first()
+    if not userPrize:
+        return http_return(400, "没有对象")
+
+    try:
+        with transaction.atomic():
+            userPrize.deliveryNum = deliveryNum
+            userPrize.save()
+        return http_return(200, 'OK')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '添加运单号失败')

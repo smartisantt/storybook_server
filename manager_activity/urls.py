@@ -25,5 +25,8 @@ urlpatterns = [
 
     # 发货管理
     path('userprizelist/', UserPrizeView.as_view()),
+    path('adduserprize/', views.add_user_prize, name='adduserprize'),
+
+
 
 ]

@@ -552,3 +552,4 @@ def activityRankList_format(games):
             "score": game.votes,
         })
     return resultList
+

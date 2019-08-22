@@ -140,7 +140,7 @@ class GameInfo(BaseModle, models.Model):
                                   to_field='uuid')
     votes = models.IntegerField(null=True, default=0)
     status = models.IntegerField(default=0)  # 状态 0正常 1禁用 2删除
-    inviter = models.CharField(max_length=32, null=True)
+    inviter = models.CharField(max_length=32, null=True)  # 邀请人 or 门店uuid
 
     class Meta:
         db_table = 'tb_gameinfo'
@@ -268,6 +268,7 @@ class User(BaseModle, models.Model):
                                     to_field='uuid')
     readDate = models.DateField(null=True)  # 连续阅读最后时间
     readDays = models.IntegerField(default=0)  # 连续阅读天数
+    inviter = models.CharField(max_length=32, null=True)  # 邀请人uuid or 门店uuid
 
     class Meta:
         db_table = 'tb_user'

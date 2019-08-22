@@ -56,7 +56,7 @@ def create_session(user_data, token, user_info):
     except Exception as e:
         logging.error(str(e))
         return False
-    objKey = user_data.userID+"-"+user_info.get('platform', '')
+    objKey = user_data.userID + "-" + user_info.get('platform', '')
     try:
         objToken = caches['api'].get(objKey)
     except Exception as e:
@@ -114,6 +114,42 @@ def save_login_log(user_info, user, request):
     return True
 
 
+def create_user(user_info,inviter=None):
+    """
+    添加用户信息到user
+    :param user_info:
+    :return:
+    """
+    user_uuid = get_uuid()
+    version = Version.objects.filter(status="dafault").first()
+    defaultIcon = user_info.get('wxAvatarUrl', '')
+    if defaultIcon == '':
+        defaultIcon = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111746672834.png'
+    defaultName = user_info.get('wxNickname', '')
+    if defaultName == '':
+        defaultName = get_default_name(user_info.get('phone', ''))
+    user = User(
+        uuid=user_uuid,
+        tel=user_info.get('phone', ''),
+        userID=user_info.get('userId', ''),
+        nickName=defaultName,
+        roles="normalUser",
+        avatar=defaultIcon,
+        gender=user_info.get('wxSex', None),
+        versionUuid=version if version else None,
+        status="normal",
+        loginType=user_info.get('loginType', ''),
+        inviter=inviter,
+    )
+    try:
+        with transaction.atomic():
+            user.save()
+    except Exception as e:
+        logging.error(str(e))
+        return False
+    return user
+
+
 def check_identify(func):
     """
     身份认证装饰器
@@ -136,32 +172,9 @@ def check_identify(func):
             else:
                 user_data = User.objects.filter(userID=user_info.get('userId', '')).first()
                 if not user_data:
-                    user_uuid = get_uuid()
-                    version = Version.objects.filter(status="dafault").first()
-                    defaultIcon = user_info.get('wxAvatarUrl', '')
-                    if defaultIcon == '':
-                        defaultIcon = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111746672834.png'
-                    defaultName = user_info.get('wxNickname', '')
-                    if defaultName == '':
-                        defaultName = get_default_name(user_info.get('phone', ''))
-                    user = User(
-                        uuid=user_uuid,
-                        tel=user_info.get('phone', ''),
-                        userID=user_info.get('userId', ''),
-                        nickName=defaultName,
-                        roles="normalUser",
-                        avatar=defaultIcon,
-                        gender=user_info.get('wxSex', None),
-                        versionUuid=version if version else None,
-                        status="normal",
-                    )
-                    try:
-                        with transaction.atomic():
-                            user.save()
-                    except Exception as e:
-                        logging.error(str(e))
-                        return http_return(401, '保存失败')
-                    user_data = user
+                    user_data = create_user(user_info)
+                    if not user_data:
+                        return http_return(400, "用户信息保存失败")
                 # 处理缓存信息，更新或者添加
                 if not create_session(user_data, token, user_info):
                     return http_return(401, '缓存错误，请稍后重试')
@@ -552,4 +565,3 @@ def activityRankList_format(games):
             "score": game.votes,
         })
     return resultList
-

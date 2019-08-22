@@ -147,7 +147,7 @@ def activity_sign(request):
         return http_return(400, '请选择要报名的活动')
     act = Activity.objects.filter(uuid=activityUuid).first()
     if not act:
-        return http_return(400,'活动信息不存在')
+        return http_return(400, '活动信息不存在')
     inviter = data.get("inviter")
     try:
         GameInfo.objects.create(
@@ -160,7 +160,7 @@ def activity_sign(request):
         logging.error(str(e))
         return http_return(400, '报名失败')
     return http_return(200, '报名成功')
-        
+
 
 @check_identify
 def activity_join(request):
@@ -217,17 +217,16 @@ def invite_user(request):
     :return:
     """
     token = request.META.get('HTTP_TOKEN')
-    try:
-        user_info = caches['api'].get(token)
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, '服务器连接redis失败')
+    if not token:
+        return http_return(400, '获取token失败')
+    api = Api()
+    user_info = api.check_token(token)
     if not user_info:
-        api = Api()
-        user_info = api.check_token(token)
-        if not user_info:
-            return http_return(401, '登录失效')
-        else:
-            user_data = User.objects.filter(userID=user_info.get('userId', '')).first()
-            if not user_data:
-                pass
+        return http_return(401, '登录失效')
+    user_data = User.objects.filter(userID=user_info.get('userId', '')).first()
+    if not user_data:
+        inviter = request.POST.get("inviter", "")
+        user_data = create_user(user_info, inviter)
+        if not user_data:
+            return http_return(400, "用户信息保存失败")
+    return http_return(200, "邀请关系简历成功")

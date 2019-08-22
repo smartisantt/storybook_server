@@ -210,23 +210,26 @@ def activity_join(request):
     return http_return(200, '参赛成功')
 
 
+@check_identify
 def invite_user(request):
     """
     注册邀请关系确定
     :param request:
     :return:
     """
-    token = request.META.get('HTTP_TOKEN')
-    if not token:
-        return http_return(400, '获取token失败')
-    api = Api()
-    user_info = api.check_token(token)
-    if not user_info:
-        return http_return(401, '登录失效')
-    user_data = User.objects.filter(userID=user_info.get('userId', '')).first()
-    if not user_data:
-        inviter = request.POST.get("inviter", "")
-        user_data = create_user(user_info, inviter)
-        if not user_data:
-            return http_return(400, "用户信息保存失败")
-    return http_return(200, "邀请关系简历成功")
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    inviter = request.POST.get("inviter", "")
+    if not inviter:
+        return http_return(400,'邀请参数错误')
+    user = User.objects.filter(uuid=data['_cache']['uuid']).first()
+    if not user:
+        return http_return(400, "未获取到用户信息")
+    try:
+        user.inviter = inviter
+        user.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '关系建立失败')
+    return http_return(200, '关系建立成功')

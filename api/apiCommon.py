@@ -114,7 +114,7 @@ def save_login_log(user_info, user, request):
     return True
 
 
-def create_user(user_info,inviter=None):
+def create_user(user_info):
     """
     添加用户信息到user
     :param user_info:
@@ -139,7 +139,6 @@ def create_user(user_info,inviter=None):
         versionUuid=version if version else None,
         status="normal",
         loginType=user_info.get('loginType', ''),
-        inviter=inviter,
     )
     try:
         with transaction.atomic():

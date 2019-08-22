@@ -162,7 +162,6 @@ def activity_sign(request):
     return http_return(200, '报名成功')
         
 
-
 @check_identify
 def activity_join(request):
     """
@@ -209,3 +208,26 @@ def activity_join(request):
         logging.error(str(e))
         return http_return(400, '参赛失败')
     return http_return(200, '参赛成功')
+
+
+def invite_user(request):
+    """
+    注册邀请关系确定
+    :param request:
+    :return:
+    """
+    token = request.META.get('HTTP_TOKEN')
+    try:
+        user_info = caches['api'].get(token)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '服务器连接redis失败')
+    if not user_info:
+        api = Api()
+        user_info = api.check_token(token)
+        if not user_info:
+            return http_return(401, '登录失效')
+        else:
+            user_data = User.objects.filter(userID=user_info.get('userId', '')).first()
+            if not user_data:
+                pass

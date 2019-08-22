@@ -126,7 +126,7 @@ class Api(object):
 if __name__ == '__main__':
     api = Api()
     # api.admin_reset_pwd("13398876569", "1234567", "2C2936634B97A0C9EDDDFA0B7EC2A412")
-    print(api.check_token('AD183005CD040A769C150F2A515CC149'))
+    print(api.check_token('D3D0DCADB76527B077153035E18F15C1'))
     # if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
         # print ('111')
     # print(api.create_user('15928140420', '123456'))

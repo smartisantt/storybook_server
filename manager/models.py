@@ -268,6 +268,7 @@ class User(BaseModle, models.Model):
                                     to_field='uuid')
     readDate = models.DateField(null=True)  # 连续阅读最后时间
     readDays = models.IntegerField(default=0)  # 连续阅读天数
+    loginType = models.CharField(max_length=32, null=True) # 登录方式
     inviter = models.CharField(max_length=32, null=True)  # 邀请人uuid or 门店uuid
 
     class Meta:

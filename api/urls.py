@@ -88,7 +88,7 @@ urlpatterns = [
     path('activity/index', activity.activity_index, name='activity_index'),  # 活动首页
     path('activity/ranklist', activity.activity_rank, name='activity_rank'),  # 活动排行
     path('activity/audiostorylist', activity.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
-    path('activity/join', activity.activity_join, name='activity_join'),  # 参与比赛
+    path('activity/join', activity.activity_join, name='activity_join'),  # 上传参赛作品
     path('activity/sign', activity.activity_sign, name='activity_sign'),  # 活动报名
 
 ]

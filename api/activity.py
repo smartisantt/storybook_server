@@ -59,10 +59,10 @@ def activity_detail(request):
         status = 2
         if game.audioUuid != None:
             status = 3
-        games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).all()
-        games = sorted(games, key=lambda x: x.votes, reverse=True)
-        rank = games.index(game) + 1
-        score = game.votes
+            games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).all()
+            games = sorted(games, key=lambda x: x.votes, reverse=True)
+            rank = games.index(game) + 1
+            score = game.votes
     userInfo = {
         "uuid": user.uuid,
         "avatar": user.avatar if user.avatar else '',
@@ -225,3 +225,25 @@ def invite_user(request):
         logging.error(str(e))
         return http_return(400, '关系建立失败')
     return http_return(200, '关系建立成功')
+
+
+@check_identify
+def prize_list(request):
+    """
+    奖品列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    prizes = Prize.objects.filter(isDelete=False, activityUuid__uuid=uuid, status=1).all()[:8]
+    prizeList = []
+    for prize in prizes:
+        prizeList.append({
+            "uuid": prize.uuid,
+            "name": prize.name if prize.name else "",
+            "icon": prize.icon if prize.icon else "",
+        })
+    return http_return(200, prizeList)

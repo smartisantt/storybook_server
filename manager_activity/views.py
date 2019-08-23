@@ -360,7 +360,7 @@ def add_prize(request):
 
     total = Prize.objects.filter(isDelete=False, status=1).aggregate(nums=Sum('probability'))['nums']
     if total:
-        if probability + total > 1:
+        if round(probability + total, 9) > 1:
             temp = 1 - total
             return http_return(400, "当前启用奖品概率之和已经大于1，建议当前取值小于等于{:.10}".format(temp))
 
@@ -416,7 +416,7 @@ def modify_prize(request):
     total = Prize.objects.filter(isDelete=False, status=1).\
         exclude(uuid = prizeUuid).aggregate(nums=Sum('probability'))['nums']
     if total:
-        if probability + total > 1:
+        if round(probability + total, 9) > 1:
             temp = 1- total
             return http_return(400, "当前启用奖品概率之和已经大于1，建议当前取值小于等于{:.10}".format(temp))
 
@@ -455,7 +455,7 @@ def forbid_prize(request):
     if not prize.status:
         total = Prize.objects.filter(isDelete=False, status=1).aggregate(nums=Sum('probability'))['nums']
         if total:
-            if prize.probability + total > 1:
+            if round(prize.probability + total, 9) > 1:
                 temp = 1 - total
                 return http_return(400, "当前启用奖品概率之和已经大于1，建议当前取值小于等于{:.10}".format(temp))
     try:

@@ -268,7 +268,7 @@ class User(BaseModle, models.Model):
                                     to_field='uuid')
     readDate = models.DateField(null=True)  # 连续阅读最后时间
     readDays = models.IntegerField(default=0)  # 连续阅读天数
-    loginType = models.CharField(max_length=32, null=True) # 登录方式
+    loginType = models.CharField(max_length=32, null=True)  # 登录方式
     inviter = models.CharField(max_length=32, null=True)  # 邀请人uuid or 门店uuid
 
     class Meta:
@@ -377,6 +377,8 @@ class AudioStory(BaseModle, models.Model):
     checkInfo = models.CharField(max_length=256, null=True)  # 审核信息，审核被拒绝原因
     isDelete = models.BooleanField(default=False)  # 软删除
     fileSize = models.IntegerField(null=True)  # 音频文件大小
+    taskID = models.CharField(max_length=255, null=True)  # 任务轮训id
+    interfaceStatus = models.CharField(max_length=64, default="unCheck")  # unCheck待审核 check审核通过 checkFail审核不通过
 
     class Meta:
         db_table = 'tb_audio_story'

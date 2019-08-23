@@ -456,6 +456,13 @@ def forbid_prize(request):
     prize = Prize.objects.filter(uuid=prizeUuid, isDelete=False).first()
     if not prize:
         return http_return(400, "没有对象")
+
+    if not prize.status:
+        total = Prize.objects.filter(isDelete=False, status=1).aggregate(nums=Sum('probability'))['nums']
+        if total:
+            if prize.probability + total > 1:
+                temp = 1 - total
+                return http_return(400, "当前启用奖品概率之和已经大于1，建议当前取值小于等于{:.10}".format(temp))
     try:
         with transaction.atomic():
             prize.status = not(prize.status)

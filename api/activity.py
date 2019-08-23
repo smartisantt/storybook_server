@@ -203,6 +203,45 @@ def activity_join(request):
 
 
 @check_identify
+def activity_vote(request):
+    """
+    为作品投票
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get("uuid", "")
+    if not uuid:
+        return http_return(400, "请选择要投票的作品")
+    game = GameInfo.objects.filter(uuid=uuid, audioUuid__isnull=False).first()
+    if not game:
+        return http_return(400, "未获取到参赛作品信息")
+    selfUuid = data['_cache']['uuid']
+    user = User.objects.filter(uuid=selfUuid).filter()
+    todayDate = datetime.datetime.today()
+    voteBehavior = VoteBehavior.objects.filter(userUuid__uuid=selfUuid, voteDate=todayDate).first()
+    if voteBehavior:
+        return http_return(400, '今日票数已用完')
+    game.votes += 1
+    voteBehavior = VoteBehavior(
+        uuid=get_uuid(),
+        userUuid=user,
+        gameUuid=game,
+        voteDate=todayDate,
+    )
+    try:
+        with transaction.atomic():
+            game.save()
+            voteBehavior.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '投票失败')
+    return http_return(200, '投票成功')
+
+
+@check_identify
 def invite_user(request):
     """
     注册邀请关系确定
@@ -248,6 +287,7 @@ def prize_list(request):
         })
     return http_return(200, prizeList)
 
+
 @check_identify
 def prize_draw(request):
     """
@@ -258,5 +298,3 @@ def prize_draw(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-
-

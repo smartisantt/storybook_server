@@ -90,5 +90,6 @@ urlpatterns = [
     path('activity/audiostorylist', activity.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
     path('activity/join', activity.activity_join, name='activity_join'),  # 上传参赛作品
     path('activity/sign', activity.activity_sign, name='activity_sign'),  # 活动报名
+    path('activity/vote', activity.activity_vote, name='activity_vote'),  # 为参赛作品投票
 
 ]

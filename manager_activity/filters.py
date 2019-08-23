@@ -1,6 +1,6 @@
 import django_filters
 
-from manager.models import Shop, Prize, UserPrize
+from manager.models import Shop, Prize, UserPrize, User
 from utils.errors import ParamsException
 
 
@@ -50,3 +50,11 @@ class UserPrizeFilter(django_filters.FilterSet):
         model = UserPrize
         fields = ("orderNum", )
 
+
+class UserInvitationFilter(django_filters.FilterSet):
+    nickName = django_filters.CharFilter(field_name="nickName", lookup_expr="icontains")
+    tel = django_filters.CharFilter(field_name="tel", lookup_expr="icontains")
+
+    class Meta:
+        model = User
+        fields = ("id", )

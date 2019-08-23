@@ -1,7 +1,7 @@
 from django.urls import path
 
 from manager_activity import views
-from manager_activity.views import ActivityView, ShopView, PrizeView, UserPrizeView
+from manager_activity.views import ActivityView, ShopView, PrizeView, UserPrizeView, UserInvitationView
 
 urlpatterns = [
     path('activitylist/', ActivityView.as_view()),
@@ -27,6 +27,7 @@ urlpatterns = [
     path('userprizelist/', UserPrizeView.as_view()),
     path('adduserprize/', views.add_user_prize, name='adduserprize'),
 
-
+    # 用户邀请关系
+    path('userinvitationlist/', UserInvitationView.as_view()),
 
 ]

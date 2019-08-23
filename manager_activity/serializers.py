@@ -1,7 +1,8 @@
+from django.db.models import Count
 from rest_framework import serializers
 
 from common.common import get_uuid
-from manager.models import Shop, Prize, UserPrize, ReceivingInfo
+from manager.models import Shop, Prize, UserPrize, ReceivingInfo, User, GameInfo
 from utils.errors import ParamsException
 
 
@@ -24,6 +25,26 @@ class ReceivingInfoBasicSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReceivingInfo
         fields = ("tel", "address", "contact")
+
+
+class UserInvitationSerializer(serializers.ModelSerializer):
+    regitsterNum = serializers.SerializerMethodField()
+    activityNum = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_regitsterNum(user):
+        res = User.objects.filter(inviter=user.uuid).count()
+        return res
+
+    @staticmethod
+    def get_activityNum(user):
+        res = GameInfo.objects.filter(inviter=user.uuid).count()
+        return res
+
+    class Meta:
+        model = User
+        fields = ("uuid", "id", "tel", "nickName", "createTime", "regitsterNum", "activityNum")
+
 
 
 class UserPrizeSerializer(serializers.ModelSerializer):

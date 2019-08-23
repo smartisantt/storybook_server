@@ -18,11 +18,11 @@ from common.expressage import Express100
 from manager.auths import CustomAuthentication
 from manager.filters import ActivityFilter
 from manager.managerCommon import request_body, http_return, timestamp2datetime
-from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize, UserPrize
+from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize, UserPrize, User
 from manager.paginations import MyPagination
 from manager.serializers import ActivitySerializer
-from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter
-from manager_activity.serializers import ShopSerializer, PrizeSerializer, UserPrizeSerializer
+from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter, UserInvitationFilter
+from manager_activity.serializers import ShopSerializer, PrizeSerializer, UserPrizeSerializer, UserInvitationSerializer
 from utils.errors import ParamsException
 
 
@@ -184,19 +184,14 @@ def activity_rank(request):
     act = Activity.objects.filter(uuid=activityUuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
-    config = ActivityConfig.objects.filter(status=0).first()
-    if not config:
-        return http_return(400, '未获取到参数配置')
-    praiseNum = config.praiseNum / 100
-    playTimesNum = config.playTimesNum / 100
+
     games = GameInfo.objects.filter(activityUuid__uuid=activityUuid).all()
-    games = sorted(games,
-                   key=lambda x: praiseNum * x.audioUuid.bauUuid.filter(
-                       type=1).count() + playTimesNum * x.audioUuid.playTimes,
-                   reverse=True)
+    games = sorted(games, key=lambda x: x.votes, reverse=True)
     total, games = page_index(games, page, page_size)
     activityRankList = []
     for index,game in enumerate(games):
+        if not game.audioUuid:
+            continue
         name = game.audioUuid.name
         if game.audioUuid.audioStoryType:
             name = game.audioUuid.storyUuid.name
@@ -215,7 +210,7 @@ def activity_rank(request):
                 "voiceUrl": game.audioUuid.voiceUrl or '',
                 "name": name or '',
             },
-            "score": praiseNum * game.audioUuid.bauUuid.filter(type=1).count() + playTimesNum * game.audioUuid.playTimes,
+            "score": game.votes,
         })
     return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
 
@@ -498,7 +493,7 @@ def del_prize(request):
 
 
 class UserPrizeView(ListAPIView):
-    queryset = UserPrize.objects.filter(prizeUuid__type=2) # 只显示实物奖品
+    queryset = UserPrize.objects.filter(prizeUuid__type=4) # 只显示实物奖品
     serializer_class = UserPrizeSerializer
     filter_class = UserPrizeFilter
     pagination_class = MyPagination
@@ -549,3 +544,29 @@ def add_user_prize(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加运单号失败')
+
+
+class UserInvitationView(ListAPIView):
+    queryset = User.objects.exclude(status='destroy')
+    serializer_class = UserInvitationSerializer
+    filter_class = UserInvitationFilter
+    pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime', )
+    ordering_fields = ('id', 'createTime')
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+
+        return self.queryset

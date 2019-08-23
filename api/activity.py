@@ -1,7 +1,10 @@
+import time
+
 from api.apiCommon import *
 from api.getClassNo import ClassObj
 from api.prizeDraw import randomMachine
-from common.common import request_body
+from common.common import request_body, datetime_to_string
+from common.expressage import Express100
 
 
 @check_identify
@@ -312,8 +315,10 @@ def prize_draw(request):
     prizeDraw.setWeight(objDict)
     resultUuid = prizeDraw.drawing()
     objPrize = Prize.objects.filter(uuid=resultUuid).first()
+    orderNum = str(time.time())
     userPrize = UserPrize(
         uuid=get_uuid(),
+        orderNum=orderNum,
         userUuid=User.objects.filter(uuid=selfUuid).first(),
         prizeUuid=objPrize,
     )
@@ -385,3 +390,28 @@ def user_logistics(request):
     uuid = data.get("uuid", "")
     if not uuid:
         return http_return(400, '请选择需要查看物流信息的奖品')
+    userPrize = UserPrize.objects.filter(uuid=uuid).first()
+    if not userPrize:
+        return http_return(400, "未查询到奖品信息")
+    deliveryNum = None
+    company = None
+    logisticsInfo = None
+    orderStatus = userPrize.orderStatus
+    if orderStatus == 1:
+        pass
+    elif orderStatus == 2:
+        deliveryNum = userPrize.deliveryNum
+        expressage = Express100()
+        company = expressage.get_company_info()
+        result = expressage.get_express_info(str(deliveryNum).strip())
+    else:
+        deliveryNum = userPrize.deliveryNum
+    info = {
+        "uuid": userPrize.uuid,
+        "icon": userPrize.prizeUuid.icon,
+        "orderStatus": orderStatus,
+        "deliveryNum": deliveryNum,
+        "company": company,
+        "logisticsInfo": logisticsInfo,
+    }
+    return http_return(200, "成功", info)

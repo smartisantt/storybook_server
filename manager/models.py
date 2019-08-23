@@ -461,6 +461,7 @@ class UserPrize(BaseModle):
     #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回等7个状态
     expressState = models.IntegerField(null=True)
     classNo = models.CharField(max_length=64, null=True)  # 课程号兑换码
+    orderStatus = models.IntegerField(default=1)#1:未发货 2：已发货 3：已签收
 
     class Meta:
         db_table = 'tb_user_prize'

@@ -1,4 +1,5 @@
 from api.apiCommon import *
+from api.getClassNo import ClassObj
 from api.prizeDraw import randomMachine
 from common.common import request_body
 
@@ -349,7 +350,18 @@ def user_prize(request):
         if prize.prizeUuid.type in [0, 1, 2, 3]:
             type = 2
             # 获取兑换码并存入数据库并返回给前端
-            info = "12345689"
+            info = prize.classNo
+            if not info:
+                classObj = ClassObj()
+                info = classObj.getCode(prize.prizeUuid.type)
+                if not info:
+                    return http_return(400, '未获取到课程码')
+                prize.classNo = info
+                try:
+                    prize.save()
+                except Exception as e:
+                    logging.error(str(e))
+                    return http_return(400, '获取课程码失败')
         prizeList.append({
             "uuid": prize.uuid,
             "name": prize.prizeUuid.name if prize.prizeUuid else "",
@@ -370,4 +382,6 @@ def user_logistics(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-    pass
+    uuid = data.get("uuid", "")
+    if not uuid:
+        return http_return(400, '请选择需要查看物流信息的奖品')

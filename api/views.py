@@ -489,7 +489,7 @@ def index_banner(request):
         target = banner.target
         if banner.type == 0:
             activity = Activity.objects.filter(uuid=target).first()
-            target = urljoin(activity.url, target)
+            target = urljoin(activity.url, target) + "/false"
         banList.append({
             "uuid": banner.uuid,
             'name': banner.name if banner.name else '',

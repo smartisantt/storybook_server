@@ -458,6 +458,7 @@ class UserPrize(BaseModle):
     #  为空这是无效快递或者没有填写快递
     #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回等7个状态
     expressState = models.IntegerField(null=True)
+
     class Meta:
         db_table = 'tb_user_prize'
 
@@ -474,10 +475,8 @@ class Prize(BaseModle):
     inventory = models.PositiveIntegerField(default=0)  # 库存
     status = models.IntegerField(default=1)  # 1 启用  0 禁用
     isDelete = models.BooleanField(verbose_name='软删除', default=False)
-    type = models.IntegerField(default=1)  # 1 好呗呗课程卡 2 实物商品
-    card_type = models.IntegerField(null=True) # 1 月卡 2 季度卡 3 半年卡 4 年卡
+    type = models.IntegerField(default=2)  # 0 年卡 1 季卡 2 月卡 3 半年 4 实物商品
     probability = models.FloatField(default=0.0, verbose_name="中奖概率")
-    backup = models.CharField(max_length=32, null=True, verbose_name="备用奖品")  # 其他奖品库存为0 之后，当前商品填补到其他商品
 
     class Meta:
         db_table = "tb_prize"

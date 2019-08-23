@@ -294,6 +294,9 @@ def prize_draw(request):
     if not data:
         return http_return(400, '请求错误')
     selfUuid = data['_cache']['uuid']
+    game = GameInfo.objects.filter(userUuid__uuid=selfUuid, audioUuid__isnull=False).first()
+    if not game:
+        return http_return(400, '未参与活动，不能抽奖')
     userPrize = UserPrize.objects.filter(userUuid__uuid=selfUuid).first()
     if userPrize:
         return http_return(400, "你已经参与过抽奖，不能重复抽奖")

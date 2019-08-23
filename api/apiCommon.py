@@ -561,6 +561,7 @@ def activityRankList_format(games):
             "audio": {
                 "uuid": game.audioUuid.uuid if game.audioUuid else '',
                 "name": game.audioUuid.name if game.audioUuid else '',
+                "icon": game.audioUuid.bgIcon if game.audioUuid else '',
             },
             "score": game.votes,
         })

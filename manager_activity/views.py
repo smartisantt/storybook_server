@@ -244,9 +244,14 @@ def query_expressage(request):
         return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState})
 
     res = Express100.get_express_info(str(num).strip())
+    if not res:
+        return http_return(400, "查询无结果，请检查单号是否正确或隔断时间再查！")
     res = json.loads(res.text)
-    info = res.get("data", "查询无结果，请检查单号是否正确或隔断时间再查！")
+    info = res.get("data", "")
     state = res.get("state", "")
+
+    if not info:
+        return http_return(400, "查询无结果，请检查单号是否正确或隔断时间再查！")
 
     # 如快递状态有更新，则更新显示
     if state and userPrize.expressState != state:

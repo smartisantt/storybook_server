@@ -25,11 +25,14 @@ class Express100(object):
     @classmethod
     def get_express_info(cls, express_code):
         company_info = cls.get_company_info(express_code)
-        company_code = company_info[0].get("comCode", "")
+        if company_info:
+            company_code = company_info[0].get("comCode", "")
+        else:
+            return
 
 
         param = {}
-        param['com'] = company_code  # 快递公司编码
+        param['com'] = company_code or ''  # 快递公司编码
         param['num'] = express_code  # 快递单号
         param['phone'] = ''  # 手机号
         param['from'] = ''  # 出发地城市

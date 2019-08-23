@@ -81,8 +81,6 @@ urlpatterns = [
     path('album/audiostory/add', views.album_audio_add, name='album_audio_add'),  # 添加作品到专辑
     path('album/audiostory/del', views.album_audio_del, name='album_audio_del'),  # 从专辑中删除作品
 
-
-
     path('activity/invite', activity.invite_user, name='invite_user'),  # 邀请注册关系建立
     path('activity/detail', activity.activity_detail, name='activity_detail'),  # 活动详情
     path('activity/index', activity.activity_index, name='activity_index'),  # 活动首页
@@ -93,5 +91,7 @@ urlpatterns = [
     path('activity/vote', activity.activity_vote, name='activity_vote'),  # 为参赛作品投票
     path('activity/prize/list', activity.prize_list, name='prize_list'),  # 奖品列表
     path('activity/prize/draw', activity.prize_draw, name='prize_draw'),  # 抽奖
+    path('activity/user/prize', activity.user_prize, name='user_prize'),  # 我的奖品
+    path('activity/user/logistics', activity.user_logistics, name='user_logistics'),  # 物流信息
 
 ]

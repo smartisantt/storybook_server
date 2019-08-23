@@ -325,3 +325,49 @@ def prize_draw(request):
     prizesList.append(objPrize)
     prizeInfo = prizeList_format(prizesList)[0]
     return http_return(200, "成功", prizeInfo)
+
+
+@check_identify
+def user_prize(request):
+    """
+    我的奖品列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
+    selfUuid = data['_cache']['uuid']
+    prizes = UserPrize.objects.filter(userUuid__uuid=selfUuid).order_by("-updateTime").all()
+    total, prizes = page_index(prizes, page, pageCount)
+    prizeList = []
+    for prize in prizes:
+        type = 1  # 1:实体商品 2：虚拟商品
+        info = None
+        if prize.prizeUuid.type in [0, 1, 2, 3]:
+            type = 2
+            # 获取兑换码并存入数据库并返回给前端
+            info = "12345689"
+        prizeList.append({
+            "uuid": prize.uuid,
+            "name": prize.prizeUuid.name if prize.prizeUuid else "",
+            "icon": prize.prizeUuid.icon if prize.prizeUuid else "",
+            "type": type,
+            "info": info,
+        })
+    return http_return(200, "成功", prizeList)
+
+
+@check_identify
+def user_logistics(request):
+    """
+    物流信息
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    pass

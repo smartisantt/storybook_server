@@ -477,7 +477,7 @@ class Prize(BaseModle):
     inventory = models.PositiveIntegerField(default=0)  # 库存
     status = models.IntegerField(default=1)  # 1 启用  0 禁用
     isDelete = models.BooleanField(verbose_name='软删除', default=False)
-    type = models.IntegerField(default=2)  # 0 年卡 1 季卡 2 月卡 3 半年 4 实物商品
+    type = models.IntegerField(default=2)  # 0 月卡 1 季卡  3 年卡 9 实物商品
     probability = models.FloatField(default=0.0, verbose_name="中奖概率")
 
     class Meta:

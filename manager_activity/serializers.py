@@ -69,4 +69,23 @@ class UserPrizeSerializer(serializers.ModelSerializer):
         fields = ("uuid", "orderNum", "prizeName", "nickName", "receiveInfo", "createTime", "deliveryNum")
 
 
+class ShopInvitationSerializer(serializers.ModelSerializer):
+    regitsterNum = serializers.SerializerMethodField()
+    activityNum = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_regitsterNum(shop):
+        res = User.objects.filter(inviter=shop.uuid).count()
+        return res
+
+    @staticmethod
+    def get_activityNum(shop):
+        res = GameInfo.objects.filter(inviter=shop.uuid).count()
+        return res
+
+    class Meta:
+        model = Shop
+        fields = ("uuid", "owner", "tel", "shopNo", "shopName", "regitsterNum", "activityNum")
+
+
 

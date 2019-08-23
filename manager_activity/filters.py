@@ -58,3 +58,16 @@ class UserInvitationFilter(django_filters.FilterSet):
     class Meta:
         model = User
         fields = ("id", )
+
+
+class ShopInvitationFilter(django_filters.FilterSet):
+    owner = django_filters.CharFilter(field_name="owner", lookup_expr="icontains")
+    shopNo = django_filters.CharFilter(field_name="shopNo", lookup_expr="icontains")
+    tel = django_filters.CharFilter(field_name="tel", lookup_expr="icontains")
+    shopName = django_filters.CharFilter(field_name="shopName", lookup_expr="icontains")
+
+    class Meta:
+        model = Shop
+        fields = ("owner", "shopNo", )
+
+

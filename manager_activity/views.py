@@ -21,8 +21,10 @@ from manager.managerCommon import request_body, http_return, timestamp2datetime
 from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize, UserPrize, User
 from manager.paginations import MyPagination
 from manager.serializers import ActivitySerializer
-from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter, UserInvitationFilter
-from manager_activity.serializers import ShopSerializer, PrizeSerializer, UserPrizeSerializer, UserInvitationSerializer
+from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter, UserInvitationFilter, \
+    ShopInvitationFilter
+from manager_activity.serializers import ShopSerializer, PrizeSerializer, UserPrizeSerializer, UserInvitationSerializer, \
+    ShopInvitationSerializer
 from utils.errors import ParamsException
 
 
@@ -340,7 +342,7 @@ def add_prize(request):
     name = data.get('name', '')
     probability = data.get('probability', '')
 
-    if not all([name, icon, type in range(5)]):
+    if not all([name, icon, type in [0, 1, 3, 9]]):
         return http_return(400, "参数有误")
 
     if not isinstance(inventory, int):
@@ -394,7 +396,7 @@ def modify_prize(request):
     name = data.get('name', '')
     probability = data.get('probability', '')
 
-    if not all([prizeUuid, name, icon, type in range(5)]):
+    if not all([prizeUuid, name, icon, type in [0, 1, 3, 9]]):
         return http_return(400, "参数有误")
 
     if not isinstance(inventory, int):
@@ -493,7 +495,7 @@ def del_prize(request):
 
 
 class UserPrizeView(ListAPIView):
-    queryset = UserPrize.objects.filter(prizeUuid__type=4) # 只显示实物奖品
+    queryset = UserPrize.objects.filter(prizeUuid__type=9) # 只显示实物奖品
     serializer_class = UserPrizeSerializer
     filter_class = UserPrizeFilter
     pagination_class = MyPagination
@@ -570,3 +572,31 @@ class UserInvitationView(ListAPIView):
                 raise ParamsException(e.detail)
 
         return self.queryset
+
+
+class ShopInvitationView(ListAPIView):
+    queryset = Shop.objects.filter(isDelete=False)
+    serializer_class = ShopInvitationSerializer
+    filter_class = ShopInvitationFilter
+    pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime', )
+    ordering_fields = ('id', 'createTime')
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                self.queryset = self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+
+        return self.queryset
+
+

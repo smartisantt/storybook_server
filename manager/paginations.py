@@ -9,13 +9,14 @@ class MyPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
-    def paginate_queryset(self, queryset, request, view=None):
-        try:
-            return super().paginate_queryset(queryset, request, view=None)
-        except Exception:
-            paginator = self.django_paginator_class(queryset, self.page_size)
-            self.page = paginator.page(1)
-            return list(queryset[:self.get_page_size(request)])
+    # def paginate_queryset(self, queryset, request, view=None):
+    #     try:
+    #         return super().paginate_queryset(queryset, request, view=None)
+    #     except Exception:
+    #         page_size = self.get_page_size(request)
+    #         paginator = self.django_paginator_class(queryset, self.page_size)
+    #         self.page = paginator.page(1)
+    #         return list(self.page)
 
     # def get_paginated_response(self, data):
     #     return super().get_paginated_response(data)

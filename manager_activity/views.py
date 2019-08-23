@@ -4,6 +4,7 @@ from datetime import datetime
 
 from django.db import transaction
 from django.db.models import Q, Sum
+from django.utils import timezone
 from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, mixins
@@ -230,12 +231,23 @@ def query_expressage(request):
     num = data.get('num', '')
     if not num:
         return http_return(400, '快递单号不能为空')
+    userPrize = UserPrize.objects.filter(deliveryNum=num).first()
+    if not userPrize:
+        return http_return(400, "用户发货管理没有此快递单号！")
+
+    # 超过30天无法获取物流的详细信息
+    if not userPrize.expressDate:
+        if (timezone.now() - userPrize.expressDate).days > 30:
+            return Response({"info": "暂无详细信息", "state": userPrize.expressState})
+
     res = Express100.get_express_info(str(num).strip())
     res = json.loads(res.text)
-    result = res.get("data", "")
-    if not result:
-        result = "查询无结果，请检查单号是否正确或隔断时间再查！"
-    return Response(result)
+    info = res.get("data", "")
+    state = res.get("state", "")
+
+    if not info:
+        info = "查询无结果，请检查单号是否正确或隔断时间再查！"
+    return Response({"info": info, "state": state})
 
 
 class ShopView(ListAPIView):
@@ -524,6 +536,7 @@ def add_user_prize(request):
     try:
         with transaction.atomic():
             userPrize.deliveryNum = deliveryNum
+            userPrize.expressDate = timezone.now()
             userPrize.save()
         return http_return(200, 'OK')
     except Exception as e:

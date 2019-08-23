@@ -451,6 +451,11 @@ class UserPrize(BaseModle):
     receiveUuid = models.ForeignKey('ReceivingInfo', on_delete=models.CASCADE, related_name='receivePrizeUuid',
                                     to_field='uuid',
                                     null=True, verbose_name="收货信息")
+    # 填写订单日期
+    expressDate = models.DateTimeField(verbose_name='填写快递日期', null=True)
+    expressState = models.IntegerField(null=True)
+    #  为空这是无效快递或者没有填写快递
+    #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回等7个状态
 
     class Meta:
         db_table = 'tb_user_prize'

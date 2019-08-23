@@ -91,5 +91,7 @@ urlpatterns = [
     path('activity/join', activity.activity_join, name='activity_join'),  # 上传参赛作品
     path('activity/sign', activity.activity_sign, name='activity_sign'),  # 活动报名
     path('activity/vote', activity.activity_vote, name='activity_vote'),  # 为参赛作品投票
+    path('activity/prize/list', activity.prize_list, name='prize_list'),  # 奖品列表
+    path('activity/prize/draw', activity.prize_draw, name='prize_draw'),  # 抽奖
 
 ]

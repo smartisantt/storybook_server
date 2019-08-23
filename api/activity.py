@@ -1,4 +1,5 @@
 from api.apiCommon import *
+from api.prizeDraw import randomMachine
 from common.common import request_body
 
 
@@ -278,14 +279,8 @@ def prize_list(request):
         return http_return(400, '请求错误')
     # uuid = data.get('uuid', '') 如果多个活动，则要关联，第一个版本不做
     prizes = Prize.objects.filter(isDelete=False, status=1).all()[:8]
-    prizeList = []
-    for prize in prizes:
-        prizeList.append({
-            "uuid": prize.uuid,
-            "name": prize.name if prize.name else "",
-            "icon": prize.icon if prize.icon else "",
-        })
-    return http_return(200, prizeList)
+    prizeList = prizeList_format(prizes)
+    return http_return(200, "成功", prizeList)
 
 
 @check_identify
@@ -295,6 +290,35 @@ def prize_draw(request):
     :param request:
     :return:
     """
-    data = request_body(request)
+    data = request_body(request, "POST")
     if not data:
         return http_return(400, '请求错误')
+    selfUuid = data['_cache']['uuid']
+    userPrize = UserPrize.objects.filter(userUuid__uuid=selfUuid).first()
+    if userPrize:
+        return http_return(400, "你已经参与过抽奖，不能重复抽奖")
+    prizes = Prize.objects.filter(isDelete=False, status=1).order_by("-updateTime").all()[:8]
+    objDict = {}
+    for prize in prizes:
+        if prize.inventory > 0:
+            objDict[prize.uuid] = prize.probability
+        else:
+            objDict[prize.uuid] = 0
+    prizeDraw = randomMachine()
+    prizeDraw.setWeight(objDict)
+    resultUuid = prizeDraw.drawing()
+    objPrize = Prize.objects.filter(uuid=resultUuid).first()
+    userPrize = UserPrize(
+        uuid=get_uuid(),
+        userUuid=User.objects.filter(uuid=selfUuid).first(),
+        prizeUuid=objPrize,
+    )
+    try:
+        userPrize.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '抽奖失败')
+    prizesList = []
+    prizesList.append(objPrize)
+    prizeInfo = prizeList_format(prizesList)[0]
+    return http_return(200, "成功", prizeInfo)

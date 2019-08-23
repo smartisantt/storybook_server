@@ -565,3 +565,20 @@ def activityRankList_format(games):
             "score": game.votes,
         })
     return resultList
+
+
+def prizeList_format(prizes):
+    """
+    奖品列表模型
+    :param prizes:
+    :return:
+    """
+    prizeList = []
+    for prize in prizes:
+        prizeList.append({
+            "uuid": prize.uuid,
+            "name": prize.name if prize.name else "",
+            "icon": prize.icon if prize.icon else "",
+            "type": prize.type if prize.type else "",
+        })
+    return prizeList

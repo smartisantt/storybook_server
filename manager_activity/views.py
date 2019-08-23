@@ -240,13 +240,20 @@ def query_expressage(request):
         if (timezone.now() - userPrize.expressDate).days > 30:
             return Response({"info": "暂无详细信息", "state": userPrize.expressState})
 
+    if userPrize.expressState == 3:
+        return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState})
+
     res = Express100.get_express_info(str(num).strip())
     res = json.loads(res.text)
-    info = res.get("data", "")
+    info = res.get("data", "查询无结果，请检查单号是否正确或隔断时间再查！")
     state = res.get("state", "")
 
-    if not info:
-        info = "查询无结果，请检查单号是否正确或隔断时间再查！"
+    # 如快递状态有更新，则更新显示
+    if state and userPrize.expressState != state:
+        userPrize.expressState = state
+
+    userPrize.expressDetail = json.dumps(info)
+    userPrize.save()
     return Response({"info": info, "state": state})
 
 

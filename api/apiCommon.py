@@ -552,6 +552,7 @@ def activityRankList_format(games):
     resultList = []
     for game in games:
         resultList.append({
+            "uuid": game.uuid,
             "publisher": {
                 "uuid": game.userUuid.uuid if game.userUuid else '',
                 "nickname": game.userUuid.nickName if game.userUuid else '',

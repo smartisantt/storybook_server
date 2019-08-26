@@ -122,7 +122,8 @@ def activity_audiostory_list(request):
     activityUuidList = []
     games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
     for game in games:
-        activityUuidList.append(game.audioUuid.uuid)
+        if game.audioUuid:
+            activityUuidList.append(game.audioUuid.uuid)
     audio = AudioStory.objects.filter(isDelete=False, userUuid__uuid=data['_cache']['uuid'])
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
@@ -410,20 +411,39 @@ def user_logistics(request):
     if not userPrize:
         return http_return(400, "未查询到奖品信息")
     status = 1
-    comCode = ""
+    company = ""
     logisticsInfo = ""
     deliveryNum = userPrize.deliveryNum
     if deliveryNum:
         status = 2
-        expressage = Express100()
-        comCode = expressage.get_company_info(deliveryNum)[0]["comCode"]
-        logisticsInfo = expressage.get_express_info(str(deliveryNum).strip())
+        if userPrize.expressState == 3:
+            status = 3
+            company = userPrize.com
+        else:
+            expressage = Express100()
+            comCode = expressage.get_company_info(deliveryNum)[0]["comCode"]
+            com_dict = {
+                "yunda": "韵达快递",
+                "youzhengguonei": "邮政快递包裹",
+                "zhongtong": "中通快递",
+                "shunfeng": "顺丰速运",
+                "shentong": "申通快递",
+                "yuantong": "圆通速递",
+                "huitongkuaidi": "百世快递",
+                "yundakuaiyun": "韵达快运",
+                "danniao": "丹鸟",
+                "zhongtongkuaiyun": "中通快运",
+                "ems": "EMS"
+            }
+            company = com_dict[comCode]
+            logisticsInfo = expressage.get_express_info(str(deliveryNum).strip())
+
     info = {
         "uuid": userPrize.uuid,
         "icon": userPrize.prizeUuid.icon,
         "status": status,
         "code": deliveryNum,
-        "comCode": comCode,
+        "company": company,
         "logisticsInfo": logisticsInfo,
     }
     return http_return(200, "成功", info)

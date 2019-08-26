@@ -376,6 +376,31 @@ def audioList_format(audios, data=None):
     return audioStoryList
 
 
+def activity_audioList_format(audios):
+    """
+    活动处理返回格式化
+    :param audios:
+    :return:
+    """
+    audioStoryList = []
+    for audio in audios:
+        tagList = []
+        for tag in audio.tags.all():
+            tagList.append({
+                'uuid': tag.uuid,
+                'name': tag.name if tag.name else '',
+                "icon": tag.icon if tag.icon else '',
+            })
+        audioStoryList.append({
+            "uuid": audio.uuid,
+            "name": audio.name if audio.name else '',
+            "icon": audio.bgIcon if audio.bgIcon else '',
+            "createTime": datetime_to_unix(audio.createTime) if audio.createTime else 0,
+            "tagList": tagList,
+        })
+    return audioStoryList
+
+
 def userList_format(users):
     """
     格式返回用户列表

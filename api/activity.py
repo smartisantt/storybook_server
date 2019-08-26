@@ -1,3 +1,4 @@
+import json
 import time
 
 from api.apiCommon import *
@@ -124,17 +125,16 @@ def activity_audiostory_list(request):
     for game in games:
         if game.audioUuid:
             activityUuidList.append(game.audioUuid.uuid)
-    audio = AudioStory.objects.filter(isDelete=False, userUuid__uuid=data['_cache']['uuid'])
+    audio = AudioStory.objects.exclude(uuid__in=activityUuidList).filter(isDelete=False,
+                                                                         userUuid__uuid=data['_cache']['uuid'])
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:
         return http_return(400, '活动信息不存在')
-    startTime = activity.startTime
-    endTime = activity.endTime
-    audio = audio.filter(createTime__gte=startTime, createTime__lte=endTime)
-    audios = audio.exclude(uuid__in=activityUuidList).order_by("-updateTime").all()
+    audio = audio.filter(createTime__range=(activity.startTime, activity.endTime))
+    audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
-    audioStoryList = audioList_format(audio, data)
+    audioStoryList = audioList_format(audios, data)
     return http_return(200, '成功', {"list": audioStoryList, "total": total})
 
 
@@ -420,9 +420,12 @@ def user_logistics(request):
         if userPrize.expressState == 3:
             status = 3
             company = userPrize.com
+            logisticsInfo = userPrize.expressDetail
         else:
             expressage = Express100()
             comCode = expressage.get_company_info(deliveryNum)[0]["comCode"]
+            if not comCode:
+                return http_return(400, '未获取到快递公司信息')
             com_dict = {
                 "yunda": "韵达快递",
                 "youzhengguonei": "邮政快递包裹",
@@ -437,13 +440,28 @@ def user_logistics(request):
                 "ems": "EMS"
             }
             company = com_dict[comCode]
-            logisticsInfo = expressage.get_express_info(str(deliveryNum).strip())
-
+            res = expressage.get_express_info(str(deliveryNum).strip()).json()
+            if not res:
+                return http_return(400, "未获取到物流信息")
+            logisticsInfo = res["data"]
+            state = res["state"]
+            if state == 3:
+                status = 3
+            if state != userPrize.expressState:
+                # 更新本地数据库
+                try:
+                    userPrize.expressState = state
+                    userPrize.expressDetail = logisticsInfo
+                    userPrize.com = company
+                    userPrize.save()
+                except Exception as e:
+                    logging.error(str(e))
+                    return http_return(400, '更新物流信息失败')
     info = {
         "uuid": userPrize.uuid,
         "icon": userPrize.prizeUuid.icon,
         "status": status,
-        "code": deliveryNum,
+        "code": deliveryNum if deliveryNum else "",
         "company": company,
         "logisticsInfo": logisticsInfo,
     }

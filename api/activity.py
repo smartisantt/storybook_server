@@ -224,7 +224,7 @@ def activity_vote(request):
     if not game:
         return http_return(400, "未获取到参赛作品信息")
     selfUuid = data['_cache']['uuid']
-    user = User.objects.filter(uuid=selfUuid).filter()
+    user = User.objects.filter(uuid=selfUuid).first()
     todayDate = datetime.datetime.today()
     voteBehavior = VoteBehavior.objects.filter(userUuid__uuid=selfUuid, voteDate=todayDate).first()
     if voteBehavior:
@@ -281,8 +281,10 @@ def prize_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-    # uuid = data.get('uuid', '') 如果多个活动，则要关联，第一个版本不做
-    prizes = Prize.objects.filter(isDelete=False, status=1).all()[:8]
+    uuid = data.get('uuid', '')  # 如果多个活动，则要关联，第一个版本不做
+    if not uuid:
+        return http_return(400, '请选择要查看抽奖列表的活动')
+    prizes = Prize.objects.filter(activityUuid__uuid=uuid, isDelete=False, status=1).all()[:8]
     prizeList = prizeList_format(prizes)
     return http_return(200, "成功", prizeList)
 
@@ -298,10 +300,14 @@ def prize_draw(request):
     if not data:
         return http_return(400, '请求错误')
     selfUuid = data['_cache']['uuid']
-    game = GameInfo.objects.filter(userUuid__uuid=selfUuid, audioUuid__isnull=False).first()
+    uuid = data.get("uuid", "")
+    if not uuid:
+        return http_return(400, '请选择要抽奖的活动')
+    game = GameInfo.objects.filter(activityUuid__uuid=uuid, userUuid__uuid=selfUuid, audioUuid__isnull=False).first()
     if not game:
         return http_return(400, '未参与活动，不能抽奖')
-    userPrize = UserPrize.objects.filter(userUuid__uuid=selfUuid).first()
+    prizeUuidList = Prize.objects.filter(activityUuid__uuid=uuid, isDelete=False, status=1).values("uuid")
+    userPrize = UserPrize.objects.filter(userUuid__uuid=selfUuid, prizeUuid__uuid__in=prizeUuidList).first()
     if userPrize:
         return http_return(400, "你已经参与过抽奖，不能重复抽奖")
     prizes = Prize.objects.filter(isDelete=False, status=1).order_by("-updateTime").all()[:8]
@@ -351,7 +357,7 @@ def user_prize(request):
     prizeList = []
     for prize in prizes:
         type = 1  # 1:实体商品 2：虚拟商品
-        info = None
+        info = ""
         if prize.prizeUuid.type in [0, 1, 2, 3]:
             type = 2
             # 获取兑换码并存入数据库并返回给前端
@@ -393,25 +399,21 @@ def user_logistics(request):
     userPrize = UserPrize.objects.filter(uuid=uuid).first()
     if not userPrize:
         return http_return(400, "未查询到奖品信息")
-    deliveryNum = None
-    company = None
-    logisticsInfo = None
-    orderStatus = userPrize.orderStatus
-    if orderStatus == 1:
-        pass
-    elif orderStatus == 2:
-        deliveryNum = userPrize.deliveryNum
+    status = 1
+    comCode = ""
+    logisticsInfo = ""
+    deliveryNum = userPrize.deliveryNum
+    if deliveryNum:
+        status = 2
         expressage = Express100()
-        company = expressage.get_company_info()
-        result = expressage.get_express_info(str(deliveryNum).strip())
-    elif orderStatus == 3:
-        deliveryNum = userPrize.deliveryNum
+        comCode = expressage.get_company_info(deliveryNum)[0]["comCode"]
+        logisticsInfo = expressage.get_express_info(str(deliveryNum).strip())
     info = {
         "uuid": userPrize.uuid,
         "icon": userPrize.prizeUuid.icon,
-        "orderStatus": orderStatus,
-        "deliveryNum": deliveryNum,
-        "company": company,
+        "status": status,
+        "code": deliveryNum,
+        "comCode": comCode,
         "logisticsInfo": logisticsInfo,
     }
     return http_return(200, "成功", info)

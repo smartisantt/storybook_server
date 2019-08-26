@@ -43,8 +43,48 @@ class UserInvitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("uuid", "id", "tel", "nickName", "createTime", "regitsterNum", "activityNum")
+        fields = ("uuid", "id", "tel", "nickName", "createTime", "regitsterNum", "activityNum", "avatar")
 
+
+class UserInvitationDetailSerializer(serializers.ModelSerializer):
+    # 是否参加活动
+    isActivity = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_isActivity(inviter):
+        if GameInfo.objects.filter(userUuid=inviter).exists():
+            return True
+        return False
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['sortNum'] = list(self.instance).index(instance) + 1
+        return data
+
+    class Meta:
+        model = User
+        fields = ("uuid", "id", "tel", "nickName", "status", "createTime", "isActivity")
+
+
+
+class ShopInvitationDetailSerializer(serializers.ModelSerializer):
+    # 是否参加活动
+    isActivity = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_isActivity(inviter):
+        if GameInfo.objects.filter(userUuid=inviter).exists():
+            return True
+        return False
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['sortNum'] = list(self.instance).index(instance) + 1
+        return data
+
+    class Meta:
+        model = User
+        fields = ("uuid", "id", "tel", "nickName", "status", "createTime", "isActivity")
 
 
 class UserPrizeSerializer(serializers.ModelSerializer):

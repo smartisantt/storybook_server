@@ -48,7 +48,7 @@ class UserPrizeFilter(django_filters.FilterSet):
 
     class Meta:
         model = UserPrize
-        fields = ("orderNum", )
+        fields = ("orderNum", "expressState")
 
 
 class UserInvitationFilter(django_filters.FilterSet):

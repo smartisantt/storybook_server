@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, mixins
-from rest_framework.decorators import api_view, authentication_classes, throttle_classes
+from rest_framework.decorators import api_view, authentication_classes, throttle_classes, action
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -24,7 +24,7 @@ from manager.serializers import ActivitySerializer
 from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter, UserInvitationFilter, \
     ShopInvitationFilter
 from manager_activity.serializers import ShopSerializer, PrizeSerializer, UserPrizeSerializer, UserInvitationSerializer, \
-    ShopInvitationSerializer
+    ShopInvitationSerializer, UserInvitationDetailSerializer, ShopInvitationDetailSerializer
 from utils.errors import ParamsException
 
 
@@ -232,20 +232,33 @@ def query_expressage(request):
     if not userPrize:
         return http_return(400, "用户发货管理没有此快递单号！")
 
-    # 超过30天无法获取物流的详细信息
+    # 超过30的单号直接读取数据库历史记录
     if not userPrize.expressDate:
         if (timezone.now() - userPrize.expressDate).days > 30:
-            return Response({"info": "暂无详细信息", "state": userPrize.expressState})
+            return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})
 
     if userPrize.expressState == 3:
-        return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState})
+        return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})
 
     res = Express100.get_express_info(str(num).strip())
     if not res:
-        return http_return(400, "查询无结果，请检查单号是否正确或隔断时间再查！")
+        return http_return(400, "查询无结果，请隔断时间再查！")
     res = json.loads(res.text)
     info = res.get("data", "")
     state = res.get("state", "")
+    com = res.get("com", "")
+    com_dict = {"yunda": "韵达快递",
+                "youzhengguonei": "邮政快递包裹",
+                "zhongtong": "中通快递",
+                "shunfeng": "顺丰速运",
+                "shentong": "申通快递",
+                "yuantong": "圆通速递",
+                "huitongkuaidi": "百世快递",
+                "yundakuaiyun": "韵达快运",
+                "danniao": "丹鸟",
+                "zhongtongkuaiyun": "中通快运",
+                "ems": "EMS"
+                }
 
     if not info:
         return http_return(400, "查询无结果，请检查单号是否正确或隔断时间再查！")
@@ -254,9 +267,11 @@ def query_expressage(request):
     if state and userPrize.expressState != state:
         userPrize.expressState = state
 
+    com = com_dict.get(com, com)
     userPrize.expressDetail = json.dumps(info)
+    userPrize.com = com
     userPrize.save()
-    return Response({"info": info, "state": state})
+    return Response({"info": info, "state": state, "com": com})
 
 
 class ShopView(ListAPIView):
@@ -314,6 +329,7 @@ class PrizeView(ListAPIView):
     ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
+        # 更新物流信息（除签收以外）：
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
 
@@ -520,7 +536,7 @@ class UserPrizeView(ListAPIView):
         return self.queryset
 
 
-#
+
 @api_view(['POST'])
 @authentication_classes((CustomAuthentication, ))
 def add_user_prize(request):
@@ -540,6 +556,9 @@ def add_user_prize(request):
     try:
         with transaction.atomic():
             userPrize.deliveryNum = deliveryNum
+            #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回  7 未录入单号 等8个状态
+            #  填写快递单号后改成揽收状态
+            userPrize.expressState = 1
             userPrize.expressDate = timezone.now()
             userPrize.save()
         return http_return(200, 'OK')
@@ -574,6 +593,24 @@ class UserInvitationView(ListAPIView):
         return self.queryset
 
 
+class UserInvitationDetailView(ListAPIView):
+    queryset = User.objects.exclude(status='destroy')
+    serializer_class = UserInvitationDetailSerializer
+    pagination_class = MyPagination
+    ordering = ('createTime', )
+
+    def get_queryset(self):
+        userUuid = self.request.query_params.get('userUuid', '')
+        if not userUuid:
+            raise ParamsException("参数错误")
+        user = User.objects.filter(uuid=userUuid).exclude(status='destroy')
+        if not user:
+            return ParamsException("用户不存在")
+
+        return User.objects.filter(inviter=userUuid).order_by('createTime')
+
+
+
 class ShopInvitationView(ListAPIView):
     queryset = Shop.objects.filter(isDelete=False)
     serializer_class = ShopInvitationSerializer
@@ -600,3 +637,18 @@ class ShopInvitationView(ListAPIView):
         return self.queryset
 
 
+class ShopInvitationDetailView(ListAPIView):
+    queryset = Shop.objects.filter(isDelete=False)
+    serializer_class = ShopInvitationDetailSerializer
+    pagination_class = MyPagination
+    ordering = ('createTime', )
+
+    def get_queryset(self):
+        shopUuid = self.request.query_params.get('shopUuid', '')
+        if not shopUuid:
+            raise ParamsException("参数错误")
+        shop = Shop.objects.filter(uuid=shopUuid)
+        if not shop:
+            return ParamsException("门店不存在")
+
+        return User.objects.filter(inviter=shopUuid).order_by('createTime')

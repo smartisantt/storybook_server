@@ -453,13 +453,14 @@ class UserPrize(BaseModle):
     receiveUuid = models.ForeignKey('ReceivingInfo', on_delete=models.CASCADE, related_name='receivePrizeUuid',
                                     to_field='uuid',
                                     null=True, verbose_name="收货信息")
-    # 填写订单日期
+
     expressDate = models.DateTimeField(verbose_name='填写快递日期', null=True)
+    com = models.CharField(max_length=64, null=True, verbose_name="快递公司名字")
     # 物流的详细信息
     expressDetail = models.TextField(null=True)
     #  为空这是无效快递或者没有填写快递
-    #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回等7个状态
-    expressState = models.IntegerField(null=True)
+    #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回  7 未录入单号 等8个状态
+    expressState = models.IntegerField(default=7)  # 当前快递状态
     classNo = models.CharField(max_length=64, null=True)  # 课程号兑换码
 
     class Meta:

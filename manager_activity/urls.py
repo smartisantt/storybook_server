@@ -2,7 +2,7 @@ from django.urls import path
 
 from manager_activity import views
 from manager_activity.views import ActivityView, ShopView, PrizeView, UserPrizeView, UserInvitationView, \
-    ShopInvitationView
+    ShopInvitationView, UserInvitationDetailView, ShopInvitationDetailView
 
 urlpatterns = [
     path('activitylist/', ActivityView.as_view()),
@@ -30,8 +30,11 @@ urlpatterns = [
 
     # 用户邀请关系
     path('userinvitationlist/', UserInvitationView.as_view()),
+    path('userinvitationdetail/', UserInvitationDetailView.as_view()),
+    # path('invitationdetail/', views.invitation_detail, name='invitationdetail'),
 
     # 店主邀请关系
     path('shopinvitationlist/', ShopInvitationView.as_view()),
+    path('shopinvitationdetail/', ShopInvitationDetailView.as_view()),
 
 ]

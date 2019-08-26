@@ -200,6 +200,7 @@ def activity_join(request):
     if not game:
         return http_return(400, '请报名后再上传作品')
     # 如果邀请者参与比赛，则增加30票
+    inviterGame = None
     if game.inviter:
         inviterGame = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=game.inviter,
                                               audioUuid__isnull=False).first()

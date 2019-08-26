@@ -66,7 +66,7 @@ class CheckAudioStoryInfoFilter(django_filters.FilterSet):
 
     class Meta:
         model = AudioStory
-        fields = ('id', 'checkStatus', 'name')
+        fields = ('id', 'checkStatus', 'name', 'interfaceStatus')
 
 
 class QualifiedAudioStoryInfoFilter(django_filters.FilterSet):

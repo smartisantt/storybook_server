@@ -256,7 +256,8 @@ def recording_send(request):
 
     # 提交音频合并请求
     mix = MixAudio()
-    mix.audio_product(uuid)
+    if not mix.audio_product(uuid):
+        return http_return(400, "音频合成失败")
 
     return http_return(200, '发布成功')
 

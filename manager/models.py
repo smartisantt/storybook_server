@@ -459,7 +459,7 @@ class UserPrize(BaseModle):
     # 物流的详细信息
     expressDetail = models.TextField(null=True)
     #  为空这是无效快递或者没有填写快递
-    #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回  7 未录入单号 等8个状态
+    #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回  7未录入单号 8暂无物流信息 9个状态
     expressState = models.IntegerField(default=7)  # 当前快递状态
     classNo = models.CharField(max_length=64, null=True)  # 课程号兑换码
 

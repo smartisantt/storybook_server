@@ -556,9 +556,9 @@ def add_user_prize(request):
     try:
         with transaction.atomic():
             userPrize.deliveryNum = deliveryNum
-            #  快递单当前状态，包括0在途，1揽收，2疑难，3签收，4退签，5派件，6退回  7 未录入单号 等8个状态
-            #  填写快递单号后改成揽收状态
-            userPrize.expressState = 1
+            #  0在途，1揽收，2疑难，3签收，4退签，5派件，6退回  7未录入单号 8暂无物流信息
+            #  填写快递单号后暂无物流信息状态
+            userPrize.expressState = 8
             userPrize.expressDate = timezone.now()
             userPrize.save()
         return http_return(200, 'OK')

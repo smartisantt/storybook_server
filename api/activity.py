@@ -363,6 +363,7 @@ def activity_audio_play(request):
         "publisher": publisher,
         "votes": game.votes,
         "isVote": True if checkVote else False,
+        "joinUuid": game.uuid,
     }
     return http_return(200, '成功', playDict)
 

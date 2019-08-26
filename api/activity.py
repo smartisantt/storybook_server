@@ -198,9 +198,19 @@ def activity_join(request):
     game = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=data['_cache']['uuid']).first()
     if not game:
         return http_return(400, '请报名后再上传作品')
+    # 如果邀请者参与比赛，则增加30票
+    if game.inviter:
+        inviterGame = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=game.inviter,
+                                              audioUuid__isnull=False).first()
+        if inviterGame:
+            inviterGame.votes += 30
+
+    game.audioUuid = audioStory
     try:
-        game.audioUuid = audioStory
-        game.save()
+        with transaction.atomic():
+            game.save()
+            if inviterGame:
+                inviterGame.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '参赛失败')

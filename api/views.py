@@ -374,7 +374,8 @@ def audio_list(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     audioStoryType = data.get('audioStoryType', None)
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
+    audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        checkStatus="unCheck").filter(isDelete=False)
     if audioStoryType:
         audio = audio.filter(audioStoryType=audioStoryType)
     audios = audio.order_by('-createTime').all()
@@ -461,7 +462,9 @@ def audio_other(request):
     audio = AudioStory.objects.filter(uuid=uuid).first()
     if not audio:
         return http_return(400, '作品信息不存在')
-    otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+    otheraudio = AudioStory.objects.filter(
+        Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(checkStatus="unCheck").exclude(
+        checkStatus="unCheck").filter(
         isDelete=False).exclude(uuid=uuid).filter(userUuid__uuid=audio.userUuid.uuid, isDelete=False)
     otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)
@@ -540,7 +543,7 @@ def index_list(request):
     selfUuid = data['_cache']['uuid']
     likeList = []
     audios = AudioStory.objects.exclude(userUuid__uuid=selfUuid).filter(
-        Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+        Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).filter(
         isDelete=False).order_by("?")[:6]
     if audios:
         for audio in audios:
@@ -572,7 +575,8 @@ def index_more(request):
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # rank:最热 latest:最新
     # MOD1每日一读  MOD2抢先听  MOD3热门推荐 MOD4猜你喜欢
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
+    audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
     if type in [1, 2, 3]:
         typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
         audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False)
@@ -616,7 +620,8 @@ def search_all(request):
         return http_return(400, '请输入搜索关键词')
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
+    audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
     user = User.objects.filter(roles='normalUser')
     audios = audio.filter(name__contains=keyword).order_by("-updateTime").all()[:6]
     users = user.filter(nickName__contains=keyword).order_by("-updateTime").all()[:6]
@@ -648,7 +653,9 @@ def search_each(request):
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
     if type == "audioStory":
-        audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
+        audio = AudioStory.objects.filter(
+            Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+            checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
         audio = audio.filter(Q(storyUuid__name__contains=keyword) | Q(name__contains=keyword))
         if filterValue == 'rank':
             audio = audio.order_by("-playTimes")
@@ -736,7 +743,8 @@ def index_category_result(request):
     if not data:
         return http_return(400, '请求错误')
     keyword = data.get('keyword', '')
-    audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
+    audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
     user = User.objects.filter(status='normal')
     if keyword:
         categoryList = keyword.split('*')
@@ -770,7 +778,9 @@ def index_category_each(request):
     if not selfUser:
         return http_return(400, '未获取到用户信息')
     if type == "audioStory":
-        audio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(isDelete=False)
+        audio = AudioStory.objects.filter(
+            Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+            checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
         if keyword:
             categoryList = keyword.split('*')
             for cate in categoryList:
@@ -1216,7 +1226,9 @@ def audio_other_version(request):
         return http_return(400, '模板音频不存在')
     if not audio.storyUuid:
         return http_return(400, '自由录制作品没有其他主播版本')
-    otheraudio = AudioStory.objects.filter(Q(checkStatus="check") | Q(checkStatus="exemption")).filter(
+    otheraudio = AudioStory.objects.filter(
+        Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(checkStatus="unCheck").exclude(
+        checkStatus="unCheck").filter(
         isDelete=False).filter(storyUuid__uuid=audio.storyUuid.uuid).exclude(userUuid__uuid=audio.userUuid.uuid)
     otheraudios = otheraudio.order_by("-updateTime").all()
     total, otheraudios = page_index(otheraudios, page, pageCount)

@@ -466,3 +466,110 @@ def user_logistics(request):
         "logisticsInfo": logisticsInfo,
     }
     return http_return(200, "成功", info)
+
+
+@check_identify
+def address_create(request):
+    """
+    新增收货地址
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    address = data.get("address", "")
+    isDefault = data.get("isDefault", "")  # 1 不设置为默认地址， 2设置为默认地址
+    contact = data.get("contact", "")
+    tel = data.get("tel", "")
+    if not address:
+        return http_return(400, '请输入地址')
+    selfUuid = data['_cache']['uuid']
+    if not isDefault:
+        return http_return(400, "请选择是否设为默认地址")
+        if isDefault == 1:
+            isDefault = 0
+        elif isDefault == 2:  # 设置为默认地址
+            isDefault = 1
+            try:
+                ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(defaultAddress=0)
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '设置默认地址失败')
+    if not contact:
+        return http_return(400, "请输入收件人姓名")
+    if not tel:
+        return http_return(400, "请输入收件人电话")
+    user = User.objects.filter(uuid=selfUuid).first()
+    try:
+        ReceivingInfo.objects.create(
+            uuid=get_uuid(),
+            userUuid=user,
+            address=address,
+            defaultAddress=isDefault,
+            contact=contact,
+            tel=tel,
+        )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '新增失败')
+    return http_return(200, "新增成功")
+
+
+@check_identify
+def address_list(request):
+    """
+    新增收货地址
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    selfUuid = data['_cache']['uuid']
+    receives = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).order_by("-updateTime").all()
+    resList = []
+    for rece in receives:
+        isDefault = False
+        if rece.defaultAddress == 1:
+            isDefault = True
+        resList.append({
+            "uuid": rece.uuid,
+            "address": rece.address if rece.address else "",
+            "isDefault": isDefault,
+            "contact": rece.contact if rece.contact else "",
+            "tel": rece.tel if rece.tel else "",
+        })
+    return http_return(200, "成功", resList)
+
+
+@check_identify
+def address_choose(request):
+    """
+    选择收货地址
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    receUuid = data.get("receUuid", "")
+    if not receUuid:
+        return http_return(400, "请选择收货地址")
+    rece = ReceivingInfo.objects.filter(uuid=receUuid).first()
+    if not rece:
+        return http_return(400, "未获取到收货地址信息")
+
+    userPrizeUuid = data.get("userPrizeUuid", "")
+    if not userPrizeUuid:
+        return http_return(400, "请选择收货奖品")
+    userPrize = UserPrize.objects.filter(uuid=userPrizeUuid).first()
+    if not userPrize:
+        return http_return(400, "未获取到奖品信息")
+    userPrize.receiveUuid = rece
+    try:
+        userPrize.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '选择收货地址失败')
+    return http_return(200, "选择收货地址成功")

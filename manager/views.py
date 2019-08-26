@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Create your views here.
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import authentication, viewsets, mixins
 from rest_framework.decorators import authentication_classes, api_view, action
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
@@ -27,6 +25,8 @@ from common.api import Api
 from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
 from utils.errors import ParamsException
+
+q = (Q(isDelete=False)&Q(isUpload=1)&(Q(checkStatus='check')|Q(interfaceStatus="check")|Q(checkStatus='exemption')))
 
 
 def admin(request):
@@ -184,8 +184,7 @@ def total_data(request):
     # 用户总人数
     totalUsers = User.objects.exclude(status='destroy').count()
     # 音频总数
-    totalAudioStory = AudioStory.objects.filter(isDelete=False, isUpload=1,
-                                                checkStatus__in=["check", "exemption"]).count()
+    totalAudioStory = AudioStory.objects.filter(q).exclude(checkStatus="checkFail").count()
     # 专辑总数
     totalAlbums = Album.objects.filter(isDelete=False).count()
     # 新增用户人数
@@ -207,14 +206,13 @@ def total_data(request):
 
 
     # 模板音频
-    aduioStoryCount = AudioStory.objects.filter(
-        isDelete=False, audioStoryType=1, isUpload=1, createTime__range=(t1, t2),
-        checkStatus__in=["check", "exemption"]).count()
+    aduioStoryCount = AudioStory.objects.filter(Q(createTime__range=(t1, t2))&Q(audioStoryType=1)&q).\
+        exclude(checkStatus="checkFail").count()
+
 
     # 自由录制
-    freedomStoryCount = AudioStory.objects.filter(
-        isDelete=False, audioStoryType=0, isUpload=1, createTime__range=(t1, t2),
-        checkStatus='check').count()
+    freedomStoryCount = AudioStory.objects.filter(Q(createTime__range=(t1, t2))&Q(audioStoryType=0)&q).\
+        exclude(checkStatus="checkFail").count()
 
     tagNameList = []
     tagsNumList = []
@@ -823,8 +821,8 @@ def del_story(request):
 
 class AudioStoryInfoView(ListAPIView):
     """模板音频"""
-    queryset = AudioStory.objects.filter(Q(isDelete=False), Q(audioStoryType=1),Q(isUpload=1),
-                                         Q(checkStatus='check')|Q(checkStatus='exemption'))\
+    queryset = AudioStory.objects.filter(q&Q(audioStoryType=1))\
+        .exclude(checkStatus="checkFail")\
         .select_related('bgm', 'userUuid')\
         .prefetch_related('tags')
 
@@ -885,44 +883,6 @@ def add_audio_story(request):
     userUuid = data.get('useruuid', '')
     remarks = data.get('remarks', '')
     duration = data.get('duration', '')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     url = data.get('url', '')
     type = data.get('type', '')                 # 录制形式 0宝宝录制 1爸妈录制
     tagsUuidList = data.get('tagsuuidlist', '')
@@ -979,8 +939,8 @@ def add_audio_story(request):
 
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
-    queryset = AudioStory.objects.filter(isDelete=False, audioStoryType=0, isUpload=1,
-                                         checkStatus='check') \
+    queryset = AudioStory.objects.filter(q&Q(audioStoryType=0)) \
+        .exclude(checkStatus='checkFail') \
         .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
 
@@ -1022,7 +982,7 @@ class FreedomAudioStoryInfoView(ListAPIView):
 
 # 内容审核
 class CheckAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1 )\
+    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1)\
         .select_related('bgm', 'userUuid')\
         .prefetch_related('tags')
 
@@ -1057,7 +1017,7 @@ class CheckAudioStoryInfoView(ListAPIView):
 
 
 class QualifiedAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1,checkStatus__in=["check", "exemption"])\
+    queryset = AudioStory.objects.filter(q).exclude(checkStatus="checkFail")\
         .select_related('bgm', 'userUuid')\
         .prefetch_related('tags')
 
@@ -1401,7 +1361,7 @@ def del_bgm(request):
     if not bgm:
         return http_return(400, '找不到对象')
     if AudioStory.objects.filter(bgm__uuid=uuid, isDelete=False).exists():
-        return http_return(400, '改背景音乐在作品中使用')
+        return http_return(400, '该背景音乐在作品中使用')
     try:
         # forbid 停用 normal正常 在用  destroy 删除
         bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destroy").first()
@@ -1575,7 +1535,7 @@ def add_ad(request):
             return http_return(400, '没有此专辑')
 
     if type == 2:  # 音频
-        if not AudioStory.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
+        if not AudioStory.objects.filter(Q(uuid=target)&q).exclude(checkStatus="checkFail").exists():
             return http_return(400, '没有此音频')
 
     if type == 4:  # 外部链接
@@ -1656,7 +1616,7 @@ def modify_ad(request):
             return http_return(400, '没有此专辑')
 
     if type == 2: # 音频
-        if not AudioStory.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
+        if not AudioStory.objects.filter(Q(uuid=target)&q).exclude(checkStatus="checkFail").exists():
             return http_return(400, '没有此音频')
 
     if type == 4: # 外部链接
@@ -1728,8 +1688,7 @@ class ModuleView(ListAPIView):
 
 # 显示所有作品的简单信息
 class AllAudioSimpleView(ListAPIView):
-    queryset = AudioStory.objects.filter(
-        Q(isDelete=False),Q(isUpload=1),Q(checkStatus='check')|Q(checkStatus='exemption')).order_by('-createTime')
+    queryset = AudioStory.objects.filter(q).exclude(checkStatus="checkFail").order_by('-createTime')
     serializer_class = AudioStorySimpleSerializer
     filter_class = CheckAudioStoryInfoFilter
     pagination_class = MyPagination
@@ -1780,8 +1739,7 @@ def add_story_into_module(request):
     audioStory = None
     album = None
     if contentType in [1,2]:
-        audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=targetUuid),Q(isUpload=1),
-                                               Q(checkStatus='check')|Q(checkStatus='exemption')).first()
+        audioStory = AudioStory.objects.filter(Q(uuid=targetUuid)&q).exclude(checkStatus="checkFail").first()
         if not audioStory:
             return http_return(400, '没有对象')
         module = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type, contentType=contentType).first()
@@ -1835,8 +1793,7 @@ def change_story_in_module(request):
     album = None
     type = module.type
     if contentType in [1, 2]:
-        audioStory = AudioStory.objects.filter(Q(isDelete=False), Q(uuid=targetUuid), Q(isUpload=1),
-                                               Q(checkStatus='check') | Q(checkStatus='exemption')).first()
+        audioStory = AudioStory.objects.filter(Q(uuid=targetUuid)&q).exclude(checkStatus="checkFail").first()
         if not audioStory:
             return http_return(400, '没有对象')
         module = Module.objects.filter(isDelete=False, audioUuid=targetUuid, type=type, contentType=contentType).first()
@@ -2408,7 +2365,7 @@ def add_cycle_banner(request):
             return http_return(400, '没有此专辑')
 
     if type == 2: # 音频
-        if not AudioStory.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
+        if not AudioStory.objects.filter(Q(uuid=target)&q).exclude(checkStatus="checkFail").exists():
             return http_return(400, '没有此音频')
 
     if type == 4: # 外部链接
@@ -2491,7 +2448,7 @@ def modify_cycle_banner(request):
             return http_return(400, '没有此专辑')
 
     if type == 2:  # 音频
-        if not AudioStory.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
+        if not AudioStory.objects.filter(Q(uuid=target)&q).exclude(checkStatus="checkFail").exists():
             return http_return(400, '没有此音频')
 
     if type == 4:  # 外部链接
@@ -2650,8 +2607,7 @@ class AlbumView(ListAPIView):
 
 class AuthorAudioStoryView(ListAPIView):
     """只有此作者的音频 不包含已经添加的"""
-    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1,
-                                         checkStatus__in=['check', 'exemption']) \
+    queryset = AudioStory.objects.filter(q).exclude(checkStatus="checkFail") \
         .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
 
@@ -2868,8 +2824,7 @@ def add_audio2album(request):
 
     audioStoryList = []
     for audioStoryUuid in audioStoryUuidList:
-        audioStory = AudioStory.objects.filter(isDelete=False, uuid=audioStoryUuid,
-                                               checkStatus__in=["check", "exemption"]).first()
+        audioStory = AudioStory.objects.filter(Q(uuid=audioStoryUuid)&q).exclude(checkStatus="checkFail").first()
         if not audioStory:
             return http_return(400, '没有音频对象')
 

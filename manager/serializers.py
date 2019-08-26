@@ -111,7 +111,7 @@ class FreedomAudioStoryInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm')
+        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm', 'taskID')
 
 
 
@@ -156,7 +156,7 @@ class AudioStoryInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm')
+        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm', 'taskID')
 
 
 
@@ -230,7 +230,7 @@ class QualifiedAudioStoryInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm')
+        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm', 'taskID')
 
 
 class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
@@ -259,7 +259,7 @@ class CheckAudioStoryInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AudioStory
-        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm')
+        exclude = ('tags', 'storyUuid', 'userUuid', 'bgm', "taskID")
 
 
 class BgmSerializer(serializers.ModelSerializer):

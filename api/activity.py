@@ -1,3 +1,4 @@
+import json
 import time
 
 from api.apiCommon import *
@@ -122,18 +123,18 @@ def activity_audiostory_list(request):
     activityUuidList = []
     games = GameInfo.objects.filter(activityUuid__uuid=uuid).all()
     for game in games:
-        activityUuidList.append(game.audioUuid.uuid)
-    audio = AudioStory.objects.filter(isDelete=False, userUuid__uuid=data['_cache']['uuid'])
+        if game.audioUuid:
+            activityUuidList.append(game.audioUuid.uuid)
+    audio = AudioStory.objects.exclude(uuid__in=activityUuidList).filter(isDelete=False,
+                                                                         userUuid__uuid=data['_cache']['uuid'])
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:
         return http_return(400, '活动信息不存在')
-    startTime = activity.startTime
-    endTime = activity.endTime
-    audio = audio.filter(createTime__gte=startTime, createTime__lte=endTime)
-    audios = audio.exclude(uuid__in=activityUuidList).order_by("-updateTime").all()
+    audio = audio.filter(createTime__range=(activity.startTime, activity.endTime))
+    audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
-    audioStoryList = audioList_format(audio, data)
+    audioStoryList = audioList_format(audios, data)
     return http_return(200, '成功', {"list": audioStoryList, "total": total})
 
 
@@ -198,9 +199,20 @@ def activity_join(request):
     game = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=data['_cache']['uuid']).first()
     if not game:
         return http_return(400, '请报名后再上传作品')
+    # 如果邀请者参与比赛，则增加30票
+    inviterGame = None
+    if game.inviter:
+        inviterGame = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=game.inviter,
+                                              audioUuid__isnull=False).first()
+        if inviterGame:
+            inviterGame.votes += 30
+
+    game.audioUuid = audioStory
     try:
-        game.audioUuid = audioStory
-        game.save()
+        with transaction.atomic():
+            game.save()
+            if inviterGame:
+                inviterGame.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '参赛失败')
@@ -400,20 +412,164 @@ def user_logistics(request):
     if not userPrize:
         return http_return(400, "未查询到奖品信息")
     status = 1
-    comCode = ""
+    company = ""
     logisticsInfo = ""
     deliveryNum = userPrize.deliveryNum
     if deliveryNum:
         status = 2
-        expressage = Express100()
-        comCode = expressage.get_company_info(deliveryNum)[0]["comCode"]
-        logisticsInfo = expressage.get_express_info(str(deliveryNum).strip())
+        if userPrize.expressState == 3:
+            status = 3
+            company = userPrize.com
+            logisticsInfo = userPrize.expressDetail
+        else:
+            expressage = Express100()
+            comCode = expressage.get_company_info(deliveryNum)[0]["comCode"]
+            if not comCode:
+                return http_return(400, '未获取到快递公司信息')
+            com_dict = {
+                "yunda": "韵达快递",
+                "youzhengguonei": "邮政快递包裹",
+                "zhongtong": "中通快递",
+                "shunfeng": "顺丰速运",
+                "shentong": "申通快递",
+                "yuantong": "圆通速递",
+                "huitongkuaidi": "百世快递",
+                "yundakuaiyun": "韵达快运",
+                "danniao": "丹鸟",
+                "zhongtongkuaiyun": "中通快运",
+                "ems": "EMS"
+            }
+            company = com_dict[comCode]
+            res = expressage.get_express_info(str(deliveryNum).strip()).json()
+            if not res:
+                return http_return(400, "未获取到物流信息")
+            logisticsInfo = res["data"]
+            state = res["state"]
+            if state == 3:
+                status = 3
+            if state != userPrize.expressState:
+                # 更新本地数据库
+                try:
+                    userPrize.expressState = state
+                    userPrize.expressDetail = logisticsInfo
+                    userPrize.com = company
+                    userPrize.save()
+                except Exception as e:
+                    logging.error(str(e))
+                    return http_return(400, '更新物流信息失败')
     info = {
         "uuid": userPrize.uuid,
         "icon": userPrize.prizeUuid.icon,
         "status": status,
-        "code": deliveryNum,
-        "comCode": comCode,
+        "code": deliveryNum if deliveryNum else "",
+        "company": company,
         "logisticsInfo": logisticsInfo,
     }
     return http_return(200, "成功", info)
+
+
+@check_identify
+def address_create(request):
+    """
+    新增收货地址
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    address = data.get("address", "")
+    isDefault = data.get("isDefault", "")  # 1 不设置为默认地址， 2设置为默认地址
+    contact = data.get("contact", "")
+    tel = data.get("tel", "")
+    if not address:
+        return http_return(400, '请输入地址')
+    selfUuid = data['_cache']['uuid']
+    if not isDefault:
+        return http_return(400, "请选择是否设为默认地址")
+        if isDefault == 1:
+            isDefault = 0
+        elif isDefault == 2:  # 设置为默认地址
+            isDefault = 1
+            try:
+                ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(defaultAddress=0)
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '设置默认地址失败')
+    if not contact:
+        return http_return(400, "请输入收件人姓名")
+    if not tel:
+        return http_return(400, "请输入收件人电话")
+    user = User.objects.filter(uuid=selfUuid).first()
+    try:
+        ReceivingInfo.objects.create(
+            uuid=get_uuid(),
+            userUuid=user,
+            address=address,
+            defaultAddress=isDefault,
+            contact=contact,
+            tel=tel,
+        )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '新增失败')
+    return http_return(200, "新增成功")
+
+
+@check_identify
+def address_list(request):
+    """
+    新增收货地址
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    selfUuid = data['_cache']['uuid']
+    receives = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).order_by("-updateTime").all()
+    resList = []
+    for rece in receives:
+        isDefault = False
+        if rece.defaultAddress == 1:
+            isDefault = True
+        resList.append({
+            "uuid": rece.uuid,
+            "address": rece.address if rece.address else "",
+            "isDefault": isDefault,
+            "contact": rece.contact if rece.contact else "",
+            "tel": rece.tel if rece.tel else "",
+        })
+    return http_return(200, "成功", resList)
+
+
+@check_identify
+def address_choose(request):
+    """
+    选择收货地址
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    receUuid = data.get("receUuid", "")
+    if not receUuid:
+        return http_return(400, "请选择收货地址")
+    rece = ReceivingInfo.objects.filter(uuid=receUuid).first()
+    if not rece:
+        return http_return(400, "未获取到收货地址信息")
+
+    userPrizeUuid = data.get("userPrizeUuid", "")
+    if not userPrizeUuid:
+        return http_return(400, "请选择收货奖品")
+    userPrize = UserPrize.objects.filter(uuid=userPrizeUuid).first()
+    if not userPrize:
+        return http_return(400, "未获取到奖品信息")
+    userPrize.receiveUuid = rece
+    try:
+        userPrize.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '选择收货地址失败')
+    return http_return(200, "选择收货地址成功")

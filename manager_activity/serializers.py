@@ -106,7 +106,8 @@ class UserPrizeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserPrize
-        fields = ("uuid", "orderNum", "prizeName", "nickName", "receiveInfo", "createTime", "deliveryNum")
+        fields = ("uuid", "orderNum", "prizeName", "nickName", "receiveInfo",
+                  "createTime", "deliveryNum", "expressState", "com")
 
 
 class ShopInvitationSerializer(serializers.ModelSerializer):

@@ -284,6 +284,90 @@ def invite_user(request):
 
 
 @check_identify
+def activity_audio_play(request):
+    """
+    播放作品
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数错误')
+    game = GameInfo.objects.filter(uuid=uuid, audioUuid__isnull=False, status=0).first()
+    if not game:
+        return http_return(400, '未获取到参赛信息')
+    audio = game.audioUuid
+    if not audio:
+        return http_return(400, '故事信息不存在')
+    # 更新播放次数
+    audio.playTimes += 1
+    try:
+        with transaction.atomic():
+            audio.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新播放次数失败')
+
+    story = None
+    if audio.storyUuid:
+        storyObj = audio.storyUuid
+        story = {
+            "uuid": storyObj.uuid if storyObj.uuid else '',
+            "name": storyObj.name if storyObj.name else '',
+            "icon": storyObj.faceIcon if storyObj.faceIcon else '',
+            "content": storyObj.content if storyObj.content else '',
+            "intro": storyObj.intro if storyObj.intro else ''
+        }
+    bgm = None
+    if audio.bgm:
+        bgmObj = audio.bgm
+        bgm = {
+            "uuid": bgmObj.uuid if bgmObj.uuid else '',
+            "url": bgmObj.url if bgmObj.url else '',
+            "name": bgmObj.name if bgmObj.name else '',
+            "duration": bgmObj.duration if bgmObj.duration else 0,
+        }
+    publisher = None
+    if audio.userUuid:
+        user = audio.userUuid
+        publisher = {
+            "uuid": user.uuid if user.uuid else '',
+            "nickname": user.nickName if user.nickName else '',
+            "avatar": user.avatar if user.avatar else '',
+            "createTime": datetime_to_unix(user.createTime) if user.createTime else 0,
+            "city": user.city if user.city else ''
+        }
+
+    selfUuid = data['_cache']['uuid']
+    checkVote = VoteBehavior.objects.filter(gameUuid__uuid=uuid, userUuid__uuid=selfUuid,
+                                            voteDate=datetime.datetime.today()).first()
+
+    playDict = {
+        "uuid": audio.uuid,
+        "remarks": audio.remarks if audio.remarks else '',
+        "name": audio.name if audio.name else '',
+        "icon": audio.bgIcon if audio.bgIcon else '',
+        "audioVolume": audio.userVolume if audio.userVolume else 1.0,
+        "bgmVolume": audio.bgmVolume if audio.bgmVolume else 1.0,
+        "createTime": datetime_to_unix(audio.createTime) if audio.createTime else 0,
+        "story": story,
+        "audio": {
+            "url": audio.voiceUrl if audio.voiceUrl else '',
+            "duration": audio.duration if audio.duration else 0,
+            "fileSize": audio.fileSize if audio.fileSize else 0,
+        },
+        "bgm": bgm,
+        "publisher": publisher,
+        "votes": game.votes,
+        "isVote": True if checkVote else False,
+    }
+    return http_return(200, '成功', playDict)
+
+
+@check_identify
 def prize_list(request):
     """
     奖品列表

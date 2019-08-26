@@ -404,7 +404,7 @@ def user_logistics(request):
         expressage = Express100()
         company = expressage.get_company_info()
         result = expressage.get_express_info(str(deliveryNum).strip())
-    else:
+    elif orderStatus == 3:
         deliveryNum = userPrize.deliveryNum
     info = {
         "uuid": userPrize.uuid,

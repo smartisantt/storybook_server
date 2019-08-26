@@ -1,3 +1,5 @@
+import logging
+
 import requests
 
 from storybook_sever.config import version
@@ -22,9 +24,12 @@ class MixAudio(object):
         data = {
             'uuid': uuid,
         }
-        txt = requests.post(url, json=data)
-
-        result = txt.json()
+        try:
+            txt = requests.post(url, json=data)
+            result = txt.json()
+        except Exception as e:
+            logging.error(str(e))
+            return False
         return result
 
 

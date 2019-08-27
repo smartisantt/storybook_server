@@ -476,7 +476,7 @@ def user_prize(request):
             "icon": prize.prizeUuid.icon if prize.prizeUuid else "",
             "type": type,
             "info": info,
-            "createTime": datetime_to_string(prize.createTime, rule="'%Y-%m-%d"),
+            "createTime": datetime_to_string(prize.createTime, rule="%Y-%m-%d"),
         })
     return http_return(200, "成功", prizeList)
 

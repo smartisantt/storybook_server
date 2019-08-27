@@ -247,7 +247,7 @@ def query_expressage(request):
         return http_return(400, "用户发货管理没有此快递单号！")
 
     # 超过30的单号直接读取数据库历史记录
-    if not userPrize.expressDate:
+    if userPrize.expressDate:
         if (timezone.now() - userPrize.expressDate).days > 30:
             return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})
 

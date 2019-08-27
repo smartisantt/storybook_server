@@ -301,13 +301,23 @@ def add_shop_info(request):
     if not shopList:
         return http_return(400, "店主信息为空！")
 
-    # 列表去重
-    run_function = lambda x, y: x if y in x else x + [y]
-    a = reduce(run_function, [[], ] + shopList)
-    shopList = a
+    total = len(shopList)
 
-    # 校验用户信息， 重复， 缺少信息， 格式错误，
     errorList = []
+    # 列表中的字典去重
+    # run_function = lambda x, y: x if y in x else x + [y]
+    # uniqueList = reduce(run_function, [[], ] + shopList)
+    # shopList = uniqueList
+    uniqueList = []
+    for item in shopList:
+        if item in uniqueList:
+            item['err_msg'] = "重复添加"
+            errorList.append(item)
+        else:
+            uniqueList += [item]
+    shopList = uniqueList
+    # 校验用户信息， 重复， 缺少信息， 格式错误，
+
     for shop in shopList[:]:
         shop["owner"] = shop.get("owner", "")
         shop["tel"] = shop.get("tel", "")
@@ -324,7 +334,7 @@ def add_shop_info(request):
             shopList.remove(shop)
 
 
-    data= {"success":len(shopList), "err_info": errorList}
+    data= {"total":total, "success":len(shopList), "fail":total-len(shopList), "err_info": errorList}
 
     try:
         with transaction.atomic():

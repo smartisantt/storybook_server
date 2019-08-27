@@ -328,8 +328,8 @@ def add_shop_info(request):
             errorList.append({"err_msg": "重复添加", "owner": shop["owner"],
                               "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)
-        if not all([shop["tel"], shop["shopName"]]):
-            errorList.append({"err_msg": "电话或店名没有", "owner": shop["owner"],
+        if not all([shop["tel"], shop["owner"]]):
+            errorList.append({"err_msg": "电话或店主名没有", "owner": shop["owner"],
                               "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)
 

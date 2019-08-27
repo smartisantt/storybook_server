@@ -476,6 +476,7 @@ def user_prize(request):
             "icon": prize.prizeUuid.icon if prize.prizeUuid else "",
             "type": type,
             "info": info,
+            "createTime": datetime_to_string(prize.createTime, rule="'%Y-%m-%d"),
         })
     return http_return(200, "成功", prizeList)
 
@@ -496,7 +497,7 @@ def user_logistics(request):
     userPrize = UserPrize.objects.filter(uuid=uuid).first()
     if not userPrize:
         return http_return(400, "未查询到奖品信息")
-    status = 1
+    status = 1  # 1未发货 2已发货 3已完成
     company = ""
     logisticsInfo = ""
     deliveryNum = userPrize.deliveryNum

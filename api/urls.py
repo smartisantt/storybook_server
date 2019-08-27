@@ -92,6 +92,7 @@ urlpatterns = [
     path('activity/prize/draw', activity.prize_draw, name='prize_draw'),  # 抽奖
     path('activity/user/prize', activity.user_prize, name='user_prize'),  # 我的奖品
     path('activity/user/logistics', activity.user_logistics, name='user_logistics'),  # 物流信息
+    path('activity/audiostoryplay', activity.activity_audio_play, name='activity_audio_play'),  # 参赛作品详情
 
     path('address/create', activity.address_create, name='address_create'),  # 新增收货地址
     path('address/list', activity.address_list, name='address_list'),  # 收货地址列表

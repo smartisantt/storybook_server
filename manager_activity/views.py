@@ -536,6 +536,32 @@ def del_prize(request):
         return http_return(400, '删除失败')
 
 
+def refresh_express():
+    # 排除已签收和没有运单号的
+    deliveryNumQueryset  = UserPrize.objects.exclude(expressState__in=[3, 7]).values("deliveryNum")
+    deliveryNums = [item["deliveryNum"] for item in list(deliveryNumQueryset)]
+    for deliveryNum in deliveryNums:
+        res = Express100.get_express_info(deliveryNum)
+        if not res:
+            continue
+        res = json.loads(res.text)
+        info = res.get("data", "")
+        state = res.get("state", "")
+        com = res.get("com", "")
+
+        if not info:
+            continue
+
+        # 如快递状态有更新，则更新显示
+        userPrize = UserPrize.objects.filter(deliveryNum=deliveryNum).first()
+
+        userPrize.expressState = state
+        userPrize.expressDetail = json.dumps(info)
+        com = com_dict.get(com, com)
+        userPrize.com = com
+        userPrize.save()
+
+
 class UserPrizeView(ListAPIView):
     queryset = UserPrize.objects.filter(prizeUuid__type=9) # 只显示实物奖品
     serializer_class = UserPrizeSerializer
@@ -546,6 +572,7 @@ class UserPrizeView(ListAPIView):
     ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
+        refresh_express()
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
 

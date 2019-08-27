@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime
+from functools import reduce
 
 from django.db import transaction
 from django.db.models import Q, Sum
@@ -216,6 +217,19 @@ def activity_rank(request):
         })
     return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
 
+com_dict = {
+    "yunda": "韵达快递",
+    "youzhengguonei": "邮政快递包裹",
+    "zhongtong": "中通快递",
+    "shunfeng": "顺丰速运",
+    "shentong": "申通快递",
+    "yuantong": "圆通速递",
+    "huitongkuaidi": "百世快递",
+    "yundakuaiyun": "韵达快运",
+    "danniao": "丹鸟",
+    "zhongtongkuaiyun": "中通快运",
+    "ems": "EMS",
+}
 
 # 查询快递
 @api_view(['GET'])
@@ -247,18 +261,7 @@ def query_expressage(request):
     info = res.get("data", "")
     state = res.get("state", "")
     com = res.get("com", "")
-    com_dict = {"yunda": "韵达快递",
-                "youzhengguonei": "邮政快递包裹",
-                "zhongtong": "中通快递",
-                "shunfeng": "顺丰速运",
-                "shentong": "申通快递",
-                "yuantong": "圆通速递",
-                "huitongkuaidi": "百世快递",
-                "yundakuaiyun": "韵达快运",
-                "danniao": "丹鸟",
-                "zhongtongkuaiyun": "中通快运",
-                "ems": "EMS"
-                }
+
 
     if not info:
         return http_return(400, "查询无结果，请检查单号是否正确或隔断时间再查！")
@@ -298,7 +301,30 @@ def add_shop_info(request):
     if not shopList:
         return http_return(400, "店主信息为空！")
 
+    # 列表去重
+    run_function = lambda x, y: x if y in x else x + [y]
+    a = reduce(run_function, [[], ] + shopList)
+    shopList = a
+
     # 校验用户信息， 重复， 缺少信息， 格式错误，
+    errorList = []
+    for shop in shopList[:]:
+        shop["owner"] = shop.get("owner", "")
+        shop["tel"] = shop.get("tel", "")
+        shop["shopNo"] = shop.get("shopNo", "")
+        shop["shopName"] = shop.get("shopName", "")
+        # 重复
+        if Shop.objects.filter(tel=shop["tel"], shopName=shop["shopName"], shopNo=shop["shopNo"]).exists():
+            errorList.append({"err_msg": "重复添加", "owner": shop["owner"],
+                              "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
+            shopList.remove(shop)
+        if not all([shop["tel"], shop["shopName"]]):
+            errorList.append({"err_msg": "电话或店名没有", "owner": shop["owner"],
+                              "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
+            shopList.remove(shop)
+
+
+    data= {"success":len(shopList), "err_info": errorList}
 
     try:
         with transaction.atomic():
@@ -313,7 +339,7 @@ def add_shop_info(request):
                     isDelete=False
                 ))
             Shop.objects.bulk_create(querysetlist)
-        return http_return(200, 'OK')
+        return http_return(200, 'OK', data)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -652,3 +678,4 @@ class ShopInvitationDetailView(ListAPIView):
             return ParamsException("门店不存在")
 
         return User.objects.filter(inviter=shopUuid).order_by('createTime')
+

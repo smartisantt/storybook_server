@@ -2,7 +2,7 @@ from django.db.models import Count
 from rest_framework import serializers
 
 from common.common import get_uuid
-from manager.models import Shop, Prize, UserPrize, ReceivingInfo, User, GameInfo
+from manager.models import Shop, Prize, UserPrize, ReceivingInfo, User, GameInfo, Activity
 from utils.errors import ParamsException
 
 
@@ -129,4 +129,8 @@ class ShopInvitationSerializer(serializers.ModelSerializer):
         fields = ("uuid", "owner", "tel", "shopNo", "shopName", "regitsterNum", "activityNum")
 
 
+class ActivitySelectSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = Activity
+        fields = ("uuid", "name")

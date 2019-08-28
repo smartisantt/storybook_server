@@ -3,7 +3,7 @@ from django.views.decorators.cache import cache_page
 
 from manager_activity import views
 from manager_activity.views import ActivityView, ShopView, PrizeView, UserPrizeView, UserInvitationView, \
-    ShopInvitationView, UserInvitationDetailView, ShopInvitationDetailView
+    ShopInvitationView, UserInvitationDetailView, ShopInvitationDetailView, ActivitySelectView
 
 urlpatterns = [
     path('activitylist/', ActivityView.as_view()),
@@ -38,4 +38,6 @@ urlpatterns = [
     path('shopinvitationlist/', ShopInvitationView.as_view()),
     path('shopinvitationdetail/', ShopInvitationDetailView.as_view()),
 
+    # 选择活动 （现在正在进行的 未来的活动）
+    path('activityselect/', ActivitySelectView.as_view()),
 ]

@@ -25,7 +25,7 @@ from manager.serializers import ActivitySerializer
 from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter, UserInvitationFilter, \
     ShopInvitationFilter
 from manager_activity.serializers import ShopSerializer, PrizeSerializer, UserPrizeSerializer, UserInvitationSerializer, \
-    ShopInvitationSerializer, UserInvitationDetailSerializer, ShopInvitationDetailSerializer
+    ShopInvitationSerializer, UserInvitationDetailSerializer, ShopInvitationDetailSerializer, ActivitySelectSerializer
 from utils.errors import ParamsException
 
 
@@ -475,8 +475,9 @@ def modify_prize(request):
     icon = data.get('icon', '')
     name = data.get('name', '')
     probability = data.get('probability', '')
+    activityUuid = data.get('activityUuid', '')
 
-    if not all([prizeUuid, name, icon, type in [0, 1, 3, 9]]):
+    if not all([prizeUuid, name, icon, type in [0, 1, 3, 9], activityUuid]):
         return http_return(400, "参数有误")
 
     if not isinstance(inventory, int):
@@ -490,6 +491,9 @@ def modify_prize(request):
 
     if not 0 <= probability <= 1:
         return http_return(400, "概率在0到1之间")
+
+    if not Activity.objects.filter(uuid=activityUuid).exclude(status="destroy").exists():
+        return http_return(400, "没有此活动")
 
     prize = Prize.objects.filter(uuid = prizeUuid, isDelete=False).first()
     if not prize:
@@ -513,6 +517,7 @@ def modify_prize(request):
             prize.icon=icon
             prize.name=name
             prize.probability=probability
+            prize.activityUuid=activityUuid
             prize.save()
         return http_return(200, 'OK')
     except Exception as e:
@@ -744,3 +749,12 @@ class ShopInvitationDetailView(ListAPIView):
 
         return User.objects.filter(inviter=shopUuid).order_by('createTime')
 
+
+class ActivitySelectView(ListAPIView):
+    queryset = Activity.objects.filter(status="normal").exclude(endTime__lt=datetime.now())\
+        .only("uuid", "name").order_by('-createTime')
+    serializer_class = ActivitySelectSerializer
+    # filter_class = ActivitySelectFilter
+    # pagination_class = MyPagination
+    # filter_backends = (DjangoFilterBackend, OrderingFilter)
+    # ordering = ('-createTime',)

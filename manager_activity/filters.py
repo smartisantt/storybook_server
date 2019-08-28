@@ -20,7 +20,7 @@ class PrizeFilter(django_filters.FilterSet):
 
     class Meta:
         model = Prize
-        fields = ("name", "id", "status")
+        fields = ("name", "id", "status", "activityUuid")
 
 
 class UserPrizeFilter(django_filters.FilterSet):
@@ -68,6 +68,6 @@ class ShopInvitationFilter(django_filters.FilterSet):
 
     class Meta:
         model = Shop
-        fields = ("owner", "shopNo", )
+        fields = ("owner", "shopNo", "activityUuid")
 
 

@@ -23,7 +23,7 @@ class Api(object):
         self.search_user_byphone_url = '/api/sso/user/byphone'
 
         if version == 'ali_test':
-            self.comm_host = 'https://castest.hbbclub.com/'
+            self.comm_host = 'https://castest.hbbclub.com'
             # self.create_user_host = 'https://castest.hbbclub.com/'
 
     def check_token(self, token):

@@ -126,7 +126,7 @@ class ShopInvitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Shop
-        fields = ("uuid", "owner", "tel", "shopNo", "shopName", "regitsterNum", "activityNum")
+        fields = ("uuid", "owner", "tel", "shopNo", "shopName", "regitsterNum", "activityNum", "activityUuid")
 
 
 class ActivitySelectSerializer(serializers.ModelSerializer):

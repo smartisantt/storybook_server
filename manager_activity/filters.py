@@ -17,6 +17,11 @@ class ShopFilter(django_filters.FilterSet):
 
 class PrizeFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(field_name="name", lookup_expr="icontains")
+    activityUuid = django_filters.CharFilter(method='filter_by_activity')
+
+    @staticmethod
+    def filter_by_activity(queryset, name, value):
+        return queryset.filter(activityUuid__uuid=value)
 
     class Meta:
         model = Prize
@@ -65,6 +70,11 @@ class ShopInvitationFilter(django_filters.FilterSet):
     shopNo = django_filters.CharFilter(field_name="shopNo", lookup_expr="icontains")
     tel = django_filters.CharFilter(field_name="tel", lookup_expr="icontains")
     shopName = django_filters.CharFilter(field_name="shopName", lookup_expr="icontains")
+    activityUuid = django_filters.CharFilter(method='filter_by_activity')
+
+    @staticmethod
+    def filter_by_activity(queryset, name, value):
+        return queryset.filter(activityUuid__uuid=value)
 
     class Meta:
         model = Shop

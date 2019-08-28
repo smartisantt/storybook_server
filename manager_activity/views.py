@@ -344,16 +344,19 @@ def add_shop_info(request):
             errorList.append({"err_msg": "无效活动", "activityUuid": shop["activityUuid"], "owner": shop["owner"],
                               "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)
+            continue
         # 重复
         if Shop.objects.filter(tel=shop["tel"], shopName=shop["shopName"], shopNo=shop["shopNo"]).exists():
             errorList.append({"err_msg": "重复添加","activityUuid": shop["activityUuid"], "owner": shop["owner"],
                               "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)
+            continue
         if not all([shop["tel"], shop["owner"]]):
             errorList.append({"err_msg": "电话或店主名没有","activityUuid": shop["activityUuid"],
                               "owner": shop["owner"],"tel": shop["tel"],
                               "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)
+            continue
 
 
     data= {"total":total, "success":len(shopList), "fail":total-len(shopList), "err_info": errorList}

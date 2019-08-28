@@ -403,8 +403,7 @@ def prize_draw(request):
     game = GameInfo.objects.filter(activityUuid__uuid=uuid, userUuid__uuid=selfUuid, audioUuid__isnull=False).first()
     if not game:
         return http_return(400, '未参与活动，不能抽奖')
-    prizeUuidList = Prize.objects.filter(activityUuid__uuid=uuid, isDelete=False, status=1).values("uuid")
-    userPrize = UserPrize.objects.filter(userUuid__uuid=selfUuid, prizeUuid__uuid__in=prizeUuidList).first()
+    userPrize = UserPrize.objects.filter(userUuid__uuid=selfUuid, prizeUuid__activityUuid__uuid=uuid).first()
     if userPrize:
         return http_return(400, "你已经参与过抽奖，不能重复抽奖")
     prizes = Prize.objects.filter(isDelete=False, status=1).order_by("-updateTime").all()[:8]

@@ -181,8 +181,8 @@ class Shop(BaseModle, models.Model):
 
 class FriendShip(BaseModle, models.Model):
     """当前用户和其他用户关系表"""
-    follows = models.ForeignKey('User', on_delete=models.CASCADE, related_name='follows')
-    followers = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followers')
+    follows = models.ForeignKey('User', on_delete=models.CASCADE, related_name='follows',null=True)
+    followers = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followers',null=True)
     status = models.BooleanField(default=False)  # 状态，是否取消0/关注1
 
     class Meta:

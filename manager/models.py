@@ -399,7 +399,7 @@ class Behavior(BaseModle, models.Model):
                                   null=True)
     type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:收藏 4:播放记录 5:最近录过
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
-    remarks = models.CharField(max_length=256, null=True)
+    remarks = models.TextField(null=True)
 
     class Meta:
         db_table = 'tb_behavior'
@@ -499,10 +499,30 @@ class ReceivingInfo(BaseModle):
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userShippingAddressUuid',
                                  to_field='uuid',
                                  null=True, verbose_name="用户")
+    areaUuid = models.ForeignKey("ChinaArea", on_delete=models.CASCADE, related_name="areaReceUuid", to_field='uuid',
+                                 null=True)
     address = models.CharField(max_length=255, verbose_name='收货地址', null=True)
-    defaultAddress = models.BooleanField(default=0)  # 0 不是默认地址  1 是默认地址
+    isDefault = models.BooleanField(default=False)  #False不是默认 True默认
     contact = models.CharField(max_length=32, null=False)  # 收件人
     tel = models.CharField(max_length=20, null=True)
 
     class Meta:
         db_table = "tb_receiving_info"
+
+
+class ChinaArea(BaseModle):
+    """
+    中国省市区（县）列表
+    数据来源于高德地图
+    """
+    fatherUuid = models.ForeignKey('self', on_delete=models.CASCADE, to_field='uuid', null=True, default=None)
+    level = models.CharField(max_length=32, verbose_name="级别")
+    adcode = models.CharField(max_length=32, verbose_name="区域代码")
+    name = models.CharField(max_length=64, verbose_name="区域名")
+    center = models.CharField(max_length=32, verbose_name="中心点")
+    status = models.CharField(max_length=32, default='normal')
+
+    class Meta:
+        db_table = "tb_china_area"
+
+

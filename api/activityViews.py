@@ -1,6 +1,8 @@
 import json
 import time
 
+import requests
+
 from api.apiCommon import *
 from api.getClassNo import ClassObj
 from api.prizeDraw import randomMachine
@@ -567,6 +569,7 @@ def address_create(request):
     isDefault = data.get("isDefault", "")  # 1 不设置为默认地址， 2设置为默认地址
     contact = data.get("contact", "")
     tel = data.get("tel", "")
+    areaUuid = data.get("areaUuid","")
     if not address:
         return http_return(400, '请输入地址')
     selfUuid = data['_cache']['uuid']
@@ -577,7 +580,7 @@ def address_create(request):
         elif isDefault == 2:  # 设置为默认地址
             isDefault = 1
             try:
-                ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(defaultAddress=0)
+                ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(isDefault=False)
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '设置默认地址失败')
@@ -585,14 +588,20 @@ def address_create(request):
         return http_return(400, "请输入收件人姓名")
     if not tel:
         return http_return(400, "请输入收件人电话")
+    if not areaUuid:
+        return http_return(400,"请选择区域")
+    area = ChinaArea.objects.filter(uuid=areaUuid).first()
+    if not area:
+        return http_return(400,"未获取到地区信息")
     user = User.objects.filter(uuid=selfUuid).first()
     try:
         ReceivingInfo.objects.create(
             uuid=get_uuid(),
             userUuid=user,
             address=address,
-            defaultAddress=isDefault,
+            isDefault=isDefault,
             contact=contact,
+            areaUuid=area,
             tel=tel,
         )
     except Exception as e:
@@ -604,7 +613,7 @@ def address_create(request):
 @check_identify
 def address_list(request):
     """
-    新增收货地址
+    收货地址列表
     :param request:
     :return:
     """
@@ -615,13 +624,14 @@ def address_list(request):
     receives = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).order_by("-updateTime").all()
     resList = []
     for rece in receives:
-        isDefault = False
-        if rece.defaultAddress == 1:
-            isDefault = True
+        area = rece.areaUuid
+        areaList = [area.fatherUuid.fatherUuid.name, area.fatherUuid.name, area.name]
+        areaStr = " ".join(areaList)
         resList.append({
             "uuid": rece.uuid,
+            "area": areaStr if area else "",
             "address": rece.address if rece.address else "",
-            "isDefault": isDefault,
+            "isDefault": rece.isDefault,
             "contact": rece.contact if rece.contact else "",
             "tel": rece.tel if rece.tel else "",
         })
@@ -658,3 +668,109 @@ def address_choose(request):
         logging.error(str(e))
         return http_return(400, '选择收货地址失败')
     return http_return(200, "选择收货地址成功")
+
+
+@check_identify
+def area_create(request):
+    """
+    存储地区信息
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    url = "https://restapi.amap.com/v3/config/district"
+    headers = {
+        'User-Agent': 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; InfoPath.3)'}
+    params = {
+        "key": "1d25cdd07a8b5fc88641e916afaf538e",
+        "subdistrict": 3
+    }
+    res = requests.get(url, params=params, headers=headers)
+    res.encoding = "utf-8"
+    # html为json格式的字符串
+    data = res.text
+    # 把json格式字符串转为python数据类型
+    data = json.loads(data)
+    if data['info'] == "OK":
+        try:
+            info = data["districts"][0]
+            with transaction.atomic():
+                uuid1 = get_uuid()
+                country = ChinaArea(
+                    uuid=uuid1,
+                    level=info['level'],
+                    adcode=info['adcode'],
+                    name=info['name'],
+                    center=info['center'],
+                )
+                country.save()
+                for pro in info['districts']:
+                    uuid2 = get_uuid()
+                    province = ChinaArea(
+                        uuid=uuid2,
+                        fatherUuid=country,
+                        level=pro['level'],
+                        adcode=pro['adcode'],
+                        name=pro['name'],
+                        center=pro['center'],
+                    )
+                    province.save()
+                    for cit in pro['districts']:
+                        uuid3 = get_uuid()
+                        city = ChinaArea(
+                            uuid=uuid3,
+                            fatherUuid=province,
+                            level=cit['level'],
+                            adcode=cit['adcode'],
+                            name=cit['name'],
+                            center=cit['center'],
+                        )
+                        city.save()
+                        for are in cit['districts']:
+                            uuid4 = get_uuid()
+                            area = ChinaArea(
+                                uuid=uuid4,
+                                fatherUuid=city,
+                                level=are['level'],
+                                adcode=are['adcode'],
+                                name=are['name'],
+                                center=are['center'],
+                            )
+                            area.save()
+        except Exception as e:
+            logging.error(str(e))
+            print(str(e))
+            return http_return(400, '失败')
+    else:
+        return http_return(400, '响应失败')
+    return http_return(200, '成功')
+
+
+@check_identify
+def area_query(request):
+    """
+    区域信息获取
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get('uuid', '')
+    level = data.get('level', '')
+    name = data.get('name', '')
+    areas = ChinaArea.objects.filter(level=level)
+    if uuid:
+        areas = areas.filter(fatherUuid__uuid=uuid)
+    if name:
+        areas = areas.filter(name__contains=name)
+    areas = areas.all()
+    areaList = []
+    for area in areas:
+        areaList.append({
+            "uuid": area.uuid,
+            "name": area.name,
+        })
+    return http_return(200, "成功", {"area": areaList})

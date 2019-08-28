@@ -3,7 +3,7 @@
 
 from django.urls import path
 
-from api import views, shareViews, activity
+from api import views, shareViews, activityViews
 
 app_name = 'api'
 
@@ -80,22 +80,25 @@ urlpatterns = [
     path('album/audiostory/add', views.album_audio_add, name='album_audio_add'),  # 添加作品到专辑
     path('album/audiostory/del', views.album_audio_del, name='album_audio_del'),  # 从专辑中删除作品
 
-    path('activity/invite', activity.invite_user, name='invite_user'),  # 邀请注册关系建立
-    path('activity/detail', activity.activity_detail, name='activity_detail'),  # 活动详情
-    path('activity/index', activity.activity_index, name='activity_index'),  # 活动首页
-    path('activity/ranklist', activity.activity_rank, name='activity_rank'),  # 活动排行
-    path('activity/audiostorylist', activity.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
-    path('activity/join', activity.activity_join, name='activity_join'),  # 上传参赛作品
-    path('activity/sign', activity.activity_sign, name='activity_sign'),  # 活动报名
-    path('activity/vote', activity.activity_vote, name='activity_vote'),  # 为参赛作品投票
-    path('activity/prize/list', activity.prize_list, name='prize_list'),  # 奖品列表
-    path('activity/prize/draw', activity.prize_draw, name='prize_draw'),  # 抽奖
-    path('activity/user/prize', activity.user_prize, name='user_prize'),  # 我的奖品
-    path('activity/user/logistics', activity.user_logistics, name='user_logistics'),  # 物流信息
-    path('activity/audiostoryplay', activity.activity_audio_play, name='activity_audio_play'),  # 参赛作品详情
+    path('activity/invite', activityViews.invite_user, name='invite_user'),  # 邀请注册关系建立
+    path('activity/detail', activityViews.activity_detail, name='activity_detail'),  # 活动详情
+    path('activity/index', activityViews.activity_index, name='activity_index'),  # 活动首页
+    path('activity/ranklist', activityViews.activity_rank, name='activity_rank'),  # 活动排行
+    path('activity/audiostorylist', activityViews.activity_audiostory_list, name='activity_audiostory_list'),  # 用户作品列表
+    path('activity/join', activityViews.activity_join, name='activity_join'),  # 上传参赛作品
+    path('activity/sign', activityViews.activity_sign, name='activity_sign'),  # 活动报名
+    path('activity/vote', activityViews.activity_vote, name='activity_vote'),  # 为参赛作品投票
+    path('activity/prize/list', activityViews.prize_list, name='prize_list'),  # 奖品列表
+    path('activity/prize/draw', activityViews.prize_draw, name='prize_draw'),  # 抽奖
+    path('activity/user/prize', activityViews.user_prize, name='user_prize'),  # 我的奖品
+    path('activity/user/logistics', activityViews.user_logistics, name='user_logistics'),  # 物流信息
+    path('activity/audiostoryplay', activityViews.activity_audio_play, name='activity_audio_play'),  # 参赛作品详情
 
-    path('address/create', activity.address_create, name='address_create'),  # 新增收货地址
-    path('address/list', activity.address_list, name='address_list'),  # 收货地址列表
-    path('address/choose', activity.address_choose, name='address_choose'),  # 选择收货地址
+    path('address/create', activityViews.address_create, name='address_create'),  # 新增收货地址
+    path('address/list', activityViews.address_list, name='address_list'),  # 收货地址列表
+    path('address/choose', activityViews.address_choose, name='address_choose'),  # 选择收货地址
+    path('address/area/create', activityViews.area_create, name='area_create'),  # 创建数据库地区
+    path('address/area/query', activityViews.area_query, name='area_query'),  # 地区数据获取
+
 
 ]

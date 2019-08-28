@@ -25,6 +25,9 @@ class Activity(BaseModle, models.Model):
     icon = models.CharField(max_length=256, verbose_name="活动图片", null=True)
     startTime = models.DateTimeField(verbose_name='活动开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='活动结束时间', null=True)
+    # isParticipationPrize = models.IntegerField(default=1)  # 1 没有参与奖 2 有参与奖
+    # offeringPrizeType = models.IntegerField(null=True)  # 奖品发放形式 1 多选一抽取  2 固定奖品
+    # isBrokerage = models.IntegerField(default=1)    # 门店推广是否返佣金 1 是  2 否
 
     class Meta:
         db_table = 'tb_activity'
@@ -163,6 +166,9 @@ class Shop(BaseModle, models.Model):
     """
     门店信息表
     """
+    activityUuid = models.ForeignKey("Activity", on_delete=models.CASCADE, related_name='activityShopUuid',
+                                     to_field='uuid',
+                                     null=True, )
     owner = models.CharField(max_length=32, null=True)  # 店主姓名
     tel = models.CharField(max_length=20, null=True)  # 店主号码
     shopNo = models.CharField(max_length=32, null=True)  # 门店编号

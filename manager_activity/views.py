@@ -68,9 +68,21 @@ def create_activity(request):
     startTime = data.get('starttime', '')
     endTime = data.get('endtime', '')
     url = data.get('url', '')
+    # isParticipationPrize = data.get('isParticipationPrize', '')
+    # offeringPrizeType = data.get('offeringPrizeType', '')   # 没有奖品，此项为空
+    # isBrokerage = data.get('isBrokerage', '')
     icon = data.get('icon', '')         # 非必填
     if not all([url, name, intro, startTime, endTime]):
         return http_return(400, '参数错误')
+
+    # if not all([isParticipationPrize in [1, 2], isBrokerage in [1, 2]]):
+    #     return http_return(400, '活动参数错误')
+    #
+    # # 有奖品则有发奖形式
+    # if isParticipationPrize == 2:
+    #     if not offeringPrizeType in [1, 2]:
+    #         return http_return(400, '发放奖品参数错误')
+
     if Activity.objects.filter(name=name).exists():
         return http_return(400, '重复活动名')
 
@@ -107,6 +119,9 @@ def create_activity(request):
                 endTime=endTime,
                 intro=intro,
                 icon=icon,
+                # isParticipationPrize=isParticipationPrize,
+                # offeringPrizeType=offeringPrizeType,
+                # isBrokerage=isBrokerage,
                 status="normal"
             )
             return http_return(200, 'OK')
@@ -323,14 +338,21 @@ def add_shop_info(request):
         shop["tel"] = shop.get("tel", "")
         shop["shopNo"] = shop.get("shopNo", "")
         shop["shopName"] = shop.get("shopName", "")
+        shop["activityUuid"] = shop.get("activityUuid", "")
+
+        if not Activity.objects.filter(uuid=shop["activityUuid"]).exclude(status="destroy").exists():
+            errorList.append({"err_msg": "无效活动", "activityUuid": shop["activityUuid"], "owner": shop["owner"],
+                              "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
+            shopList.remove(shop)
         # 重复
         if Shop.objects.filter(tel=shop["tel"], shopName=shop["shopName"], shopNo=shop["shopNo"]).exists():
-            errorList.append({"err_msg": "重复添加", "owner": shop["owner"],
+            errorList.append({"err_msg": "重复添加","activityUuid": shop["activityUuid"], "owner": shop["owner"],
                               "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)
         if not all([shop["tel"], shop["owner"]]):
-            errorList.append({"err_msg": "电话或店主名没有", "owner": shop["owner"],
-                              "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
+            errorList.append({"err_msg": "电话或店主名没有","activityUuid": shop["activityUuid"],
+                              "owner": shop["owner"],"tel": shop["tel"],
+                              "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)
 
 
@@ -346,6 +368,7 @@ def add_shop_info(request):
                     tel=shop["tel"],
                     shopNo=shop["shopNo"],
                     shopName=shop["shopName"],
+                    activityUuid=shop["activityUuid"],
                     isDelete=False
                 ))
             Shop.objects.bulk_create(querysetlist)
@@ -393,8 +416,9 @@ def add_prize(request):
     icon = data.get('icon', '')
     name = data.get('name', '')
     probability = data.get('probability', '')
+    activityUuid = data.get('activityUuid', '')
 
-    if not all([name, icon, type in [0, 1, 3, 9]]):
+    if not all([name, icon, type in [0, 1, 3, 9], activityUuid]):
         return http_return(400, "参数有误")
 
     if not isinstance(inventory, int):
@@ -408,6 +432,9 @@ def add_prize(request):
 
     if not 0 <= probability <= 1:
         return http_return(400, "概率在0到1之间")
+
+    if not Activity.objects.filter(uuid=activityUuid).exclude(status="destroy").exists():
+        return http_return(400, "没有此活动")
 
     if Prize.objects.filter(name=name, isDelete=False).exists():
         return http_return(400, "重复名字")
@@ -427,6 +454,7 @@ def add_prize(request):
                 type=type,
                 inventory=inventory,
                 probability=probability,
+                activityUuid=activityUuid,
                 name=name
             )
         return http_return(200, 'OK')

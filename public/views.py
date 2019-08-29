@@ -131,6 +131,7 @@ def address_change(request):
     if tel:
         updateData["tel"] = tel
     try:
+        updateData["updateTime"] = datetime.datetime.now()
         rece.update(**updateData)
     except Exception as e:
         logging.error(str(e))

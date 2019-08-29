@@ -295,5 +295,6 @@ def area_query(request):
         areaList.append({
             "uuid": area.uuid,
             "name": area.name,
+            "level": area.level,
         })
     return http_return(200, "成功", {"area": areaList})

@@ -125,10 +125,10 @@ class Api(object):
 
 if __name__ == '__main__':
     api = Api()
-    # api.admin_reset_pwd("13398876569", "1234567", "2C2936634B97A0C9EDDDFA0B7EC2A412")
+    print(api.admin_reset_pwd("18581589937", "123456", "6AA9438A8A35A7C86CF2A0BB119E960F"))
     # 微信：D6D9D462296F38D642E21898EF3A4B5D
     # Q  Q：1DE3A5906F27400A0792B12F5F4F74D5
-    print(api.check_token('D6D9D462296F38D642E21898EF3A4B5D'))
+    # print(api.check_token('D6D9D462296F38D642E21898EF3A4B5D'))
     # if not api.check_token('285C430F99A9C706BFB925DA55F18665'):
         # print ('111')
     # print(api.create_user('15928140420', '123456'))

@@ -94,11 +94,7 @@ urlpatterns = [
     path('activity/user/logistics', activityViews.user_logistics, name='user_logistics'),  # 物流信息
     path('activity/audiostoryplay', activityViews.activity_audio_play, name='activity_audio_play'),  # 参赛作品详情
 
-    path('address/create', activityViews.address_create, name='address_create'),  # 新增收货地址
-    path('address/list', activityViews.address_list, name='address_list'),  # 收货地址列表
-    path('address/choose', activityViews.address_choose, name='address_choose'),  # 选择收货地址
-    path('address/area/create', activityViews.area_create, name='area_create'),  # 创建数据库地区
-    path('address/area/query', activityViews.area_query, name='area_query'),  # 地区数据获取
+
 
 
 ]

@@ -62,8 +62,8 @@ if __name__ == "__main__":
     # while True:
     #     code = input("请输入快递单号：")
     #     res = Express100.get_express_info(str(code).strip())
-    #     # print(json.dumps(res, ensure_ascii=False, sort_keys=True, indent=4))
-    #     print(res.text)
+    #     print(json.dumps(res, ensure_ascii=False, sort_keys=True, indent=4))
+    #     print(res.text,type(res))
     code = "YT4002369100629"
-    company = Express100.get_company_info(str(code).strip())
-    print(company[0]["comCode"])
+    res = Express100.get_express_info(str(code).strip())
+    print(res.json()["data"])

@@ -1,6 +1,6 @@
 storybook_sever/config.py
 migrations/
-/.idea
+.idea
 *.py[cod]
 *.so
 *.egg

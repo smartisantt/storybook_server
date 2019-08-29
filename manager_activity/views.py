@@ -314,7 +314,7 @@ def add_shop_info(request):
     if not isinstance(shopList, list):
         return http_return(400, "数据格式错误")
 
-    if not all([shopList, activityUuid]) :
+    if not all([shopList, activityUuid]):
         return http_return(400, "参数有空")
 
     activity = Activity.objects.filter(uuid=activityUuid).exclude(status="destroy").first()

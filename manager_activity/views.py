@@ -498,7 +498,8 @@ def modify_prize(request):
     if not 0 <= probability <= 1:
         return http_return(400, "概率在0到1之间")
 
-    if not Activity.objects.filter(uuid=activityUuid).exclude(status="destroy").exists():
+    activity = Activity.objects.filter(uuid=activityUuid).exclude(status="destroy").first()
+    if not activity:
         return http_return(400, "没有此活动")
 
     prize = Prize.objects.filter(uuid = prizeUuid, isDelete=False).first()
@@ -523,7 +524,7 @@ def modify_prize(request):
             prize.icon=icon
             prize.name=name
             prize.probability=probability
-            prize.activityUuid=activityUuid
+            prize.activityUuid=activity
             prize.save()
         return http_return(200, 'OK')
     except Exception as e:

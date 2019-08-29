@@ -282,14 +282,16 @@ def area_query(request):
     if not data:
         return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
-    level = data.get('level', 'province')
+    level = data.get('level', '')
     name = data.get('name', '')
-    areas = ChinaArea.objects.filter(level=level)
+    area = ChinaArea.objects
+    if level:
+        area = area.filter(level=level)
     if uuid:
-        areas = areas.filter(fatherUuid__uuid=uuid)
+        area = area.filter(fatherUuid__uuid=uuid)
     if name:
-        areas = areas.filter(name__contains=name)
-    areas = areas.all()
+        area = area.filter(name__contains=name)
+    areas = area.all()
     areaList = []
     for area in areas:
         areaList.append({

@@ -278,12 +278,9 @@ def area_query(request):
     :param request:
     :return:
     """
-    data = request_body(request)
-    if not data:
-        return http_return(400, '请求错误')
-    uuid = data.get('uuid', '')
-    level = data.get('level', '')
-    name = data.get('name', '')
+    uuid = request.GET.get('uuid', '')
+    level = request.GET.get('level', '')
+    name = request.GET.get('name', '')
     area = ChinaArea.objects
     if level:
         area = area.filter(level=level)

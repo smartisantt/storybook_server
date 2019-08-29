@@ -10,8 +10,8 @@ from storybook_sever.config import version
 class Api(object):
 
     def __init__(self):
-        self.comm_host = 'http://wsdev.pymom.com'
-        # self.comm_host = 'http://casdev.pymom.com'
+        # self.comm_host = 'http://wsdev.pymom.com'
+        self.comm_host = 'http://casdev.pymom.com'
         # self.create_user_host = 'http://casdev.pymom.com'
         self.sts_token_host = 'https://aiupload.hbbclub.com'
 

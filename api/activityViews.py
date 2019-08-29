@@ -455,6 +455,8 @@ def user_prize(request):
     prizeList = []
     for prize in prizes:
         type = 1  # 1:实体商品 2：虚拟商品
+        if not prize.receiveUuid:
+            type = 3
         info = ""
         if prize.prizeUuid.type in [0, 1, 2, 3]:
             type = 2

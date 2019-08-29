@@ -43,7 +43,7 @@ def address_create(request):
         return http_return(400, "请输入收件人电话")
     if not areaUuid:
         return http_return(400, "请选择区域")
-    area = ChinaArea.objects.filter(uuid=areaUuid).first()
+    area = ChinaArea.objects.filter(uuid=areaUuid, level="district").first()
     if not area:
         return http_return(400, "未获取到地区信息")
     user = User.objects.filter(uuid=selfUuid).first()
@@ -74,7 +74,13 @@ def address_list(request):
     if not data:
         return http_return(400, '请求错误')
     selfUuid = data['_cache']['uuid']
-    receives = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).order_by("-updateTime").all()
+    receiveAll = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid)
+    isDefault = data.get("isDefault", "")  # 1拉取默认收货地址
+    if isDefault == 1:
+        receive = receiveAll.filter(isDefault=True)
+    receives = receive.order_by("-updateTime").all()
+    if len(receives) == 0 and len(receiveAll) > 0:
+        receives = receiveAll.all()[:1]
     resList = []
     for rece in receives:
         area = rece.areaUuid

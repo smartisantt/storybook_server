@@ -550,6 +550,6 @@ def user_logistics(request):
         "status": status,
         "code": deliveryNum if deliveryNum else "",
         "company": company,
-        "logisticsInfo": logisticsInfo,
+        "logisticsInfo": eval(logisticsInfo),
     }
     return http_return(200, "成功", info)

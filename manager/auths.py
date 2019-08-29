@@ -78,7 +78,7 @@ class CustomAuthentication(BaseAuthentication):
             user = User.objects.filter(userID=user_info.get('userId', '')).\
                 exclude(status="destroy").first()
             if not user:
-                raise AuthenticationFailed('改用户已删除，请联系管理员！')
+                raise AuthenticationFailed('该用户已删除，请联系管理员！')
 
             user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
                 exclude(status="destroy").first()

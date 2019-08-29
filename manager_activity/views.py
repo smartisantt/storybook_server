@@ -349,12 +349,12 @@ def add_shop_info(request):
 
         # 重复
         if Shop.objects.filter(tel=shop["tel"], shopName=shop["shopName"], shopNo=shop["shopNo"]).exists():
-            errorList.append({"err_msg": "重复添加","activityUuid": shop["activityUuid"], "owner": shop["owner"],
+            errorList.append({"err_msg": "重复添加", "owner": shop["owner"],
                               "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)
             continue
         if not all([shop["tel"], shop["owner"]]):
-            errorList.append({"err_msg": "电话或店主名没有","activityUuid": shop["activityUuid"],
+            errorList.append({"err_msg": "电话或店主名没有",
                               "owner": shop["owner"],"tel": shop["tel"],
                               "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
             shopList.remove(shop)

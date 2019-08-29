@@ -74,13 +74,7 @@ def address_list(request):
     if not data:
         return http_return(400, '请求错误')
     selfUuid = data['_cache']['uuid']
-    receiveAll = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid)
-    isDefault = data.get("isDefault", "")  # 1拉取默认收货地址
-    if isDefault == 1:
-        receive = receiveAll.filter(isDefault=True)
-    receives = receive.order_by("-updateTime").all()
-    if len(receives) == 0 and len(receiveAll) > 0:
-        receives = receiveAll.all()[:1]
+    receives = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).order_by("-updateTime").all()
     resList = []
     for rece in receives:
         area = rece.areaUuid

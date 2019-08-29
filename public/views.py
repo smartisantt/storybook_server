@@ -272,7 +272,6 @@ def area_create(request):
     return http_return(200, '成功')
 
 
-@check_identify
 def area_query(request):
     """
     区域信息获取

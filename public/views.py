@@ -101,12 +101,16 @@ def address_change(request):
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '请求错误')
+    uuid = data.get("uuid", "")
     areaUuid = data.get("areaUuid", "")
     isDefault = data.get("isDefault", "")
     contact = data.get("contact", "")
     tel = data.get("tel", "")
     updateData = {}
     selfUuid = data['_cache']['uuid']
+    rece = ReceivingInfo.objects.filter(uuid=uuid)
+    if not rece:
+        return http_return(400, "未获取到地址信息")
     if areaUuid:
         area = ChinaArea.objects.filter(uuid=areaUuid).first()
         if not area:
@@ -127,7 +131,7 @@ def address_change(request):
     if tel:
         updateData["tel"] = tel
     try:
-        ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(**updateData)
+        rece.update(**updateData)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')

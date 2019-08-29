@@ -26,7 +26,7 @@ urlpatterns = [
     path('delprize/', views.del_prize, name='delprize'),
 
     # 发货管理
-    path('userprizelist/', cache_page(60*10)(UserPrizeView.as_view())),
+    path('userprizelist/', UserPrizeView.as_view()),
     path('adduserprize/', views.add_user_prize, name='adduserprize'),
 
     # 用户邀请关系

@@ -309,6 +309,11 @@ def add_shop_info(request):
     if not data:
         return http_return(400, '参数错误')
     shopList = data.get('shopList', '')
+    activityUuid = data.get('activityUuid', '')
+
+    activity = Activity.objects.filter(uuid=activityUuid).exclude(status="destroy").first()
+    if not activity:
+        return http_return(400, "无效活动")
 
     if not isinstance(shopList, list):
         return http_return(400, "数据格式错误")
@@ -338,15 +343,8 @@ def add_shop_info(request):
         shop["tel"] = shop.get("tel", "")
         shop["shopNo"] = shop.get("shopNo", "")
         shop["shopName"] = shop.get("shopName", "")
-        shop["activityUuid"] = shop.get("activityUuid", "")
 
-        activity = Activity.objects.filter(uuid=shop["activityUuid"]).exclude(status="destroy").first()
-        if not activity:
-            errorList.append({"err_msg": "无效活动", "activityUuid": shop["activityUuid"], "owner": shop["owner"],
-                              "tel": shop["tel"], "shopNo": shop["shopNo"], "shopName": shop["shopName"]})
-            shopList.remove(shop)
-            continue
-        shop["activityUuid"] = activity
+
         # 重复
         if Shop.objects.filter(tel=shop["tel"], shopName=shop["shopName"], shopNo=shop["shopNo"]).exists():
             errorList.append({"err_msg": "重复添加","activityUuid": shop["activityUuid"], "owner": shop["owner"],
@@ -373,7 +371,7 @@ def add_shop_info(request):
                     tel=shop["tel"],
                     shopNo=shop["shopNo"],
                     shopName=shop["shopName"],
-                    activityUuid=shop["activityUuid"],
+                    activityUuid=activity,
                     isDelete=False
                 ))
             Shop.objects.bulk_create(querysetlist)

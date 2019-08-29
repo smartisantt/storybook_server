@@ -505,6 +505,7 @@ class ReceivingInfo(BaseModle):
     isDefault = models.BooleanField(default=False)  #False不是默认 True默认
     contact = models.CharField(max_length=32, null=False)  # 收件人
     tel = models.CharField(max_length=20, null=True)
+    isDelete = models.BooleanField(default=False)
 
     class Meta:
         db_table = "tb_receiving_info"

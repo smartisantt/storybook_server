@@ -311,15 +311,17 @@ def add_shop_info(request):
     shopList = data.get('shopList', '')
     activityUuid = data.get('activityUuid', '')
 
+    if not isinstance(shopList, list):
+        return http_return(400, "数据格式错误")
+
+    if not all([shopList, activityUuid]) :
+        return http_return(400, "参数有空")
+
     activity = Activity.objects.filter(uuid=activityUuid).exclude(status="destroy").first()
     if not activity:
         return http_return(400, "无效活动")
 
-    if not isinstance(shopList, list):
-        return http_return(400, "数据格式错误")
 
-    if not shopList:
-        return http_return(400, "店主信息为空！")
 
     total = len(shopList)
 

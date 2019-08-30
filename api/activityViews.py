@@ -156,6 +156,9 @@ def activity_sign(request):
     act = Activity.objects.filter(uuid=activityUuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
+    checkJoin = GameInfo.objects.filter(activityUuid__uuid=activityUuid, userUuid__uuid=data['_cache']['uuid']).first()
+    if checkJoin:
+        return http_return(400, "你已参与过该活动，不能重复报名")
     inviter = data.get("inviter")
     try:
         GameInfo.objects.create(
@@ -532,7 +535,7 @@ def user_logistics(request):
             res = expressage.get_express_info(str(deliveryNum).strip())
             if not res:
                 return http_return(400, "未获取到物流信息")
-            logisticsInfo = json.loads(res.get("data",""))
+            logisticsInfo = json.loads(res.get("data", ""))
             state = res["state"]
             if state == 3:
                 status = 3

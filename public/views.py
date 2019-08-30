@@ -306,37 +306,33 @@ def area_all(request):
     :return:
     """
     area = ChinaArea.objects.filter(fatherUuid__isnull=True).first()
-    provinces = ChinaArea.objects.filter(fatherUuid__uuid=area.uuid).all()
+    provinces = area.children.all()
     provinceList = []
     for province in provinces:
         cityList = []
-        cities = ChinaArea.objects.filter(fatherUuid__uuid=province.uuid).all()
+        cities = province.children.all()
         for city in cities:
             districtList = []
-            districts = ChinaArea.objects.filter(fatherUuid__uuid=city.uuid).all()
+            districts = city.children.all()
             for district in districts:
                 districtList.append({
-                    "uuid": district.uuid,
-                    "level": district.level,
-                    "name": district.name,
+                    "value": district.uuid,
+                    "label": district.name,
                     "children": [],
                 })
             cityList.append({
-                "uuid": city.uuid,
-                "level": city.level,
-                "name": city.name,
+                "value": city.uuid,
+                "label": city.name,
                 "children": districtList,
             })
         provinceList.append({
-            "uuid": province.uuid,
-            "level": province.level,
-            "name": province.name,
+            "value": province.uuid,
+            "label": province.name,
             "children": cityList,
         })
     info = {
-        "uuid": area.uuid,
-        "level": area.level,
-        "name": area.name,
+        "value": area.uuid,
+        "label": area.name,
         "children": provinceList,
     }
     return http_return(200, "成功", info)

@@ -526,3 +526,14 @@ class ChinaArea(BaseModle):
         db_table = "tb_china_area"
 
 
+
+class SystemNotification(BaseModle):
+    title = models.CharField(max_length=256, verbose_name="标题")
+    content = models.CharField(max_length=256, verbose_name="内容")
+    publishDate = models.TimeField(null=False)
+    publishState = models.IntegerField(default=1) # 1 已发布 2 未发布
+    isDelete = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "tb_system_notification"
+

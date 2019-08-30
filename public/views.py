@@ -41,6 +41,8 @@ def address_create(request):
         return http_return(400, "请输入收件人姓名")
     if not tel:
         return http_return(400, "请输入收件人电话")
+    if not tel_match(tel):
+        return http_return(400, "手机号有误")
     if not areaUuid:
         return http_return(400, "请选择区域")
     if not area:
@@ -122,6 +124,8 @@ def address_change(request):
     if contact:
         updateData["contact"] = contact
     if tel:
+        if not tel_match(tel):
+            return http_return(400, "手机号有误")
         updateData["tel"] = tel
     try:
         updateData["updateTime"] = datetime.datetime.now()

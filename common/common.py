@@ -1,12 +1,14 @@
 import datetime
 import json
 import logging
+import re
 import time
 import uuid
 
 from django.core.cache import cache, caches
 from django.http import HttpResponse
 from common.fileApi import FileInfo
+
 
 def request_body(request, method='GET'):
     """
@@ -117,7 +119,7 @@ def page_index(myList, page=1, limit=10):
     :param limit: 每一页显示条数
     :return: total + list
     """
-    page = page if page and int(page)>0 else 0
+    page = page if page and int(page) > 0 else 0
     limit = limit if limit else 20
 
     if not all([isinstance(page, int), isinstance(limit, int)]):
@@ -174,6 +176,18 @@ def datetime_to_unix(_time):
     :return:
     """
     if isinstance(_time, datetime.datetime):
-        return time.mktime(_time.timetuple())*1000
+        return time.mktime(_time.timetuple()) * 1000
     else:
         return _time
+
+
+def tel_match(tel):
+    """
+    手机号正则验证
+    :param tel:
+    :return:
+    """
+    if re.match(r"^1[35678]\d{9}$", tel):
+        return True
+    else:
+        return False

@@ -48,6 +48,11 @@ def address_create(request):
     if not area:
         return http_return(400, "未获取到地区信息")
     user = User.objects.filter(uuid=selfUuid).first()
+    if isinstance(area, list):
+        areaList = []
+        for ar in area:
+            areaList.append(ChinaArea.objects.filter(uuid=ar).first().name)
+        area = ",".join(areaList)
     try:
         ReceivingInfo.objects.create(
             uuid=get_uuid(),

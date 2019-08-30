@@ -9,7 +9,7 @@ from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from common.mixFileAPI import MixAudio
-from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL
+from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, JoinActivityURL
 
 
 def identify_code(request):
@@ -259,7 +259,13 @@ def recording_send(request):
     if not mix.audio_product(uuid):
         return http_return(400, "音频合成失败")
 
-    return http_return(200, '发布成功')
+    # 判断是否有报名参加某一个活动
+    game = GameInfo.objects.filter(userUuid__uuid=data['_cache']['uuid'], audioUuid__isnull=True).first()
+    url = None
+    if game:
+        url = urljoin(JoinActivityURL, game.uuid)
+
+    return http_return(200, '发布成功', url)
 
 
 @check_identify

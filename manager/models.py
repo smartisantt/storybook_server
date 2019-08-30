@@ -516,7 +516,7 @@ class ChinaArea(BaseModle):
     中国省市区（县）列表
     数据来源于高德地图
     """
-    fatherUuid = models.ForeignKey('self', on_delete=models.CASCADE, to_field='uuid', null=True, default=None)
+    fatherUuid = models.ForeignKey('self', on_delete=models.CASCADE, to_field='uuid', related_name="children", null=True, default=None)
     level = models.CharField(max_length=32, verbose_name="级别")
     adcode = models.CharField(max_length=32, verbose_name="区域代码")
     name = models.CharField(max_length=64, verbose_name="区域名")

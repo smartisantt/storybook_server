@@ -663,6 +663,7 @@ def add_user_prize(request):
             #  填写快递单号后暂无物流信息状态
             userPrize.expressState = 8
             userPrize.expressDetail = ""
+            userPrize.com = ""
             userPrize.expressDate = timezone.now()
             userPrize.save()
         return http_return(200, 'OK')

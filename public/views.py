@@ -28,9 +28,9 @@ def address_create(request):
     selfUuid = data['_cache']['uuid']
     if not isDefault:
         return http_return(400, "请选择是否设为默认地址")
-        if isDefault == 1:
+        if int(isDefault) == 1:
             isDefault = False
-        elif isDefault == 2:  # 设置为默认地址
+        elif int(isDefault) == 2:  # 设置为默认地址
             isDefault = True
             try:
                 ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(isDefault=False)

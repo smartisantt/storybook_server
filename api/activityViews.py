@@ -20,7 +20,7 @@ def activity_index(request):
     if not uuid:
         return http_return(400, '请选择要查看的活动')
     keyword = data.get('keyword', '')
-    game = GameInfo.objects.filter(audioUuid__isnull=False)
+    game = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False)
     if keyword:
         game = game.filter(Q(audioUuid__name__contains=keyword) | Q(userUuid__nickName__contains=keyword))
     games = game.order_by("-updateTime").all()
@@ -100,7 +100,7 @@ def activity_rank(request):
     act = Activity.objects.filter(uuid=uuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
-    games = GameInfo.objects.filter(audioUuid__isnull=False).all()
+    games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).all()
     games = sorted(games, key=lambda x: x.votes, reverse=True)
     total, games = page_index(games, page, pageCount)
     activityRankList = activityRankList_format(games)
@@ -535,7 +535,9 @@ def user_logistics(request):
             res = expressage.get_express_info(str(deliveryNum).strip())
             if not res:
                 return http_return(400, "未获取到物流信息")
-            logisticsInfo = json.loads(res.get("data", ""))
+            info = res.get("data", "")
+            if not info:
+                logisticsInfo = json.loads(info)
             state = res["state"]
             if state == 3:
                 status = 3
@@ -553,8 +555,8 @@ def user_logistics(request):
         "uuid": userPrize.uuid,
         "icon": userPrize.prizeUuid.icon,
         "status": status,
-        "code": deliveryNum if deliveryNum else "",
-        "company": company if company else "",
+        "code": deliveryNum if deliveryNum else 0,
+        "company": company,
         "logisticsInfo": logisticsInfo,
     }
     return http_return(200, "成功", info)

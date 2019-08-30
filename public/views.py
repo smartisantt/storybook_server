@@ -43,8 +43,6 @@ def address_create(request):
         return http_return(400, "请输入收件人电话")
     if not tel_match(tel):
         return http_return(400, "手机号有误")
-    if not areaUuid:
-        return http_return(400, "请选择区域")
     if not area:
         return http_return(400, "未获取到地区信息")
     user = User.objects.filter(uuid=selfUuid).first()

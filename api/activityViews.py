@@ -532,7 +532,7 @@ def user_logistics(request):
             res = expressage.get_express_info(str(deliveryNum).strip())
             if not res:
                 return http_return(400, "未获取到物流信息")
-            logisticsInfo = res["data"]
+            logisticsInfo = res.get("data", "")
             state = res["state"]
             if state == 3:
                 status = 3

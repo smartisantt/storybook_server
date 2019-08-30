@@ -249,7 +249,6 @@ com_dict = {
 # 查询快递
 @api_view(['GET'])
 @authentication_classes((CustomAuthentication, ))
-@cache_page(60*10)
 def query_expressage(request):
     data = request_body(request, 'GET')
     if not data:
@@ -279,12 +278,9 @@ def query_expressage(request):
 
 
     if not info:
-        return http_return(400, "查询无结果，请检查单号是否正确或隔断时间再查！")
+        return http_return(400, "查询无结果，请隔断时间再查！")
 
-    # 如快递状态有更新，则更新显示
-    if state and userPrize.expressState != state:
-        userPrize.expressState = state
-
+    userPrize.expressState = state
     com = com_dict.get(com, com)
     userPrize.expressDetail = json.dumps(info)
     userPrize.com = com

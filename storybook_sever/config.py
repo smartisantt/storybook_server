@@ -10,7 +10,7 @@ USER_SESSION_OVER_TIME = 30 * 24 * 60 * 60
 TEL_IDENTIFY_CODE = 5 * 60
 
 # 管理端cache过期时间
-USER_CACHE_OVER_TIME = 12 * 60 * 60
+USER_CACHE_OVER_TIME = 10 * 60
 
 # 是否正式发送短信
 if version == 'ali_test':

@@ -124,7 +124,7 @@ def create_activity(request):
                 # isBrokerage=isBrokerage,
                 status="normal"
             )
-            return http_return(200, 'OK')
+            return http_return(200, '创建成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '创建失败')
@@ -181,7 +181,7 @@ def modify_activity(request):
             activity.intro = intro
             activity.url = url
             activity.save()
-            return http_return(200, 'OK')
+            return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -373,7 +373,7 @@ def add_shop_info(request):
                     isDelete=False
                 ))
             Shop.objects.bulk_create(querysetlist)
-        return http_return(200, 'OK', data)
+        return http_return(200, '添加成功', data)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -459,7 +459,7 @@ def add_prize(request):
                 activityUuid=activity,
                 name=name
             )
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -522,7 +522,7 @@ def modify_prize(request):
             prize.probability=probability
             prize.activityUuid=activity
             prize.save()
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -576,7 +576,7 @@ def del_prize(request):
         with transaction.atomic():
             prize.isDelete = True
             prize.save()
-        return http_return(200, 'OK')
+        return http_return(200, '删除成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
@@ -662,7 +662,7 @@ def add_user_prize(request):
             userPrize.com = ""
             userPrize.expressDate = timezone.now()
             userPrize.save()
-        return http_return(200, 'OK')
+        return http_return(200, '添加运单号成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加运单号失败')

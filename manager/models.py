@@ -501,7 +501,7 @@ class ReceivingInfo(BaseModle):
                                  null=True, verbose_name="用户")
     area = models.CharField(max_length=64,null=True)
     address = models.CharField(max_length=255, verbose_name='收货地址', null=True)
-    isDefault = models.BooleanField(default=False)  #False不是默认 True默认
+    isDefault = models.IntegerField(default=False)  # 1 不设置为默认地址， 2设置为默认地址
     contact = models.CharField(max_length=32, null=False)  # 收件人
     tel = models.CharField(max_length=20, null=True)
     isDelete = models.BooleanField(default=False)

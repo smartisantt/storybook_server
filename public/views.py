@@ -28,15 +28,12 @@ def address_create(request):
     selfUuid = data['_cache']['uuid']
     if not isDefault:
         return http_return(400, "请选择是否设为默认地址")
-        if int(isDefault) == 1:
-            isDefault = False
-        elif int(isDefault) == 2:  # 设置为默认地址
-            isDefault = True
-            try:
-                ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(isDefault=False)
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '设置默认地址失败')
+    if isDefault == 2:
+        try:
+            ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(isDefault=1)
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '修改失败')
     if not contact:
         return http_return(400, "请输入收件人姓名")
     if not tel:
@@ -87,7 +84,7 @@ def address_list(request):
             "uuid": rece.uuid,
             "area": rece.area if rece.area else "",
             "address": rece.address if rece.address else "",
-            "isDefault": rece.isDefault,
+            "isDefault": rece.isDefault if rece.isDefault else 1,
             "contact": rece.contact if rece.contact else "",
             "tel": rece.tel if rece.tel else "",
         })

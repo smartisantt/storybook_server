@@ -113,16 +113,13 @@ def address_change(request):
         return http_return(400, "未获取到地址信息")
     if area:
         updateData["area"] = area
-    if isDefault:
-        if isDefault == 2:
-            updateData["isDefault"] = True
-            try:
-                ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(isDefault=False)
-            except Exception as e:
-                logging.error(str(e))
-                return http_return(400, '修改失败')
-        else:
-            updateData["isDefault"] = False
+    if isDefault and isDefault == 2:
+        updateData["isDefault"] = 2
+        try:
+            ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).update(isDefault=1)
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '修改失败')
     if contact:
         updateData["contact"] = contact
     if tel:

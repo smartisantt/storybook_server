@@ -278,6 +278,11 @@ class HotSearchSerializer(serializers.ModelSerializer):
 
 class AdSerializer(serializers.ModelSerializer):
     linkObjectInfo = serializers.SerializerMethodField()
+    isPast = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_isPast(cycleBanner):
+        return cycleBanner.endTime < timezone.now()
 
     @staticmethod
     def get_linkObjectInfo(ad):

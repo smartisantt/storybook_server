@@ -35,7 +35,7 @@ def admin(request):
     :param request:
     :return:
     """
-    return http_return(200, 'ok')
+    return http_return(200, 'normal')
 
 """
 登录接口
@@ -83,7 +83,7 @@ def login(request):
             logging.error(str(e))
             return http_return(401, '登陆失败')
         nickName = user.nickName or get_default_name(user.tel, '')
-        return http_return(200, 'OK', {'nickName':nickName, 'roles': role})
+        return http_return(200, '登录成功', {'nickName':nickName, 'roles': role})
     # 缓存中没有数据
     if not user_data:
         api = Api()
@@ -140,7 +140,7 @@ def login(request):
                     )
                     role = user.roles or ''
                     nickName = user.nickName or get_default_name(user.tel, '')
-                    return http_return(200, 'OK', {'nickName': nickName, 'roles': role})
+                    return http_return(200, '登录成功', {'nickName': nickName, 'roles': role})
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '保存日志失败')
@@ -317,7 +317,7 @@ def total_data(request):
         res2 = graphList
 
 
-    return http_return(200, 'OK',
+    return http_return(200, '查询成功',
                        {
                            'totalUsers': totalUsers,            # 总用户人数
                            'totalAudioStory': totalAudioStory,  # 音频总数
@@ -392,7 +392,7 @@ def add_tags(request):
                 sortNum=sortNum
             )
             tag.save()
-            return http_return(200, 'OK')
+            return http_return(200, '添加分类成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加分类失败')
@@ -436,7 +436,7 @@ def modify_tags(request):
             tag.icon = icon
             tag.name = myName       # 保存的还是老标签，一级标签不能修改
             tag.save()
-            return http_return(200, 'OK', {
+            return http_return(200, '修改分类成功', {
                 'name': myName,
                 'icon': icon,
                 'sortNum': sortNum,
@@ -466,7 +466,7 @@ def stop_tags(request):
             tag.isUsing = not tag.isUsing
             tag.save()
             # 标签状态停用0 还是使用1
-            return http_return(200, 'OK', {"status":tag.isUsing})
+            return http_return(200, '保存分类成功', {"status":tag.isUsing})
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存分类失败')
@@ -493,7 +493,7 @@ def del_tags(request):
         with transaction.atomic():
             tag.isDelete = True
             tag.save()
-            return http_return(200, 'OK')
+            return http_return(200, '删除分类成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除分类失败')
@@ -539,7 +539,7 @@ def add_child_tags(request):
                 parent=parentTag
             )
             tag.save()
-            return http_return(200, 'OK', {
+            return http_return(200, '创建子标签成功', {
                 'uuid': uuid,
                 'name': name,
                 'sortNum': sortNum,
@@ -593,7 +593,7 @@ def modify_child_tags(request):
             tag.sortNum = sortNum
             tag.name = name
             tag.save()
-            return http_return(200, 'OK', {
+            return http_return(200, '修改标签成功', {
                 'uuid': uuid,
                 'name': name,
                 'sortNum': sortNum,
@@ -703,7 +703,7 @@ def add_story(request):
                 recordNum = 0
             )
             story.save()
-            return http_return(200, 'OK')
+            return http_return(200, '添加模板成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加模板失败')
@@ -752,7 +752,7 @@ def modify_story(request):
             story.isRecommd = isRecommd
             story.isTop = isTop
             story.save()
-            return http_return(200, 'OK')
+            return http_return(200, '添加模板成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加模板失败')
@@ -784,7 +784,7 @@ def change_story_status(request):
             elif story.status == 'forbid':
                 story.status = 'normal'
             story.save()
-            return http_return(200, 'OK', {"status": story.status})
+            return http_return(200, '改变模板状态成功', {"status": story.status})
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '改变模板状态失败')
@@ -815,7 +815,7 @@ def del_story(request):
         with transaction.atomic():
             story.status = 'destroy'
             story.save()
-            return http_return(200, 'OK')
+            return http_return(200, '删除模板成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除模板失败')
@@ -935,7 +935,7 @@ def add_audio_story(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
-    return http_return(200, 'OK')
+    return http_return(200, '添加成功')
 
 
 
@@ -1073,7 +1073,7 @@ def check_audio(request):
         with transaction.atomic():
             audioStory.checkStatus = checkStatus
             audioStory.save()
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -1102,7 +1102,7 @@ def config_tags(request):
         try:
             with transaction.atomic():
                 audioStory.tags.clear()
-                return http_return(200, 'OK')
+                return http_return(200, '配置标签成功')
         except Exception as e:
             logging.error(str(e))
             return http_return(400, '配置标签失败')
@@ -1118,7 +1118,7 @@ def config_tags(request):
         with transaction.atomic():
             audioStory.tags.clear()
             audioStory.tags.add(*tags)
-            return http_return(200, 'OK')
+            return http_return(200, '配置标签成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '配置标签失败')
@@ -1183,7 +1183,7 @@ def add_bgm(request):
                 sortNum=maxSortNum+1,
                 duration=duration,
             )
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -1231,7 +1231,7 @@ def modify_bgm(request):
             bgm.duration=duration
             bgm.save()
 
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -1273,7 +1273,7 @@ def change_order(request):
             bgm.sortNum, swapBgm.sortNum = swapSortNum, mySortNum
             bgm.save()
             swapBgm.save()
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -1304,7 +1304,7 @@ def forbid_bgm(request):
             else:
                 return http_return(400, '参数错误')
             bgm.save()
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -1342,7 +1342,7 @@ def del_audioStory(request):
         with transaction.atomic():
             audioStory.isDelete = True
             audioStory.save()
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
@@ -1370,7 +1370,7 @@ def del_bgm(request):
         with transaction.atomic():
             bgm.status = "destroy"
             bgm.save()
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -1408,7 +1408,7 @@ def add_keyword(request):
             searchNum = 0,
             isAdminAdd = True
         )
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -1436,7 +1436,7 @@ def top_keyword(request):
                 maxTop = HotSearch.objects.filter(isDelete=False).aggregate(Max('isTop'))['isTop__max']
                 hotSearch.isTop = maxTop + 1
             hotSearch.save()
-        return http_return(200, 'OK')
+        return http_return(200, '置顶失败')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '置顶失败')
@@ -1459,7 +1459,7 @@ def del_keyword(request):
         with transaction.atomic():
             hotSearch.isDelete = True
             hotSearch.save()
-        return http_return(200, 'OK')
+        return http_return(200, '删除失败')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
@@ -1556,7 +1556,7 @@ def add_ad(request):
             target=target,
             icon=icon
         )
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -1638,7 +1638,7 @@ def modify_ad(request):
             target=target,
             icon=icon
         )
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -1666,7 +1666,7 @@ def del_ad(request):
         with transaction.atomic():
             ad.isDelete = True
             ad.save()
-            return http_return(200, 'OK')
+            return http_return(200, '删除成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
@@ -1768,7 +1768,7 @@ def add_story_into_module(request):
                 audioUuid=audioStory,
                 albumUuid=album
             )
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -1817,7 +1817,7 @@ def change_story_in_module(request):
             module.albumUuid = album
             module.contentType = contentType
             module.save()
-        return http_return(200, 'OK')
+        return http_return(200, '替换成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '替换失败')
@@ -1844,7 +1844,7 @@ def del_story_in_module(request):
         with transaction.atomic():
             module.isDelete = True
             module.save()
-        return http_return(200, 'OK')
+        return http_return(200, '删除成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
@@ -1887,7 +1887,7 @@ def change_module_order(request):
             module.orderNum, swapModule.orderNum = swapOrderNum, myOrderNum
             module.save()
             swapModule.save()
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -1968,10 +1968,10 @@ def validate_tel(request):
     if userInfo == -1:
         return http_return(400, '接口通信错误')
     if userInfo:
-        return http_return(200, 'OK', {'status': 1})
+        return http_return(200, '迁移用户', {'status': 1})
     else:
         # 新用户
-        return http_return(200, 'OK', {'status': 2})
+        return http_return(200, '新用户', {'status': 2})
 
 
 # 迁移老用户
@@ -2036,7 +2036,7 @@ def migrate_user(request):
                 roles=roles,
                 city=city
             )
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -2122,7 +2122,7 @@ def add_user(request):
                 roles = roles,
                 city = city
             )
-        return http_return(200, 'OK')
+        return http_return(200, '保存用户成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存用户失败')
@@ -2184,7 +2184,7 @@ def modify_user(request):
             user.nickName = nickName
             user.gender = gender
             user.save()
-            return http_return(200, 'OK', data)
+            return http_return(200, '修改成功', data)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -2212,7 +2212,7 @@ def del_user(request):
         with transaction.atomic():
             user.status = "destroy"
             user.save()
-            return http_return(200, 'OK')
+            return http_return(200, '删除成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
@@ -2259,7 +2259,7 @@ def forbidden_user(request):
             user.save()
             timeout = (endTime - currentTime).total_seconds()
             caches['api'].set(request.user.userID, type, timeout=timeout)
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -2287,7 +2287,7 @@ def cancel_forbid(request):
             user.status = "normal"
             user.save()
             caches['api'].delete(request.user.userID)
-        return http_return(200, 'OK')
+        return http_return(200, '恢复成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '恢复失败')
@@ -2387,7 +2387,7 @@ def add_cycle_banner(request):
             location=0,
             icon=icon
         )
-        return http_return(200, 'OK')
+        return http_return(200, '添加成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
@@ -2469,7 +2469,7 @@ def modify_cycle_banner(request):
             location=0,
             icon=icon
         )
-        return http_return(200, 'OK')
+        return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '修改失败')
@@ -2501,7 +2501,7 @@ def change_cycle_banner_status(request):
             elif type == "delete":
                 cycleBanner.isDelete = True
             cycleBanner.save()
-            return http_return(200, 'OK')
+            return http_return(200, '删除成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
@@ -2575,7 +2575,7 @@ def reply(request):
                 objectUuid=feedbackUuid,
                 remark=replyInfo
             )
-            return http_return(200, 'OK')
+            return http_return(200, '回复成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '回复失败')
@@ -2686,7 +2686,7 @@ def add_album(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
-    return http_return(200, 'OK')
+    return http_return(200, '添加成功')
 
 
 @api_view(['POST'])
@@ -2734,7 +2734,7 @@ def modify_album(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '添加失败')
-    return http_return(200, 'OK')
+    return http_return(200, '添加成功')
 
 
 @api_view(['POST'])
@@ -2768,7 +2768,7 @@ def album_tags(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '配置标签失败')
-    return http_return(200, 'OK')
+    return http_return(200, '配置标签成功')
 
 
 @api_view(['POST'])
@@ -2804,7 +2804,7 @@ def del_album(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '删除失败')
-    return http_return(200, 'OK')
+    return http_return(200, '删除成功')
 
 
 @api_view(['POST'])
@@ -2849,7 +2849,7 @@ def add_audio2album(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '专辑添加音乐失败')
-    return http_return(200, 'OK')
+    return http_return(200, '专辑添加音乐成功')
 
 
 @api_view(['POST'])
@@ -2882,7 +2882,7 @@ def disable_audioStoty_in_album(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '操作失败')
-    return http_return(200, 'OK', {"isUsing": audioStotyInAlbum.isUsing})
+    return http_return(200, '操作成功', {"isUsing": audioStotyInAlbum.isUsing})
 
 
 # class AlbumDetailView(ListAPIView):
@@ -2978,4 +2978,4 @@ def check_album(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '审核失败')
-    return http_return(200, 'OK')
+    return http_return(200, '审核成功！')

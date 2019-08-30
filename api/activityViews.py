@@ -100,7 +100,7 @@ def activity_rank(request):
     act = Activity.objects.filter(uuid=uuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
-    games = GameInfo.objects.filter(audioUuid__isnull=False).all()
+    games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).all()
     games = sorted(games, key=lambda x: x.votes, reverse=True)
     total, games = page_index(games, page, pageCount)
     activityRankList = activityRankList_format(games)

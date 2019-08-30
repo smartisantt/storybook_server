@@ -15,6 +15,7 @@ urlpatterns = [
     path('address/choose', views.address_choose, name='address_choose'),  # 选择收货地址
     path('address/area/create', views.area_create, name='area_create'),  # 创建数据库地区
     path('address/area/query', views.area_query, name='area_query'),  # 地区数据获取
+    path('address/area/all', views.area_all, name='area_all'),  # 地区数据获取
 
 
 ]

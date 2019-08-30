@@ -297,3 +297,46 @@ def area_query(request):
             "level": area.level,
         })
     return http_return(200, "成功", {"area": areaList})
+
+
+def area_all(request):
+    """
+    区域信息获取
+    :param request:
+    :return:
+    """
+    area = ChinaArea.objects.filter(fatherUuid__isnull=True).first()
+    provinces = ChinaArea.objects.filter(fatherUuid__uuid=area.uuid).all()
+    provinceList = []
+    for province in provinces:
+        cityList = []
+        cities = ChinaArea.objects.filter(fatherUuid__uuid=province.uuid).all()
+        for city in cities:
+            districtList = []
+            districts = ChinaArea.objects.filter(fatherUuid__uuid=city.uuid).all()
+            for district in districts:
+                districtList.append({
+                    "uuid": district.uuid,
+                    "level": district.level,
+                    "name": district.name,
+                    "children": [],
+                })
+            cityList.append({
+                "uuid": city.uuid,
+                "level": city.level,
+                "name": city.name,
+                "children": districtList,
+            })
+        provinceList.append({
+            "uuid": province.uuid,
+            "level": province.level,
+            "name": province.name,
+            "children": cityList,
+        })
+    info = {
+        "uuid": area.uuid,
+        "level": area.level,
+        "name": area.name,
+        "children": provinceList,
+    }
+    return http_return(200, "成功", info)

@@ -391,6 +391,11 @@ class ActivitySerializer(serializers.ModelSerializer):
 class CycleBannerSerializer(serializers.ModelSerializer):
 
     linkObjectInfo = serializers.SerializerMethodField()
+    isPast = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_isPast(cycleBanner):
+        return cycleBanner.endTime < timezone.now()
 
     @staticmethod
     def get_linkObjectInfo(cycleBanner):

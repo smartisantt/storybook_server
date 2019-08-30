@@ -187,7 +187,7 @@ def address_choose(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '选择收货地址失败')
-    return http_return(200, "选择收货地址成功")
+    return http_return(200, "绑定成功，进入配送。")
 
 
 @check_identify

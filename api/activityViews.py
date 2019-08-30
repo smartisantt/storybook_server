@@ -529,7 +529,7 @@ def user_logistics(request):
                 "ems": "EMS"
             }
             company = com_dict[comCode]
-            res = expressage.get_express_info(str(deliveryNum).strip()).json()
+            res = expressage.get_express_info(str(deliveryNum).strip())
             if not res:
                 return http_return(400, "未获取到物流信息")
             logisticsInfo = res["data"]
@@ -551,7 +551,7 @@ def user_logistics(request):
         "icon": userPrize.prizeUuid.icon,
         "status": status,
         "code": deliveryNum if deliveryNum else "",
-        "company": company,
-        "logisticsInfo": eval(logisticsInfo),
+        "company": company if company else "",
+        "logisticsInfo": json.loads(logisticsInfo),
     }
     return http_return(200, "成功", info)

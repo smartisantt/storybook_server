@@ -603,13 +603,13 @@ def refresh_express():
             continue
 
         # 如快递状态有更新，则更新显示
-        userPrize = UserPrize.objects.filter(deliveryNum=deliveryNum).first()
-
-        userPrize.expressState = state
-        userPrize.expressDetail = json.dumps(info)
-        com = com_dict.get(com, com)
-        userPrize.com = com
-        userPrize.save()
+        userPrizes = UserPrize.objects.filter(deliveryNum=deliveryNum).all()
+        for userPrize in userPrizes:
+            userPrize.expressState = state
+            userPrize.expressDetail = json.dumps(info)
+            com = com_dict.get(com, com)
+            userPrize.com = com
+            userPrize.save()
 
 
 class UserPrizeView(ListAPIView):

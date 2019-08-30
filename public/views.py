@@ -49,7 +49,9 @@ def address_create(request):
     if isinstance(area, list):
         areaList = []
         for ar in area:
-            areaList.append(ChinaArea.objects.filter(uuid=ar).first().name)
+            target = ChinaArea.objects.filter(uuid=ar).first()
+            if target:
+                areaList.append(target.name)
         area = ",".join(areaList)
     try:
         ReceivingInfo.objects.create(

@@ -23,7 +23,7 @@ def activity_index(request):
     game = GameInfo.objects.filter(audioUuid__isnull=False)
     if keyword:
         game = game.filter(Q(audioUuid__name__contains=keyword) | Q(userUuid__nickName__contains=keyword))
-    games = game.order_by("?").all()
+    games = game.order_by("-updateTime").all()
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     total, games = page_index(games, page, pageCount)

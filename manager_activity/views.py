@@ -249,7 +249,6 @@ com_dict = {
 # 查询快递
 @api_view(['GET'])
 @authentication_classes((CustomAuthentication, ))
-@cache_page(60*10)
 def query_expressage(request):
     data = request_body(request, 'GET')
     if not data:
@@ -279,12 +278,9 @@ def query_expressage(request):
 
 
     if not info:
-        return http_return(400, "查询无结果，请检查单号是否正确或隔断时间再查！")
+        return http_return(400, "查询无结果，请隔断时间再查！")
 
-    # 如快递状态有更新，则更新显示
-    if state and userPrize.expressState != state:
-        userPrize.expressState = state
-
+    userPrize.expressState = state
     com = com_dict.get(com, com)
     userPrize.expressDetail = json.dumps(info)
     userPrize.com = com
@@ -603,13 +599,13 @@ def refresh_express():
             continue
 
         # 如快递状态有更新，则更新显示
-        userPrize = UserPrize.objects.filter(deliveryNum=deliveryNum).first()
-
-        userPrize.expressState = state
-        userPrize.expressDetail = json.dumps(info)
-        com = com_dict.get(com, com)
-        userPrize.com = com
-        userPrize.save()
+        userPrizes = UserPrize.objects.filter(deliveryNum=deliveryNum).all()
+        for userPrize in userPrizes:
+            userPrize.expressState = state
+            userPrize.expressDetail = json.dumps(info)
+            com = com_dict.get(com, com)
+            userPrize.com = com
+            userPrize.save()
 
 
 class UserPrizeView(ListAPIView):
@@ -662,6 +658,8 @@ def add_user_prize(request):
             #  0在途，1揽收，2疑难，3签收，4退签，5派件，6退回  7未录入单号 8暂无物流信息
             #  填写快递单号后暂无物流信息状态
             userPrize.expressState = 8
+            userPrize.expressDetail = ""
+            userPrize.com = ""
             userPrize.expressDate = timezone.now()
             userPrize.save()
         return http_return(200, 'OK')

@@ -573,16 +573,18 @@ def modify_child_tags(request):
     mySortNum = tag.sortNum
     myName = tag.name
 
-    if sortNum != mySortNum:
-        tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
-        if tag:
-            return http_return(400, '重复序号')
     parentTag = Tag.objects.filter(uuid=parentUuid, code='SEARCHSORT', isDelete=False, parent_id__isnull=True).first()
     if not parentTag:
         return http_return(400, '参数有误')
 
+    if sortNum != mySortNum:
+        tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id=parentUuid).first()
+        if tag:
+            return http_return(400, '重复序号')
+
+
     if name != myName:
-        tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id__isnull=False).first()
+        tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id=parentUuid).first()
         if tag:
             return http_return(400, '重复标签')
     tag = Tag.objects.filter(uuid=uuid).first()

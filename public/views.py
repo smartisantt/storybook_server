@@ -22,7 +22,7 @@ def address_create(request):
     isDefault = data.get("isDefault", "")  # 1 不设置为默认地址， 2设置为默认地址
     contact = data.get("contact", "")
     tel = data.get("tel", "")
-    areaUuid = data.get("areaUuid", "")
+    area = data.get("area", "")
     if not address:
         return http_return(400, '请输入地址')
     selfUuid = data['_cache']['uuid']
@@ -41,12 +41,16 @@ def address_create(request):
         return http_return(400, "请输入收件人姓名")
     if not tel:
         return http_return(400, "请输入收件人电话")
-    if not areaUuid:
-        return http_return(400, "请选择区域")
-    area = ChinaArea.objects.filter(uuid=areaUuid, level="district").first()
+    if not tel_match(tel):
+        return http_return(400, "手机号有误")
     if not area:
         return http_return(400, "未获取到地区信息")
     user = User.objects.filter(uuid=selfUuid).first()
+    if isinstance(area, list):
+        areaList = []
+        for ar in area:
+            areaList.append(ChinaArea.objects.filter(uuid=ar).first().name)
+        area = ",".join(areaList)
     try:
         ReceivingInfo.objects.create(
             uuid=get_uuid(),
@@ -54,7 +58,7 @@ def address_create(request):
             address=address,
             isDefault=isDefault,
             contact=contact,
-            areaUuid=area,
+            area=area,
             tel=tel,
         )
     except Exception as e:
@@ -77,12 +81,9 @@ def address_list(request):
     receives = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).order_by("-updateTime").all()
     resList = []
     for rece in receives:
-        area = rece.areaUuid
-        areaList = [area.fatherUuid.fatherUuid.name, area.fatherUuid.name, area.name]
-        areaStr = " ".join(areaList)
         resList.append({
             "uuid": rece.uuid,
-            "area": areaStr if area else "",
+            "area": rece.area if rece.area else "",
             "address": rece.address if rece.address else "",
             "isDefault": rece.isDefault,
             "contact": rece.contact if rece.contact else "",
@@ -102,7 +103,7 @@ def address_change(request):
     if not data:
         return http_return(400, '请求错误')
     uuid = data.get("uuid", "")
-    areaUuid = data.get("areaUuid", "")
+    area = data.get("area", "")
     isDefault = data.get("isDefault", "")
     contact = data.get("contact", "")
     tel = data.get("tel", "")
@@ -111,11 +112,8 @@ def address_change(request):
     rece = ReceivingInfo.objects.filter(uuid=uuid)
     if not rece:
         return http_return(400, "未获取到地址信息")
-    if areaUuid:
-        area = ChinaArea.objects.filter(uuid=areaUuid).first()
-        if not area:
-            return http_return(400, '未获取到地址信息')
-        updateData["areaUuid"] = area
+    if area:
+        updateData["area"] = area
     if isDefault:
         if isDefault == 2:
             updateData["isDefault"] = True
@@ -129,6 +127,8 @@ def address_change(request):
     if contact:
         updateData["contact"] = contact
     if tel:
+        if not tel_match(tel):
+            return http_return(400, "手机号有误")
         updateData["tel"] = tel
     try:
         updateData["updateTime"] = datetime.datetime.now()

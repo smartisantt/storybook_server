@@ -24,7 +24,7 @@ class ReceivingInfoBasicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ReceivingInfo
-        fields = ("tel", "address", "contact")
+        fields = ("tel", "area", "address", "contact")
 
 
 class UserInvitationSerializer(serializers.ModelSerializer):
@@ -95,6 +95,7 @@ class UserPrizeSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_receiveInfo(userPrize):
         return ReceivingInfoBasicSerializer(userPrize.receiveUuid).data
+
 
     @staticmethod
     def get_nickName(userPrize):

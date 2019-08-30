@@ -32,8 +32,8 @@ class UserPrizeFilter(django_filters.FilterSet):
     orderNum = django_filters.CharFilter(field_name="orderNum", lookup_expr="icontains")
     prizeName = django_filters.CharFilter(method='filter_by_prizename')
     tel = django_filters.CharFilter(method='filter_by_tel')
-    address = django_filters.CharFilter(method='filter_by_address')
-    contact = django_filters.CharFilter(method='filter_by_contact')
+    area = django_filters.CharFilter(method='filter_by_area')
+    nickName = django_filters.CharFilter(method='filter_by_nickname')
 
     @staticmethod
     def filter_by_prizename(queryset, name, value):
@@ -44,12 +44,13 @@ class UserPrizeFilter(django_filters.FilterSet):
         return queryset.filter(receiveUuid__tel__icontains=value)
 
     @staticmethod
-    def filter_by_address(queryset, name, value):
-        return queryset.filter(receiveUuid__address__icontains=value)
+    def filter_by_area(queryset, name, value):
+        value = value.replace('/', ',')
+        return queryset.filter(receiveUuid__area__icontains=value)
 
     @staticmethod
-    def filter_by_contact(queryset, name, value):
-        return queryset.filter(receiveUuid__contact__icontains=value)
+    def filter_by_nickname(queryset, name, value):
+        return queryset.filter(userUuid__nickName__icontains=value)
 
     class Meta:
         model = UserPrize

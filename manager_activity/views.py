@@ -662,6 +662,7 @@ def add_user_prize(request):
             #  0在途，1揽收，2疑难，3签收，4退签，5派件，6退回  7未录入单号 8暂无物流信息
             #  填写快递单号后暂无物流信息状态
             userPrize.expressState = 8
+            userPrize.expressDetail = ""
             userPrize.expressDate = timezone.now()
             userPrize.save()
         return http_return(200, 'OK')

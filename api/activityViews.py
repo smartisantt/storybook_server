@@ -454,7 +454,7 @@ def user_prize(request):
     total, prizes = page_index(prizes, page, pageCount)
     prizeList = []
     for prize in prizes:
-        type = 1  # 1:实体商品 2：虚拟商品
+        type = 1  # 1:实体商品一选择收货地址 2：虚拟商品 3.实体商品未选择收货地址
         if not prize.receiveUuid:
             type = 3
         info = ""

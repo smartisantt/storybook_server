@@ -499,8 +499,7 @@ class ReceivingInfo(BaseModle):
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userShippingAddressUuid',
                                  to_field='uuid',
                                  null=True, verbose_name="用户")
-    areaUuid = models.ForeignKey("ChinaArea", on_delete=models.CASCADE, related_name="areaReceUuid", to_field='uuid',
-                                 null=True)
+    area = models.CharField(max_length=64,null=True)
     address = models.CharField(max_length=255, verbose_name='收货地址', null=True)
     isDefault = models.BooleanField(default=False)  #False不是默认 True默认
     contact = models.CharField(max_length=32, null=False)  # 收件人

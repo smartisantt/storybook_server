@@ -502,7 +502,7 @@ def user_logistics(request):
         return http_return(400, "未查询到奖品信息")
     status = 1  # 1未发货 2已发货 3已完成
     company = ""
-    logisticsInfo = ""
+    logisticsInfo = []
     deliveryNum = userPrize.deliveryNum
     if deliveryNum:
         status = 2
@@ -532,7 +532,7 @@ def user_logistics(request):
             res = expressage.get_express_info(str(deliveryNum).strip())
             if not res:
                 return http_return(400, "未获取到物流信息")
-            logisticsInfo = res.get("data", "")
+            logisticsInfo = json.loads(res.get("data",""))
             state = res["state"]
             if state == 3:
                 status = 3
@@ -552,6 +552,6 @@ def user_logistics(request):
         "status": status,
         "code": deliveryNum if deliveryNum else "",
         "company": company if company else "",
-        "logisticsInfo": json.loads(logisticsInfo),
+        "logisticsInfo": logisticsInfo,
     }
     return http_return(200, "成功", info)

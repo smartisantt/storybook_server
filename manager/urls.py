@@ -8,7 +8,7 @@ from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
     CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView, \
-    AlbumView, CheckAlbumView, AuthorAudioStoryView
+    AlbumView, CheckAlbumView, AuthorAudioStoryView, NotificationView
 
 app_name = 'manager'
 
@@ -105,7 +105,12 @@ urlpatterns = [
     path('feedback/reply/', views.reply, name='reply'),
 
     # 消息
+    path('notification/notificationlist/', NotificationView.as_view()),
     path('notification/addnotification/', views.add_notification, name='addnotification'),
+    # path('notification/publishnotification/', views.publish_notification, name='publishnotification'),
+    path('notification/delnotification/', views.del_notification, name='delnotification'),
+    path('notification/modifynotification/', views.modify_notification, name='modifynotification'),
+    path('notification/jpush/', views.MyJpush, name='jpush'),
 
     # 专辑
     path('album/', AlbumView.as_view()),

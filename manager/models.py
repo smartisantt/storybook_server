@@ -531,7 +531,9 @@ class SystemNotification(BaseModle):
     title = models.CharField(max_length=256, verbose_name="标题")
     content = models.CharField(max_length=256, verbose_name="内容")
     publishDate = models.DateTimeField(null=False)
-    publishState = models.IntegerField(default=1) # 1 已发布 2 未发布
+    linkAddress = models.CharField(max_length=256, null=True)
+    linkText = models.CharField(max_length=256, null=True)
+    publishState = models.IntegerField(default=2) # 1 已发布 2 未发布
     isDelete = models.BooleanField(default=False)
 
     class Meta:

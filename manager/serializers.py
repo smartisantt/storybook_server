@@ -2,7 +2,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
-    Feedback, Album, AlbumAudioStory
+    Feedback, Album, AlbumAudioStory, SystemNotification
 from utils.errors import ParamsException
 
 
@@ -599,6 +599,20 @@ class AuthorAudioStorySerializer(serializers.ModelSerializer):
     class Meta:
         model = AudioStory
         fields = ('name', 'createTime', 'uuid')
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    isPublish = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_isPublish(notification):
+        return notification.publishDate < timezone.now()
+
+    class Meta:
+        model = SystemNotification
+        fields = ("uuid", "title", "content", "createTime", "publishDate")
+
+
 
 
 

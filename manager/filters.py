@@ -1,9 +1,10 @@
 from datetime import datetime
 
 import django_filters
+from django.utils import timezone
 
 from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity, CycleBanner, Ad, Feedback, \
-    Album
+    Album, SystemNotification
 from utils.errors import ParamsException
 
 
@@ -199,5 +200,24 @@ class AuthorAudioStoryFilter(django_filters.FilterSet):
     class Meta:
         model = AudioStory
         fields = ("name", )
+
+
+class NotificationFilter(django_filters.FilterSet):
+    title = django_filters.CharFilter(field_name='title', lookup_expr='icontains')
+    stage = django_filters.CharFilter(method='filter_by_stage')
+
+    @staticmethod
+    def filter_by_stage(queryset, name, value):
+        currentTime = timezone.now()
+        if value == "true":
+            return queryset.filter(publishDate__gt=currentTime)
+        elif value == "false":
+            return queryset.filter(publishDate__lt=currentTime)
+        else:
+            return queryset
+
+    class Meta:
+        model = SystemNotification
+        fields = ("title", )
 
 

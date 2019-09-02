@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from django_filters.rest_framework import DjangoFilterBackend
+from jpush import schedule
 from rest_framework.decorators import authentication_classes, api_view, action
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
@@ -11,7 +12,7 @@ from api.apiCommon import get_default_name
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
-    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter, AuthorAudioStoryFilter
+    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter, AuthorAudioStoryFilter, NotificationFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -20,13 +21,16 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, CycleBannerSerializer, FeedbackSerializer, \
     TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, CheckAlbumSerializer, \
-    AuthorAudioStorySerializer, AlbumDetailSerializer
+    AuthorAudioStorySerializer, AlbumDetailSerializer, NotificationSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
 from utils.errors import ParamsException
 
-q = (Q(isDelete=False)&Q(isUpload=1)&(Q(checkStatus='check')|Q(interfaceStatus="check")|Q(checkStatus='exemption')))
+import jpush as jpush
+
+q = (Q(isDelete=False) & Q(isUpload=1) & (
+            Q(checkStatus='check') | Q(interfaceStatus="check") | Q(checkStatus='exemption')))
 
 
 def admin(request):
@@ -37,9 +41,12 @@ def admin(request):
     """
     return http_return(200, 'normal')
 
+
 """
 登录接口
 """
+
+
 def login(request):
     """登录模块"""
     # 前端传入token ， 先在缓存查找， 如果没有（调用接口查询），
@@ -50,7 +57,6 @@ def login(request):
         logging.error(str(e))
         return http_return(500, '服务器连接redis失败')
 
-
     # 登录前更新用户状态
     currentTime = datetime.now()
     # 过了结束时间，恢复用户成正常状态，缓存的信息userid自动删除
@@ -60,7 +66,7 @@ def login(request):
     if user_data:
         # 获取缓存用户信息
         user_info = caches['default'].get(token)
-        user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser').\
+        user = User.objects.filter(userID=user_info.get('userId', ''), roles='adminUser'). \
             exclude(status="destroy").only('userID').first()
         role = user.roles
         status = user.status
@@ -71,9 +77,9 @@ def login(request):
             loginIp = get_ip_address(request)
             # 登录成功生成登录日志，缓存存入信息
             loginLog = LoginLog(
-                uuid = get_uuid(),
-                ipAddr = loginIp,
-                userUuid = user,
+                uuid=get_uuid(),
+                ipAddr=loginIp,
+                userUuid=user,
                 userAgent=request.META.get('HTTP_USER_AGENT', ''),
                 isManager=True
             )
@@ -83,7 +89,7 @@ def login(request):
             logging.error(str(e))
             return http_return(401, '登陆失败')
         nickName = user.nickName or get_default_name(user.tel, '')
-        return http_return(200, '登录成功', {'nickName':nickName, 'roles': role})
+        return http_return(200, '登录成功', {'nickName': nickName, 'roles': role})
     # 缓存中没有数据
     if not user_data:
         api = Api()
@@ -146,12 +152,13 @@ def login(request):
                 return http_return(400, '保存日志失败')
 
 
-
 """
 首页数据
 """
+
+
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def total_data(request):
     data = request_body(request, 'POST')
     if not data:
@@ -160,25 +167,24 @@ def total_data(request):
     startTimestamp = data.get('startTime', '')
     endTimestamp = data.get('endTime', '')
 
-    if not all([startTimestamp, endTimestamp]): # 最近7天数据，不包含今天的数据
-        currentTime =timezone.now()
+    if not all([startTimestamp, endTimestamp]):  # 最近7天数据，不包含今天的数据
+        currentTime = timezone.now()
         t1 = currentTime + timedelta(days=-8)
         t2 = currentTime + timedelta(days=-1)
         t1 = datetime(t1.year, t1.month, t1.day)
         t2 = datetime(t2.year, t2.month, t2.day, 23, 59, 59, 999999)
     else:
         try:
-            t1,t2 = timestamp2datetime(startTimestamp, endTimestamp)
+            t1, t2 = timestamp2datetime(startTimestamp, endTimestamp)
         except Exception as e:
             logging.error(str(e))
             return http_return(e.status_code, e.detail)
 
         # 结束小于2019-05-30 00:00:00的时间不合法
         if t2 < datetime(2019, 5, 30):
-            return http_return(200, '此时间没有数据', {'status':1})
+            return http_return(200, '此时间没有数据', {'status': 1})
 
-
-        if (t2-t1).days > 31:
+        if (t2 - t1).days > 31:
             return http_return(400, '超出时间范围')
 
     # 用户总人数
@@ -190,7 +196,7 @@ def total_data(request):
     # 新增用户人数
     newUsers = User.objects.filter(createTime__range=(t1, t2)).exclude(status='destroy').count()
     # 活跃用户人数
-    activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).values('userUuid_id').\
+    activityUsers = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).values('userUuid_id'). \
         annotate(Count('userUuid_id')).count()
     # 新增音频数
     newAudioStory = AudioStory.objects.filter(createTime__range=(t1, t2), isUpload=1).count()
@@ -204,14 +210,12 @@ def total_data(request):
     # 未知
     unkonwGender = User.objects.filter(gender=0).exclude(status='destroy').count()
 
-
     # 模板音频
-    aduioStoryCount = AudioStory.objects.filter(Q(createTime__range=(t1, t2))&Q(audioStoryType=1)&q).\
+    aduioStoryCount = AudioStory.objects.filter(Q(createTime__range=(t1, t2)) & Q(audioStoryType=1) & q). \
         exclude(checkStatus="checkFail").count()
 
-
     # 自由录制
-    freedomStoryCount = AudioStory.objects.filter(Q(createTime__range=(t1, t2))&Q(audioStoryType=0)&q).\
+    freedomStoryCount = AudioStory.objects.filter(Q(createTime__range=(t1, t2)) & Q(audioStoryType=0) & q). \
         exclude(checkStatus="checkFail").count()
 
     tagNameList = []
@@ -227,16 +231,17 @@ def total_data(request):
         userNumList.append(userCount)
 
     recordTypePercentage = [{'name': name, 'tagsNum': tagsNum, 'userNum': userNum}
-                            for name,tagsNum,userNum in zip(tagNameList, tagsNumList, userNumList)
+                            for name, tagsNum, userNum in zip(tagNameList, tagsNumList, userNumList)
                             ]
 
     # 活跃用户排行
     data1_list = []
     # result = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2)).values('userUuid_id').annotate(Count('userUuid_id'))[:1]
-    res = User.objects.annotate(audioStory_count_by_user = Count("useAudioUuid")).order_by('-audioStory_count_by_user')[:5]
-    for index,item in enumerate(res.values()):
+    res = User.objects.annotate(audioStory_count_by_user=Count("useAudioUuid")).order_by('-audioStory_count_by_user')[
+          :5]
+    for index, item in enumerate(res.values()):
         data = {
-            'orderNum': index+1,
+            'orderNum': index + 1,
             'name': item['nickName'],
             'recordCount': item['audioStory_count_by_user']
         }
@@ -244,9 +249,9 @@ def total_data(request):
     # 热门录制排行 模板在选定的时间范围内的录制次数排行
     data2_list = []
     # res = Story.objects.filter(status="normal", createTime__range=(t1, t2)).order_by('-recordNum')[:5]
-    res = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2), isUpload=1, audioStoryType=1).\
-        values('storyUuid').annotate(storycount=Count('storyUuid')).order_by('-storycount')[:5]
-    for index,item in enumerate(res):
+    res = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2), isUpload=1, audioStoryType=1). \
+              values('storyUuid').annotate(storycount=Count('storyUuid')).order_by('-storycount')[:5]
+    for index, item in enumerate(res):
         data = {
             'orderNum': index + 1 or -1,
             'name': Story.objects.filter(uuid=item['storyUuid']).first().name if item['storyUuid'] else '',
@@ -254,11 +259,11 @@ def total_data(request):
         }
         data2_list.append(data)
 
-
     # 热门播放排行
     data3_list = []
-    audioStory = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2), isUpload=1).order_by('-playTimes')[:5]
-    for index,item in enumerate(audioStory):
+    audioStory = AudioStory.objects.filter(isDelete=False, createTime__range=(t1, t2), isUpload=1).order_by(
+        '-playTimes')[:5]
+    for index, item in enumerate(audioStory):
         data = {
             'orderNum': index + 1,
             'name': item.storyUuid.name if item.audioStoryType else item.name,
@@ -272,15 +277,14 @@ def total_data(request):
     graphList = []
     delta = timedelta(days=1)
     while d <= end:
-        graphList.append({'time':d.strftime("%m-%d"), 'userNum':0})
+        graphList.append({'time': d.strftime("%m-%d"), 'userNum': 0})
         d += delta
-
 
     # 图表数据--新增用户
     graph1 = User.objects.filter(createTime__range=(t1, t2)). \
         only('createTime', 'id'). \
-        extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%d')"}).\
-        order_by('time').values('time')\
+        extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%d')"}). \
+        order_by('time').values('time') \
         .annotate(userNum=Count('createTime')).values('time', 'userNum')
     # if graph1:
     #     graph1 = list(graph1)
@@ -290,17 +294,17 @@ def total_data(request):
         graph1 = list(graph1)
         res1 = graphList[:]
         for item in graph1:
-            res1.remove({'time':item['time'], 'userNum':0})
+            res1.remove({'time': item['time'], 'userNum': 0})
         res1.extend(graph1)
         res1 = sorted(res1, key=lambda s: s['time'], reverse=False)
     else:
         res1 = graphList
 
     # 活跃用户
-    graph2 = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False).\
+    graph2 = LoginLog.objects.filter(createTime__range=(t1, t2), isManager=False). \
         only('time', 'userUuid_id'). \
         extra(select={"time": "DATE_FORMAT(createTime,'%%m-%%d')"}). \
-        values('time').annotate(userNum=Count('userUuid_id', distinct=True)).\
+        values('time').annotate(userNum=Count('userUuid_id', distinct=True)). \
         values('time', 'userNum').order_by('time')
     # if graph2:
     #     graph2 = list(graph2)
@@ -316,26 +320,25 @@ def total_data(request):
     else:
         res2 = graphList
 
-
     return http_return(200, '查询成功',
                        {
-                           'totalUsers': totalUsers,            # 总用户人数
+                           'totalUsers': totalUsers,  # 总用户人数
                            'totalAudioStory': totalAudioStory,  # 音频总数
-                           'totalAlbums': totalAlbums,          # 总的专辑数
-                           'newUsers': newUsers,                # 新增用户人数
-                           'activityUsers': activityUsers,      # 活跃用户人数
-                           'newAudioStory': newAudioStory,      # 新增音频数
-                           'activityUsersRank': data1_list,     # 活跃用户排行
-                           'male': male,                         # 男性
-                           'female': female,                     # 女性
-                           'unkonwGender': unkonwGender,        # 未知性别
+                           'totalAlbums': totalAlbums,  # 总的专辑数
+                           'newUsers': newUsers,  # 新增用户人数
+                           'activityUsers': activityUsers,  # 活跃用户人数
+                           'newAudioStory': newAudioStory,  # 新增音频数
+                           'activityUsersRank': data1_list,  # 活跃用户排行
+                           'male': male,  # 男性
+                           'female': female,  # 女性
+                           'unkonwGender': unkonwGender,  # 未知性别
                            'aduioStoryCount': aduioStoryCount,  # 模板音频数量
                            'freedomStoryCount': freedomStoryCount,  # 自由录制音频数量
                            'recordTypePercentage': recordTypePercentage,
-                           'hotRecordRank': data2_list,         # 热门录制排行
-                           'hotPlayAudioStoryRank': data3_list,     # 热门播放排行
-                           'newUserGraph': res1,              # 新增用户折线图
-                           'activityUserGraph': res2,         # 活跃用户折线图
+                           'hotRecordRank': data2_list,  # 热门录制排行
+                           'hotPlayAudioStoryRank': data3_list,  # 热门播放排行
+                           'newUserGraph': res1,  # 新增用户折线图
+                           'activityUserGraph': res2,  # 活跃用户折线图
                        })
 
 
@@ -354,9 +357,8 @@ class AllTagView(ListAPIView):
         return Response(res)
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_tags(request):
     """添加分类（一级标签）"""
     data = request_body(request, "POST")
@@ -371,7 +373,7 @@ def add_tags(request):
         return http_return(400, '参数有误')
     if not isinstance(sortNum, int):
         return http_return(400, '序号错误')
-    if sortNum <= 0 :
+    if sortNum <= 0:
         return http_return(400, '序号错误')
     # 一级标签中没有重复序号
     tag = Tag.objects.filter(sortNum=sortNum, parent_id__isnull=True, code='SEARCHSORT', isDelete=False).first()
@@ -399,7 +401,7 @@ def add_tags(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def modify_tags(request):
     """修改一级标签"""
     data = request_body(request, "POST")
@@ -434,7 +436,7 @@ def modify_tags(request):
         with transaction.atomic():
             tag.sortNum = sortNum
             tag.icon = icon
-            tag.name = myName       # 保存的还是老标签，一级标签不能修改
+            tag.name = myName  # 保存的还是老标签，一级标签不能修改
             tag.save()
             return http_return(200, '修改分类成功', {
                 'name': myName,
@@ -447,9 +449,8 @@ def modify_tags(request):
         return http_return(400, '修改分类失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def stop_tags(request):
     """停用/恢复一级标签"""
     data = request_body(request, "POST")
@@ -466,14 +467,14 @@ def stop_tags(request):
             tag.isUsing = not tag.isUsing
             tag.save()
             # 标签状态停用0 还是使用1
-            return http_return(200, '保存分类成功', {"status":tag.isUsing})
+            return http_return(200, '保存分类成功', {"status": tag.isUsing})
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '保存分类失败')
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_tags(request):
     """删除一级标签 或者 二级标签"""
     data = request_body(request, "POST")
@@ -500,7 +501,7 @@ def del_tags(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_child_tags(request):
     """添加子标签"""
     data = request_body(request, "POST")
@@ -527,7 +528,7 @@ def add_child_tags(request):
     tag = Tag.objects.filter(sortNum=sortNum, code='SEARCHSORT', isDelete=False, parent_id=parentUuid).first()
     if tag:
         return http_return(400, '重复序号')
-    #创建新标签
+    # 创建新标签
     try:
         with transaction.atomic():
             uuid = get_uuid()
@@ -551,7 +552,7 @@ def add_child_tags(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def modify_child_tags(request):
     """修改子标签"""
     data = request_body(request, "POST")
@@ -582,7 +583,6 @@ def modify_child_tags(request):
         if tag:
             return http_return(400, '重复序号')
 
-
     if name != myName:
         tag = Tag.objects.filter(name=name, code='SEARCHSORT', isDelete=False, parent_id=parentUuid).first()
         if tag:
@@ -605,30 +605,27 @@ def modify_child_tags(request):
         return http_return(400, '修改分类失败')
 
 
-
-
 # 获取类型标签下的所有字标签
 class TypeTagView(ListAPIView):
-    queryset = Tag.objects.filter(code='SEARCHSORT', parent__name='类型', isDelete=False).\
+    queryset = Tag.objects.filter(code='SEARCHSORT', parent__name='类型', isDelete=False). \
         only('id', 'name', 'sortNum', 'uuid').all()
     serializer_class = TagsSimpleSerialzer
     pagination_class = MyPagination
-
 
 
 # 获取所有子标签
 class ChildTagView(ListAPIView):
-    queryset = Tag.objects.filter(code='SEARCHSORT', parent_id__isnull=False, isDelete=False).\
+    queryset = Tag.objects.filter(code='SEARCHSORT', parent_id__isnull=False, isDelete=False). \
         only('id', 'name', 'sortNum', 'uuid').all()
     serializer_class = TagsSimpleSerialzer
     pagination_class = MyPagination
-
-
 
 
 """
 模板管理
 """
+
+
 class StoryView(ListAPIView):
     """GET 显示所有模板列表"""
     queryset = Story.objects.exclude(status='destroy').defer('tags').order_by('-createTime')
@@ -643,7 +640,7 @@ class StoryView(ListAPIView):
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
 
-        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
         if startTimestamp and endTimestamp:
             try:
@@ -656,7 +653,6 @@ class StoryView(ListAPIView):
         return self.queryset
 
 
-
 class StorySimpleView(ListAPIView):
     """所有模板的模板名"""
     queryset = Story.objects.filter(status="normal")
@@ -666,14 +662,14 @@ class StorySimpleView(ListAPIView):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_story(request):
     """添加模板"""
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '参数错误')
     faceIcon = data.get('faceIcon', '')
-    listIcon = data.get('listIcon', '') # 非必填
+    listIcon = data.get('listIcon', '')  # 非必填
     name = data.get('name', '')
     intro = data.get('intro', '')
     content = data.get('content', '')
@@ -684,7 +680,7 @@ def add_story(request):
     if not all([name, faceIcon, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    story = Story.objects.filter(name=name).exclude(status = 'destroy').first()
+    story = Story.objects.filter(name=name).exclude(status='destroy').first()
     if story:
         return http_return(400, '重复模板名')
 
@@ -692,15 +688,15 @@ def add_story(request):
         with transaction.atomic():
             uuid = get_uuid()
             story = Story(
-                uuid = uuid,
-                faceIcon = faceIcon,
-                listIcon = listIcon,
-                name = name,
-                intro = intro,
-                content = content,
-                isRecommd = isRecommd,
-                isTop = isTop,
-                recordNum = 0
+                uuid=uuid,
+                faceIcon=faceIcon,
+                listIcon=listIcon,
+                name=name,
+                intro=intro,
+                content=content,
+                isRecommd=isRecommd,
+                isTop=isTop,
+                recordNum=0
             )
             story.save()
             return http_return(200, '添加模板成功')
@@ -709,9 +705,8 @@ def add_story(request):
         return http_return(400, '添加模板失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def modify_story(request):
     """修改模板"""
     data = request_body(request, "POST")
@@ -719,7 +714,7 @@ def modify_story(request):
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
     faceIcon = data.get('faceIcon', '')
-    listIcon = data.get('listIcon', '') # 非必填
+    listIcon = data.get('listIcon', '')  # 非必填
     name = data.get('name', '')
     intro = data.get('intro', '')
     content = data.get('content', '')
@@ -730,7 +725,7 @@ def modify_story(request):
     if not all([faceIcon, name, content, intro, isRecommd, isTop]):
         return http_return(400, '参数有误')
 
-    story = Story.objects.filter(uuid=uuid).exclude(status = 'destroy').first()
+    story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     if not story:
         return http_return(400, '没有对象')
 
@@ -759,7 +754,7 @@ def modify_story(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def change_story_status(request):
     """停用模板 恢复模板"""
     data = request_body(request, "POST")
@@ -773,7 +768,6 @@ def change_story_status(request):
     story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     if not story:
         return http_return(400, '没有对象')
-
 
     story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     try:
@@ -791,7 +785,7 @@ def change_story_status(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_story(request):
     """删除模板"""
     data = request_body(request, "POST")
@@ -823,9 +817,9 @@ def del_story(request):
 
 class AudioStoryInfoView(ListAPIView):
     """模板音频"""
-    queryset = AudioStory.objects.filter(q&Q(audioStoryType=1))\
-        .exclude(checkStatus="checkFail")\
-        .select_related('bgm', 'userUuid')\
+    queryset = AudioStory.objects.filter(q & Q(audioStoryType=1)) \
+        .exclude(checkStatus="checkFail") \
+        .select_related('bgm', 'userUuid') \
         .prefetch_related('tags')
 
     serializer_class = AudioStoryInfoSerializer
@@ -839,8 +833,8 @@ class AudioStoryInfoView(ListAPIView):
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
-        nickName = self.request.query_params.get('nickName', '')    # 用户名
-        tag = self.request.query_params.get('tag', '')      # 类型标签
+        nickName = self.request.query_params.get('nickName', '')  # 用户名
+        tag = self.request.query_params.get('tag', '')  # 类型标签
 
         if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
@@ -865,7 +859,6 @@ class AudioStoryInfoView(ListAPIView):
         return self.queryset
 
 
-
 class UserSearchView(ListAPIView):
     queryset = User.objects.only('uuid', 'nickName').exclude(status="destroy").order_by("nickName")
     serializer_class = UserSearchSerializer
@@ -873,9 +866,8 @@ class UserSearchView(ListAPIView):
     pagination_class = None
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_audio_story(request):
     """添加音频"""
     data = request_body(request, 'POST')
@@ -886,9 +878,9 @@ def add_audio_story(request):
     remarks = data.get('remarks', '')
     duration = data.get('duration', '')
     url = data.get('url', '')
-    type = data.get('type', '')                 # 录制形式 0宝宝录制 1爸妈录制
+    type = data.get('type', '')  # 录制形式 0宝宝录制 1爸妈录制
     tagsUuidList = data.get('tagsuuidlist', '')
-    fileSize = data.get('filesize', '')         # 文件大小
+    fileSize = data.get('filesize', '')  # 文件大小
 
     if not all([storyUuid, userUuid, remarks, url, duration, tagsUuidList, type in [0, 1]]):
         return http_return(400, '参数不能为空')
@@ -922,10 +914,10 @@ def add_audio_story(request):
             isUpload=1,
             voiceUrl=url,
             playTimes=0,
-            audioStoryType=1, # 1模板录制 0 自由音频
+            audioStoryType=1,  # 1模板录制 0 自由音频
             type=type,
-            name= story.name,
-            bgIcon= story.faceIcon,
+            name=story.name,
+            bgIcon=story.faceIcon,
             storyUuid=story,
             remarks=remarks,
             duration=duration,
@@ -938,10 +930,9 @@ def add_audio_story(request):
     return http_return(200, '添加成功')
 
 
-
 class FreedomAudioStoryInfoView(ListAPIView):
     """自由音频"""
-    queryset = AudioStory.objects.filter(q&Q(audioStoryType=0)) \
+    queryset = AudioStory.objects.filter(q & Q(audioStoryType=0)) \
         .exclude(checkStatus='checkFail') \
         .select_related('bgm', 'userUuid') \
         .prefetch_related('tags').order_by('-createTime')
@@ -953,15 +944,13 @@ class FreedomAudioStoryInfoView(ListAPIView):
     ordering = ('-createTime',)
     ordering_fields = ('id', 'createTime')
 
-
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('startTime', '')
         endTimestamp = self.request.query_params.get('endTime', '')
-        nickName = self.request.query_params.get('nickName', '')    # 用户名
-        tag = self.request.query_params.get('tag', '')      # 类型标签
+        nickName = self.request.query_params.get('nickName', '')  # 用户名
+        tag = self.request.query_params.get('tag', '')  # 类型标签
 
-
-        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
         if startTimestamp and endTimestamp:
             try:
@@ -981,11 +970,10 @@ class FreedomAudioStoryInfoView(ListAPIView):
         return self.queryset
 
 
-
 # 内容审核
 class CheckAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1)\
-        .select_related('bgm', 'userUuid')\
+    queryset = AudioStory.objects.filter(isDelete=False, isUpload=1) \
+        .select_related('bgm', 'userUuid') \
         .prefetch_related('tags')
 
     serializer_class = CheckAudioStoryInfoSerializer
@@ -999,9 +987,9 @@ class CheckAudioStoryInfoView(ListAPIView):
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
-        nickName = self.request.query_params.get('nickName', '')    # 用户名
+        nickName = self.request.query_params.get('nickName', '')  # 用户名
 
-        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
         if startTimestamp and endTimestamp:
             try:
@@ -1017,10 +1005,9 @@ class CheckAudioStoryInfoView(ListAPIView):
         return self.queryset
 
 
-
 class QualifiedAudioStoryInfoView(ListAPIView):
-    queryset = AudioStory.objects.filter(q).exclude(checkStatus="checkFail")\
-        .select_related('bgm', 'userUuid')\
+    queryset = AudioStory.objects.filter(q).exclude(checkStatus="checkFail") \
+        .select_related('bgm', 'userUuid') \
         .prefetch_related('tags')
 
     serializer_class = QualifiedAudioStoryInfoSerializer
@@ -1034,9 +1021,9 @@ class QualifiedAudioStoryInfoView(ListAPIView):
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
-        nickName = self.request.query_params.get('nickName', '')    # 用户名
+        nickName = self.request.query_params.get('nickName', '')  # 用户名
 
-        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
         if startTimestamp and endTimestamp:
             try:
@@ -1053,7 +1040,7 @@ class QualifiedAudioStoryInfoView(ListAPIView):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def check_audio(request):
     """审核通过和审核不通过"""
     data = request_body(request, 'POST')
@@ -1079,9 +1066,8 @@ def check_audio(request):
         return http_return(400, '添加失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def config_tags(request):
     """配置标签"""
     data = request_body(request, 'POST')
@@ -1133,12 +1119,11 @@ class BgmView(ListAPIView):
     filter_class = BgmFilter
     pagination_class = MyPagination
 
-
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
 
-        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
         if startTimestamp and endTimestamp:
             try:
@@ -1151,9 +1136,8 @@ class BgmView(ListAPIView):
         return self.queryset
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_bgm(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1180,7 +1164,7 @@ def add_bgm(request):
                 uuid=uuid,
                 url=url,
                 name=name,
-                sortNum=maxSortNum+1,
+                sortNum=maxSortNum + 1,
                 duration=duration,
             )
         return http_return(200, '添加成功')
@@ -1189,9 +1173,8 @@ def add_bgm(request):
         return http_return(400, '添加失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def modify_bgm(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1211,7 +1194,6 @@ def modify_bgm(request):
     myName = bgm.name
     sortNum = bgm.sortNum or 1
 
-
     if myUrl != url:
         bgm = Bgm.objects.filter(url=url).exclude(status="destroy").first()
         if bgm:
@@ -1221,14 +1203,13 @@ def modify_bgm(request):
         if bgm:
             return http_return(400, '重复音乐名')
 
-
     try:
         with transaction.atomic():
             bgm = Bgm.objects.filter(uuid=uuid).exclude(status="destroy").first()
-            bgm.url=url
-            bgm.name=name
-            bgm.sortNum=sortNum
-            bgm.duration=duration
+            bgm.url = url
+            bgm.name = name
+            bgm.sortNum = sortNum
+            bgm.duration = duration
             bgm.save()
 
         return http_return(200, '修改成功')
@@ -1238,7 +1219,7 @@ def modify_bgm(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def change_order(request):
     """改变音乐排序"""
     data = request_body(request, 'POST')
@@ -1258,12 +1239,14 @@ def change_order(request):
     # 向上
     if direct == "up":
         # 比当前sortNum小的最大值
-        swapSortNum = Bgm.objects.filter(sortNum__lt=mySortNum).exclude(status="destroy").aggregate(Max('sortNum'))['sortNum__max']
+        swapSortNum = Bgm.objects.filter(sortNum__lt=mySortNum).exclude(status="destroy").aggregate(Max('sortNum'))[
+            'sortNum__max']
         if not swapSortNum:
             return http_return(400, "已经到顶了")
     elif direct == "down":
         # 比当前sortNum大的最小值
-        swapSortNum = Bgm.objects.filter(sortNum__gt=mySortNum).exclude(status="destroy").aggregate(Min('sortNum'))['sortNum__min']
+        swapSortNum = Bgm.objects.filter(sortNum__gt=mySortNum).exclude(status="destroy").aggregate(Min('sortNum'))[
+            'sortNum__min']
         if not swapSortNum:
             return http_return(400, "已经到底了")
 
@@ -1280,7 +1263,7 @@ def change_order(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def forbid_bgm(request):
     """停用/恢复背景音乐"""
     data = request_body(request, 'POST')
@@ -1297,9 +1280,9 @@ def forbid_bgm(request):
     try:
         # forbid 停用 normal正常 在用  destroy 删除
         with transaction.atomic():
-            if status=="normal":
+            if status == "normal":
                 bgm.status = "normal"
-            elif status=="forbid":
+            elif status == "forbid":
                 bgm.status = "forbid"
             else:
                 return http_return(400, '参数错误')
@@ -1310,9 +1293,8 @@ def forbid_bgm(request):
         return http_return(400, '修改失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_audioStory(request):
     """删除模板音频 或者 自由音频"""
 
@@ -1349,7 +1331,7 @@ def del_audioStory(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_bgm(request):
     """删除背景音乐"""
     data = request_body(request, 'POST')
@@ -1376,7 +1358,6 @@ def del_bgm(request):
         return http_return(400, '修改失败')
 
 
-
 # 热搜词
 class HotSearchView(ListAPIView):
     queryset = HotSearch.objects.filter(isDelete=False).only('id', 'keyword')
@@ -1388,7 +1369,7 @@ class HotSearchView(ListAPIView):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_keyword(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1403,10 +1384,10 @@ def add_keyword(request):
     try:
         uuid = get_uuid()
         HotSearch.objects.create(
-            uuid = uuid,
-            keyword = keyword,
-            searchNum = 0,
-            isAdminAdd = True
+            uuid=uuid,
+            keyword=keyword,
+            searchNum=0,
+            isAdminAdd=True
         )
         return http_return(200, '添加成功')
     except Exception as e:
@@ -1414,9 +1395,8 @@ def add_keyword(request):
         return http_return(400, '添加失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def top_keyword(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1443,7 +1423,7 @@ def top_keyword(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_keyword(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1465,7 +1445,6 @@ def del_keyword(request):
         return http_return(400, '删除失败')
 
 
-
 class AdView(ListAPIView):
     queryset = Ad.objects.filter(isDelete=False).only('id').order_by('orderNum')
     serializer_class = AdSerializer
@@ -1476,7 +1455,7 @@ class AdView(ListAPIView):
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
 
-        if (startTimestamp and not endTimestamp) or  (not startTimestamp and endTimestamp):
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
             raise ParamsException('时间错误')
         if startTimestamp and endTimestamp:
             try:
@@ -1490,9 +1469,8 @@ class AdView(ListAPIView):
         return self.queryset
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_ad(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1518,8 +1496,8 @@ def add_ad(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间格式错误')
 
-    startTime = startTime/1000
-    endTime = endTime/1000
+    startTime = startTime / 1000
+    endTime = endTime / 1000
 
     try:
         startTime = datetime.fromtimestamp(startTime)
@@ -1537,7 +1515,7 @@ def add_ad(request):
             return http_return(400, '没有此专辑')
 
     if type == 2:  # 音频
-        if not AudioStory.objects.filter(Q(uuid=target)&q).exclude(checkStatus="checkFail").exists():
+        if not AudioStory.objects.filter(Q(uuid=target) & q).exclude(checkStatus="checkFail").exists():
             return http_return(400, '没有此音频')
 
     if type == 4:  # 外部链接
@@ -1563,7 +1541,7 @@ def add_ad(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def modify_ad(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1599,8 +1577,8 @@ def modify_ad(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
-    startTime = startTime/ 1000
-    endTime = endTime/ 1000
+    startTime = startTime / 1000
+    endTime = endTime / 1000
 
     try:
         startTime = datetime.fromtimestamp(startTime)
@@ -1617,14 +1595,13 @@ def modify_ad(request):
         if not Album.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此专辑')
 
-    if type == 2: # 音频
-        if not AudioStory.objects.filter(Q(uuid=target)&q).exclude(checkStatus="checkFail").exists():
+    if type == 2:  # 音频
+        if not AudioStory.objects.filter(Q(uuid=target) & q).exclude(checkStatus="checkFail").exists():
             return http_return(400, '没有此音频')
 
-    if type == 4: # 外部链接
+    if type == 4:  # 外部链接
         if not target.startswith('http'):
             return http_return(400, '跳转地址格式错误')
-
 
     try:
         ad = Ad.objects.filter(uuid=uuid, isDelete=False)
@@ -1644,16 +1621,14 @@ def modify_ad(request):
         return http_return(400, '修改失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_ad(request):
     # 删除
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
-
 
     if not uuid:
         return http_return(400, '参数错误')
@@ -1672,13 +1647,13 @@ def del_ad(request):
         return http_return(400, '删除失败')
 
 
-
 # 模块配置
 class ModuleView(ListAPIView):
     """显示模块类型 MOD1每日一读  MOD2抢先听  MOD3热门推荐"""
-    queryset = Module.objects.filter(isDelete=False).\
+    queryset = Module.objects.filter(isDelete=False). \
         select_related('audioUuid', 'albumUuid').order_by('orderNum')
     serializer_class = ModuleSerializer
+
     # pagination_class = MyPagination
 
     def get_queryset(self):
@@ -1720,28 +1695,26 @@ class AllAudioSimpleView(ListAPIView):
         return self.queryset
 
 
-
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_story_into_module(request):
     """新增"""
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
     type = data.get('type', '')
-    contentType = data.get('contenttype', '')   # 1 自由音频 2 模板音频 3 专辑
+    contentType = data.get('contenttype', '')  # 1 自由音频 2 模板音频 3 专辑
     # audioUuid = data.get('audiouuid', '')
     targetUuid = data.get('targetuuid', '')
-    if not all([type in ['MOD1', 'MOD2', 'MOD3'], targetUuid, contentType in [1,2,3]]):
+    if not all([type in ['MOD1', 'MOD2', 'MOD3'], targetUuid, contentType in [1, 2, 3]]):
         return http_return(400, '参数错误')
-    if type=='MOD1' and contentType != 2:
+    if type == 'MOD1' and contentType != 2:
         return http_return(400, '每日一读只能添加模板音频')
 
     audioStory = None
     album = None
-    if contentType in [1,2]:
-        audioStory = AudioStory.objects.filter(Q(uuid=targetUuid)&q).exclude(checkStatus="checkFail").first()
+    if contentType in [1, 2]:
+        audioStory = AudioStory.objects.filter(Q(uuid=targetUuid) & q).exclude(checkStatus="checkFail").first()
         if not audioStory:
             return http_return(400, '没有对象')
         module = Module.objects.filter(isDelete=False, audioUuid=audioStory, type=type, contentType=contentType).first()
@@ -1764,7 +1737,7 @@ def add_story_into_module(request):
                 uuid=uuid,
                 type=type,
                 contentType=contentType,
-                orderNum=maxOrderNum+1,
+                orderNum=maxOrderNum + 1,
                 audioUuid=audioStory,
                 albumUuid=album
             )
@@ -1775,16 +1748,16 @@ def add_story_into_module(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def change_story_in_module(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
-    moduleUuid = data.get('moduleuuid', '')              # 要替换哪条uuid
-    targetUuid = data.get('targetuuid', '')              # 替换uuid
+    moduleUuid = data.get('moduleuuid', '')  # 要替换哪条uuid
+    targetUuid = data.get('targetuuid', '')  # 替换uuid
     contentType = data.get('contenttype', '')
 
-    if not all([moduleUuid, targetUuid, contentType in [1,2,3]]):
+    if not all([moduleUuid, targetUuid, contentType in [1, 2, 3]]):
         return http_return(400, '参数错误')
 
     module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
@@ -1795,7 +1768,7 @@ def change_story_in_module(request):
     album = None
     type = module.type
     if contentType in [1, 2]:
-        audioStory = AudioStory.objects.filter(Q(uuid=targetUuid)&q).exclude(checkStatus="checkFail").first()
+        audioStory = AudioStory.objects.filter(Q(uuid=targetUuid) & q).exclude(checkStatus="checkFail").first()
         if not audioStory:
             return http_return(400, '没有对象')
         module = Module.objects.filter(isDelete=False, audioUuid=targetUuid, type=type, contentType=contentType).first()
@@ -1823,14 +1796,13 @@ def change_story_in_module(request):
         return http_return(400, '替换失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_story_in_module(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
-    moduleUuid = data.get('moduleuuid', '')              # 要删除哪条uuid
+    moduleUuid = data.get('moduleuuid', '')  # 要删除哪条uuid
 
     if not moduleUuid:
         return http_return(400, '参数错误')
@@ -1838,7 +1810,6 @@ def del_story_in_module(request):
     module = Module.objects.filter(uuid=moduleUuid, isDelete=False).first()
     if not module:
         return http_return(400, '没有对象')
-
 
     try:
         with transaction.atomic():
@@ -1851,7 +1822,7 @@ def del_story_in_module(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def change_module_order(request):
     """模块排序"""
     data = request_body(request, 'POST')
@@ -1872,12 +1843,16 @@ def change_module_order(request):
     swapOrderNum = 0
     if direct == "up":
         # 比当前sortNum小的最大值
-        swapOrderNum = Module.objects.filter(orderNum__lt=myOrderNum, isDelete=False, type=type).aggregate(Max('orderNum'))['orderNum__max']
+        swapOrderNum = \
+        Module.objects.filter(orderNum__lt=myOrderNum, isDelete=False, type=type).aggregate(Max('orderNum'))[
+            'orderNum__max']
         if not swapOrderNum:
             return http_return(400, "已经到顶了")
     elif direct == "down":
         # 比当前sortNum大的最小值
-        swapOrderNum = Module.objects.filter(orderNum__gt=myOrderNum, isDelete=False, type=type).aggregate(Min('orderNum'))['orderNum__min']
+        swapOrderNum = \
+        Module.objects.filter(orderNum__gt=myOrderNum, isDelete=False, type=type).aggregate(Min('orderNum'))[
+            'orderNum__min']
         if not swapOrderNum:
             return http_return(400, "已经到底了")
 
@@ -1899,7 +1874,7 @@ class UserView(ListAPIView):
     filter_class = UserFilter
     pagination_class = MyPagination
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    ordering = ('-createTime', )
+    ordering = ('-createTime',)
     ordering_fields = ('id', 'createTime')
 
     # 当前管理员不显示在用户列表里面
@@ -1914,7 +1889,6 @@ class UserView(ListAPIView):
     #     serializer = self.get_serializer(queryset, many=True)
     #     return Response(serializer.data)
 
-
     def get_queryset(self):
         # 首先更新用户禁言禁止登录状态
         currentTime = datetime.now()
@@ -1922,7 +1896,7 @@ class UserView(ListAPIView):
         # User.objects.filter(startTime__lt=currentTime, endTime__gt=currentTime, status="normal").\
         #     update(status=F("settingStatus"), updateTime=currentTime)
         # 过了结束时间
-        User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]).\
+        User.objects.filter(endTime__lt=currentTime).exclude(status__in=["destroy", "normal"]). \
             update(status="normal", updateTime=currentTime, startTime=None, endTime=None, settingStatus=None)
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
@@ -1940,9 +1914,8 @@ class UserView(ListAPIView):
         return self.queryset
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def validate_tel(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1976,7 +1949,7 @@ def validate_tel(request):
 
 # 迁移老用户
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def migrate_user(request):
     data = request_body(request, 'POST')
     if not data:
@@ -1995,7 +1968,6 @@ def migrate_user(request):
     city = data.get('city', '')
     roles = data.get('roles', '')
     gender = data.get('gender', '')
-
 
     if not all([gender in [0, 1, 2], nickName, roles in ['normalUser', 'adminUser']]):
         return http_return(400, '参数错误')
@@ -2042,11 +2014,9 @@ def migrate_user(request):
         return http_return(400, '添加失败')
 
 
-
-
 # 添加新用户
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_user(request):
     data = request_body(request, 'POST')
     if not data:
@@ -2072,22 +2042,21 @@ def add_user(request):
     gender = data.get('gender', '')
     pwd = data.get('pwd', '')
 
-    if not all([gender in [0, 1, 2], nickName, roles in ['normalUser','adminUser'], pwd]):
+    if not all([gender in [0, 1, 2], nickName, roles in ['normalUser', 'adminUser'], pwd]):
         return http_return(400, '参数错误')
 
-    if not 5<len(str(pwd))<40:
+    if not 5 < len(str(pwd)) < 40:
         return http_return(400, '密码长度错误')
 
     if city:
-        if not 1<len(str(city))<40:
+        if not 1 < len(str(city)) < 40:
             return http_return(400, '城市长度错误')
 
-    if not 1<len(str(nickName))<20:
+    if not 1 < len(str(nickName)) < 20:
         return http_return(400, '昵称长度错误')
 
     if not isinstance(tel, str):
         tel = str(tel)
-
 
     # /api/sso/user/byphone 读取用户列表(手机号用户)
     api = Api()
@@ -2112,15 +2081,15 @@ def add_user(request):
         uuid = get_uuid()
         with transaction.atomic():
             User.objects.create(
-                uuid = uuid,
-                userID = userID,
-                nickName = nickName or tel,
-                avatar = 'https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111746672834.png',
-                tel = tel,
-                gender = gender,  # 性别 0未知  1男  2女
-                status = "normal",
-                roles = roles,
-                city = city
+                uuid=uuid,
+                userID=userID,
+                nickName=nickName or tel,
+                avatar='https://hbb-ads.oss-cn-beijing.aliyuncs.com/file1111746672834.png',
+                tel=tel,
+                gender=gender,  # 性别 0未知  1男  2女
+                status="normal",
+                roles=roles,
+                city=city
             )
         return http_return(200, '保存用户成功')
     except Exception as e:
@@ -2128,9 +2097,8 @@ def add_user(request):
         return http_return(400, '保存用户失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def modify_user(request):
     data = request_body(request, 'POST')
     if not data:
@@ -2141,15 +2109,15 @@ def modify_user(request):
     city = data.get('city', '')
     roles = data.get('roles', '')
     gender = data.get('gender', '')
-    pwd = data.get('pwd', '') # 没有填写密码则不用修改
-    if not all([gender in [0, 1, 2], uuid, nickName, roles in ['normalUser','adminUser']]):
+    pwd = data.get('pwd', '')  # 没有填写密码则不用修改
+    if not all([gender in [0, 1, 2], uuid, nickName, roles in ['normalUser', 'adminUser']]):
         return http_return(400, '参数错误')
 
     if city:
-        if not 1<len(str(city))<40:
+        if not 1 < len(str(city)) < 40:
             return http_return(400, '城市长度错误')
 
-    if not 1<len(str(nickName))<20:
+    if not 1 < len(str(nickName)) < 20:
         return http_return(400, '昵称长度错误')
 
     user = User.objects.filter(uuid=uuid).exclude(status="destroy").first()
@@ -2161,7 +2129,7 @@ def modify_user(request):
         return http_return(400, '没有用户手机号')
     # 调用接口 管理员在后台 重置其他用户密码, 重置自己的密码清缓存
     if pwd:
-        if not 5<len(str(pwd))<40:
+        if not 5 < len(str(pwd)) < 40:
             return http_return(400, '密码长度错误')
         api = Api()
         if not api.admin_reset_pwd(tel, pwd, request.auth):
@@ -2190,10 +2158,8 @@ def modify_user(request):
         return http_return(400, '修改失败')
 
 
-
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_user(request):
     # 删除
     data = request_body(request, 'POST')
@@ -2219,7 +2185,7 @@ def del_user(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def forbidden_user(request):
     # 禁用
     data = request_body(request, 'POST')
@@ -2236,7 +2202,7 @@ def forbidden_user(request):
     if not isinstance(endTimestamp, int):
         return http_return(400, '时间格式错误')
 
-    endTimestamp = int(endTimestamp)/1000
+    endTimestamp = int(endTimestamp) / 1000
     try:
         endTime = datetime.fromtimestamp(endTimestamp)
         currentTime = datetime.now()
@@ -2246,7 +2212,7 @@ def forbidden_user(request):
         logging.error(str(e))
         return http_return(400, '时间参数错误')
 
-    user = User.objects.filter(uuid=uuid).exclude(status="destroy") .first()
+    user = User.objects.filter(uuid=uuid).exclude(status="destroy").first()
     if not user:
         return http_return(400, '没有对象')
 
@@ -2265,9 +2231,8 @@ def forbidden_user(request):
         return http_return(400, '添加失败')
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def cancel_forbid(request):
     # 恢复
     data = request_body(request, 'POST')
@@ -2275,7 +2240,7 @@ def cancel_forbid(request):
         return http_return(400, '参数错误')
     uuid = data.get('uuid', '')
 
-    user = User.objects.filter(uuid=uuid).exclude(status="destroy") .first()
+    user = User.objects.filter(uuid=uuid).exclude(status="destroy").first()
     if not user:
         return http_return(400, '没有对象')
 
@@ -2309,8 +2274,8 @@ class CycleBannerView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp, convert=False)
-                return self.queryset.exclude(Q(startTime__gt=endtime)&Q(endTime__gt=endtime)|
-                                             Q(endTime__lt=starttime)&Q(startTime__lt=starttime))
+                return self.queryset.exclude(Q(startTime__gt=endtime) & Q(endTime__gt=endtime) |
+                                             Q(endTime__lt=starttime) & Q(startTime__lt=starttime))
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)
@@ -2318,9 +2283,8 @@ class CycleBannerView(ListAPIView):
         return self.queryset
 
 
-
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_cycle_banner(request):
     # 添加轮播图
     data = request_body(request, 'POST')
@@ -2347,8 +2311,8 @@ def add_cycle_banner(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
-    startTime = startTime/1000
-    endTime = endTime/1000
+    startTime = startTime / 1000
+    endTime = endTime / 1000
 
     try:
         startTime = datetime.fromtimestamp(startTime)
@@ -2356,7 +2320,6 @@ def add_cycle_banner(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '时间参数错误')
-
 
     if type == 0:
         if not Activity.objects.filter(uuid=target, status='normal').exists():
@@ -2366,11 +2329,11 @@ def add_cycle_banner(request):
         if not Album.objects.filter(uuid=target, isDelete=False, checkStatus__in=["check", "exemption"]).exists():
             return http_return(400, '没有此专辑')
 
-    if type == 2: # 音频
-        if not AudioStory.objects.filter(Q(uuid=target)&q).exclude(checkStatus="checkFail").exists():
+    if type == 2:  # 音频
+        if not AudioStory.objects.filter(Q(uuid=target) & q).exclude(checkStatus="checkFail").exists():
             return http_return(400, '没有此音频')
 
-    if type == 4: # 外部链接
+    if type == 4:  # 外部链接
         if not target.startswith('http'):
             return http_return(400, '跳转地址格式错误')
 
@@ -2394,7 +2357,7 @@ def add_cycle_banner(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def modify_cycle_banner(request):
     # 修改轮播图
     data = request_body(request, 'POST')
@@ -2431,8 +2394,8 @@ def modify_cycle_banner(request):
     if not all([isinstance(startTime, int), isinstance(endTime, int)]):
         return http_return(400, '时间错误')
 
-    startTime = startTime/1000
-    endTime = endTime/1000
+    startTime = startTime / 1000
+    endTime = endTime / 1000
 
     try:
         startTime = datetime.fromtimestamp(startTime)
@@ -2450,7 +2413,7 @@ def modify_cycle_banner(request):
             return http_return(400, '没有此专辑')
 
     if type == 2:  # 音频
-        if not AudioStory.objects.filter(Q(uuid=target)&q).exclude(checkStatus="checkFail").exists():
+        if not AudioStory.objects.filter(Q(uuid=target) & q).exclude(checkStatus="checkFail").exists():
             return http_return(400, '没有此音频')
 
     if type == 4:  # 外部链接
@@ -2476,7 +2439,7 @@ def modify_cycle_banner(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def change_cycle_banner_status(request):
     # 停用/恢复/删除
     data = request_body(request, 'POST')
@@ -2507,7 +2470,6 @@ def change_cycle_banner_status(request):
         return http_return(400, '删除失败')
 
 
-
 # 反馈管理列表
 class FeedbackView(ListAPIView):
     queryset = Feedback.objects.all()
@@ -2536,7 +2498,7 @@ class FeedbackView(ListAPIView):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def reply(request):
     """后台回复"""
     data = request_body(request, 'POST')
@@ -2581,23 +2543,57 @@ def reply(request):
         return http_return(400, '回复失败')
 
 
+class NotificationView(ListAPIView):
+    queryset = SystemNotification.objects.filter(isDelete=False)
+    serializer_class = NotificationSerializer
+    filter_class = NotificationFilter
+    pagination_class = MyPagination
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+        return self.queryset
+
+
+
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_notification(request):
     data = request_body(request, 'POST')
     if not data:
         return http_return(400, '参数错误')
     title = data.get('title', '')
     content = data.get('content', '')
-    publishDate = data.get('publishDate', '') # 时间戳
+    publishDate = data.get('publishDate', '')  # 时间戳
+
+    linkAddress = data.get('publishDate', '')  # 非必填
+    linkText = data.get('publishDate', '')  # 非必填
+
+    if linkText != "":
+        if not isinstance(linkAddress, str):
+            return http_return(400, "格式错误")
+        if not ((linkAddress.startswith("http")) or (linkAddress.startswith("www"))):
+            return http_return(400, "跳转地址错误")
+        # if linkText == "":
+        #     return http_return(400, "连接文本没有")
 
     if not all([title, content, publishDate]):
         return http_return(400, "参数有空")
 
     if SystemNotification.objects.filter(title=title).exists():
-        return http_return(400, "重复")
+        return http_return(400, "重复活动标题")
 
-    _, publishDate = timestamp2datetime(1, publishDate)
+    _, publishDate = timestamp2datetime(1, publishDate, convert=False)
 
     try:
         with transaction.atomic():
@@ -2607,7 +2603,9 @@ def add_notification(request):
                 title=title,
                 content=content,
                 publishDate=publishDate,
-                publishState=1,
+                linkAddress=linkAddress,
+                linkText=linkText,
+                publishState=0,
                 isDelete=False,
             )
             return http_return(200, '创建成功')
@@ -2615,16 +2613,136 @@ def add_notification(request):
         logging.error(str(e))
         return http_return(400, '创建失败')
 
-#  停用/启用
+
+# #  停用/启用
+# @api_view(['POST'])
+# @authentication_classes((CustomAuthentication,))
+# def publish_notification(request):
+#     data = request_body(request, 'POST')
+#     if not data:
+#         return http_return(400, '参数错误')
+#     uuid = data.get('uuid', '')
+#
+#     if not uuid:
+#         return http_return(400, '参数有误')
+#     notification = SystemNotification.objects.filter(uuid=uuid, isDelete=False).first()
+#     if not notification:
+#         return http_return(400, '没有对象')
+#     try:
+#         with transaction.atomic():
+#             # 1 已发布 2 未发布
+#             notification.publishState = 2 if notification.publishState == 1 else 1
+#             notification.save()
+#             return http_return(200, '操作成功', {"status": notification.publishState})
+#     except Exception as e:
+#         logging.error(str(e))
+#         return http_return(400, '操作失败')
+
 
 
 # 编辑
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication,))
+def modify_notification(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    title = data.get('title', '')
+    content = data.get('content', '')
+    publishDate = data.get('publishDate', '')  # 时间戳
+
+    linkAddress = data.get('publishDate', '')  # 非必填
+    linkText = data.get('publishDate', '')  # 非必填
+
+    if linkText != "":
+        if not isinstance(linkAddress, str):
+            return http_return(400, "格式错误")
+        if not ((linkAddress.startswith("http")) or (linkAddress.startswith("www"))):
+            return http_return(400, "跳转地址错误")
+        # if linkText == "":
+        #     return http_return(400, "连接文本没有")
+
+    if not all([uuid, title, content, publishDate]):
+        return http_return(400, "参数有空")
+
+    notification = SystemNotification.objects.filter(uuid=uuid, isDelete=False).first()
+    if not notification:
+        return http_return(400, "无此消息")
+
+    if SystemNotification.objects.filter(title=title).exclude(uuid=uuid).exists():
+        return http_return(400, "重复活动标题")
+
+    _, publishDate = timestamp2datetime(1, publishDate, convert=False)
+
+    try:
+        with transaction.atomic():
+            notification.title = title
+            notification.content = content
+            notification.publishDate = publishDate
+            notification.save()
+            return http_return(200, '修改成功')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '创建失败')
+
 
 # 删除
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication,))
+def del_notification(request):
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    if not uuid:
+        return http_return(400, '参数为空')
+    notification = SystemNotification.objects.filter(uuid=uuid, isDelete=False).first()
+    if not notification:
+        return http_return(400, '没有对象')
+
+    try:
+        with transaction.atomic():
+            notification.isDelete = True
+            notification.save()
+            return http_return(200, '删除成功')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+
+
+
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication,))
+def MyJpush(request):
+    app_key = 'b878563acc58979e1bdc1c1f'
+    master_secret = '8a68fd8e94cc345f0b680dd1'
+
+    _jpush = jpush.JPush(app_key, master_secret)
+    _jpush.set_logging("DEBUG")
+
+    push = _jpush.create_push()
+    push.audience = jpush.all_
+    push.notification = jpush.notification(alert="绘童温馨提示：天冷加衣！+1")
+    push.platform = jpush.all_
+
+    # trigger = jpush.schedulepayload.trigger('2019-09-02 17:08:00')
+    # schedule_payload = jpush.schedulepayload.schedulepayload("name", True, trigger, push)
+
+    try:
+        response = push.send()
+        # response = schedule.post_schedule(schedule_payload)
+        if response.status_code != 200:
+            return http_return(400, "推送失败")
+        return http_return(200, "推送成功")
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, "推送失败")
+
 
 
 class AlbumView(ListAPIView):
-    queryset = Album.objects.filter(isDelete=False, checkStatus__in=["check", "exemption"]).\
+    queryset = Album.objects.filter(isDelete=False, checkStatus__in=["check", "exemption"]). \
         prefetch_related('audioStory')
     serializer_class = AlbumSerializer
     filter_class = AlbumFilter
@@ -2659,7 +2777,6 @@ class AuthorAudioStoryView(ListAPIView):
     filter_class = AuthorAudioStoryFilter
     pagination_class = MyPagination
 
-
     def get_queryset(self):
         authorUuid = self.request.query_params.get('authoruuid', '')
         albumUuid = self.request.query_params.get('albumuuid', '')
@@ -2679,7 +2796,7 @@ class AuthorAudioStoryView(ListAPIView):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_album(request):
     # 创建专辑
     data = request_body(request, 'POST')
@@ -2732,7 +2849,7 @@ def add_album(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def modify_album(request):
     # 修改专辑
     data = request_body(request, 'POST')
@@ -2780,7 +2897,7 @@ def modify_album(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def album_tags(request):
     # 配置专辑标签
     data = request_body(request, 'POST')
@@ -2814,7 +2931,7 @@ def album_tags(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def del_album(request):
     # 删除专辑
     data = request_body(request, 'POST')
@@ -2850,7 +2967,7 @@ def del_album(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def add_audio2album(request):
     # 专辑添加音频
     data = request_body(request, 'POST')
@@ -2868,7 +2985,7 @@ def add_audio2album(request):
 
     audioStoryList = []
     for audioStoryUuid in audioStoryUuidList:
-        audioStory = AudioStory.objects.filter(Q(uuid=audioStoryUuid)&q).exclude(checkStatus="checkFail").first()
+        audioStory = AudioStory.objects.filter(Q(uuid=audioStoryUuid) & q).exclude(checkStatus="checkFail").first()
         if not audioStory:
             return http_return(400, '没有音频对象')
 
@@ -2895,7 +3012,7 @@ def add_audio2album(request):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def disable_audioStoty_in_album(request):
     # 停用恢复专辑里的音频
     data = request_body(request, 'POST')
@@ -2916,7 +3033,7 @@ def disable_audioStoty_in_album(request):
         return http_return(400, '没有音频对象')
 
     audioStotyInAlbum = AlbumAudioStory.objects.filter(album=album, audioStory=audioStory).first()
-    
+
     try:
         with transaction.atomic():
             audioStotyInAlbum.isUsing = int(not audioStotyInAlbum.isUsing)
@@ -2954,9 +3071,8 @@ def disable_audioStoty_in_album(request):
 #         return Response(res)
 
 
-
 @api_view(['GET'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def album_detail(request):
     # 专辑详情
     data = request_body(request, 'GET')
@@ -2997,7 +3113,7 @@ class CheckAlbumView(ListAPIView):
 
 
 @api_view(['POST'])
-@authentication_classes((CustomAuthentication, ))
+@authentication_classes((CustomAuthentication,))
 def check_album(request):
     # 审核专辑
     data = request_body(request, 'POST')

@@ -2575,8 +2575,8 @@ def add_notification(request):
     content = data.get('content', '')
     publishDate = data.get('publishDate', '')  # 时间戳
 
-    linkAddress = data.get('publishDate', '')  # 非必填
-    linkText = data.get('publishDate', '')  # 非必填
+    linkAddress = data.get('linkAddress', '')  # 非必填
+    linkText = data.get('linkText', '')  # 非必填
 
     if linkText != "":
         if not isinstance(linkAddress, str):
@@ -2651,8 +2651,8 @@ def modify_notification(request):
     content = data.get('content', '')
     publishDate = data.get('publishDate', '')  # 时间戳
 
-    linkAddress = data.get('publishDate', '')  # 非必填
-    linkText = data.get('publishDate', '')  # 非必填
+    linkAddress = data.get('linkAddress', '')  # 非必填
+    linkText = data.get('linkText', '')  # 非必填
 
     if linkText != "":
         if not isinstance(linkAddress, str):
@@ -2679,6 +2679,8 @@ def modify_notification(request):
             notification.title = title
             notification.content = content
             notification.publishDate = publishDate
+            notification.linkAddress = linkAddress
+            notification.linkText = linkText
             notification.save()
             return http_return(200, '修改成功')
     except Exception as e:

@@ -610,7 +610,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SystemNotification
-        fields = ("uuid", "title", "content", "createTime", "publishDate")
+        fields = ("uuid", "title", "content", "createTime", "publishDate", "isPublish")
 
 
 

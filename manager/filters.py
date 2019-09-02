@@ -204,15 +204,15 @@ class AuthorAudioStoryFilter(django_filters.FilterSet):
 
 class NotificationFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(field_name='title', lookup_expr='icontains')
-    stage = django_filters.CharFilter(method='filter_by_stage')
+    isPublish = django_filters.CharFilter(method='filter_by_isPublish')
 
     @staticmethod
-    def filter_by_stage(queryset, name, value):
+    def filter_by_isPublish(queryset, name, value):
         currentTime = timezone.now()
         if value == "true":
-            return queryset.filter(publishDate__gt=currentTime)
-        elif value == "false":
             return queryset.filter(publishDate__lt=currentTime)
+        elif value == "false":
+            return queryset.filter(publishDate__gt=currentTime)
         else:
             return queryset
 

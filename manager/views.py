@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from django_filters.rest_framework import DjangoFilterBackend
-from jpush import schedule
 from rest_framework.decorators import authentication_classes, api_view, action
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView

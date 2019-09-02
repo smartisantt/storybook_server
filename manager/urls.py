@@ -104,6 +104,9 @@ urlpatterns = [
     path('feedback/feedbacklist/', FeedbackView.as_view()),
     path('feedback/reply/', views.reply, name='reply'),
 
+    # 消息
+    path('notification/addnotification/', views.add_notification, name='addnotification'),
+
     # 专辑
     path('album/', AlbumView.as_view()),
     path('album/author/', AuthorAudioStoryView.as_view()),

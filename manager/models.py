@@ -530,7 +530,7 @@ class ChinaArea(BaseModle):
 class SystemNotification(BaseModle):
     title = models.CharField(max_length=256, verbose_name="标题")
     content = models.CharField(max_length=256, verbose_name="内容")
-    publishDate = models.TimeField(null=False)
+    publishDate = models.DateTimeField(null=False)
     publishState = models.IntegerField(default=1) # 1 已发布 2 未发布
     isDelete = models.BooleanField(default=False)
 

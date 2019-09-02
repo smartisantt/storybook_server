@@ -40,4 +40,5 @@ urlpatterns = [
 
     # 选择活动 （现在正在进行的 未来的活动）
     path('activityselect/', ActivitySelectView.as_view()),
+
 ]

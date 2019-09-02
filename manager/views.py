@@ -2581,6 +2581,48 @@ def reply(request):
         return http_return(400, '回复失败')
 
 
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication, ))
+def add_notification(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    title = data.get('title', '')
+    content = data.get('content', '')
+    publishDate = data.get('publishDate', '') # 时间戳
+
+    if not all([title, content, publishDate]):
+        return http_return(400, "参数有空")
+
+    if SystemNotification.objects.filter(title=title).exists():
+        return http_return(400, "重复")
+
+    _, publishDate = timestamp2datetime(1, publishDate)
+
+    try:
+        with transaction.atomic():
+            uuid = get_uuid()
+            SystemNotification.objects.create(
+                uuid=uuid,
+                title=title,
+                content=content,
+                publishDate=publishDate,
+                publishState=1,
+                isDelete=False,
+            )
+            return http_return(200, '创建成功')
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '创建失败')
+
+#  停用/启用
+
+
+# 编辑
+
+# 删除
+
+
 class AlbumView(ListAPIView):
     queryset = Album.objects.filter(isDelete=False, checkStatus__in=["check", "exemption"]).\
         prefetch_related('audioStory')

@@ -19,7 +19,7 @@ from common.expressage import Express100
 from manager.auths import CustomAuthentication
 from manager.filters import ActivityFilter
 from manager.managerCommon import request_body, http_return, timestamp2datetime
-from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize, UserPrize, User
+from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize, UserPrize, User, SystemNotification
 from manager.paginations import MyPagination
 from manager.serializers import ActivitySerializer
 from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter, UserInvitationFilter, \
@@ -763,3 +763,5 @@ class ActivitySelectView(ListAPIView):
     # pagination_class = MyPagination
     # filter_backends = (DjangoFilterBackend, OrderingFilter)
     # ordering = ('-createTime',)
+
+

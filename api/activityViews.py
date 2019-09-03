@@ -63,6 +63,7 @@ def activity_detail(request):
     # 定义参赛状态：1：未报名 2：已报名未上传参赛作品 3：已上传参赛作品
     rank = None
     score = None
+    name = None
     game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
     if game:
         status = 2
@@ -72,6 +73,7 @@ def activity_detail(request):
             games = sorted(games, key=lambda x: x.votes, reverse=True)
             rank = games.index(game) + 1
             score = game.votes
+            name = game.audioUuid.name
     userInfo = {
         "uuid": user.uuid,
         "avatar": user.avatar if user.avatar else '',
@@ -79,6 +81,7 @@ def activity_detail(request):
         "status": status,
         "rank": rank,
         "score": score,
+        "name": name,
     }
     return http_return(200, '成功', {"activityInfo": activityInfo, "userInfo": userInfo})
 

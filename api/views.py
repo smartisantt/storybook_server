@@ -261,7 +261,7 @@ def recording_send(request):
 
     # 判断是否有报名参加某一个活动
     game = GameInfo.objects.filter(userUuid__uuid=data['_cache']['uuid'], audioUuid__isnull=True).first()
-    url = None
+    url = ""
     if game:
         url = urljoin(SLECTAUDIOURL, "/huodong/selectEntries/" + game.activityUuid.uuid)
 

@@ -533,8 +533,9 @@ class SystemNotification(BaseModle):
     publishDate = models.DateTimeField(null=False)
     linkAddress = models.CharField(max_length=256, null=True)
     linkText = models.CharField(max_length=256, null=True)
-    publishState = models.IntegerField(default=2) # 1 已发布 2 未发布
+    publishState = models.IntegerField(default=2) # 1 已发布 2 未发布  3 发布失败
     isDelete = models.BooleanField(default=False)
+    scheduleId = models.CharField(max_length=256, null=True)  # 定时 推送唯一标识符
 
     class Meta:
         db_table = "tb_system_notification"

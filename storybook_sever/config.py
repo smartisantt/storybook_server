@@ -20,9 +20,9 @@ else:
 
 # 分享域名
 SHAREURL = "http://192.168.100.235:8009"
-JoinActivityURL = "http://192.168.100.235:8009"
+SLECTAUDIOURL = "http://192.168.100.235:8010"
 if version == 'ali_test':
     SHAREURL = 'http://h5huitong.hbbclub.com'
-    JoinActivityURL = "http://192.168.100.235:8009"
+    SLECTAUDIOURL = "活动正式服域名"
 
 

@@ -9,7 +9,7 @@ from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from common.mixFileAPI import MixAudio
-from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, JoinActivityURL
+from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL
 
 
 def identify_code(request):
@@ -263,7 +263,7 @@ def recording_send(request):
     game = GameInfo.objects.filter(userUuid__uuid=data['_cache']['uuid'], audioUuid__isnull=True).first()
     url = None
     if game:
-        url = urljoin(JoinActivityURL, game.uuid)
+        url = urljoin(SLECTAUDIOURL, "/huodong/selectEntries/" + game.activityUuid.uuid)
 
     return http_return(200, '发布成功', url)
 
@@ -1851,3 +1851,21 @@ def recording_album_list(request):
     total, albums = page_index(albums, page, pageCount)
     albumList = albumList_format(albums)
     return http_return(200, '成功', {"total": total, "list": albumList})
+
+
+@check_identify
+def comment_list(request):
+    """
+    评论列表
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get("uuid", "")
+    if not uuid:
+        return http_return(400, "请选择要查看评论的作品")
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    if not audio:
+        return http_return(400, "未查询到作品信息")

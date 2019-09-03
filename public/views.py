@@ -80,6 +80,9 @@ def address_list(request):
     receives = ReceivingInfo.objects.filter(userUuid__uuid=selfUuid).order_by("-updateTime").all()
     resList = []
     for rece in receives:
+        areaList = rece.area.split(",")
+        lastName = areaList[len(areaList) - 1]
+        areaObj = ChinaArea.objects.filter(name=lastName).first()
         resList.append({
             "uuid": rece.uuid,
             "area": rece.area if rece.area else "",
@@ -87,6 +90,7 @@ def address_list(request):
             "isDefault": rece.isDefault if rece.isDefault else 1,
             "contact": rece.contact if rece.contact else "",
             "tel": rece.tel if rece.tel else "",
+            "adcode": areaObj.adcode if areaObj else "",
         })
     return http_return(200, "成功", resList)
 

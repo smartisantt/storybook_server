@@ -1415,7 +1415,7 @@ def top_keyword(request):
                 maxTop = HotSearch.objects.filter(isDelete=False).aggregate(Max('isTop'))['isTop__max']
                 hotSearch.isTop = maxTop + 1
             hotSearch.save()
-        return http_return(200, '置顶失败')
+        return http_return(200, '置顶成功')
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '置顶失败')

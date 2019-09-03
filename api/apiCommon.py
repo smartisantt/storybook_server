@@ -369,7 +369,7 @@ def audioList_format(audios, data=None):
             "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
             "isCollection": True if checkLike else False,
             "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
-            "commentsCount": 0,
+            "commentsCount": audio.bauUuid.filter(type=2, status=0).count(),
             "tagList": tagList,
             "share": share,
         })

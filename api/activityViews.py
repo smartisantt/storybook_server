@@ -20,7 +20,8 @@ def activity_index(request):
     if not uuid:
         return http_return(400, '请选择要查看的活动')
     keyword = data.get('keyword', '')
-    game = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False)
+    game = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).filter(Q(audioUuid__checkStatus__in=["check", "exemption"]) | Q(audioUuid__interfaceStatus="check")).exclude(
+        audioUuid__checkStatus="unCheck").filter(audioUuid__isDelete=False)
     if keyword:
         game = game.filter(Q(audioUuid__name__contains=keyword) | Q(userUuid__nickName__contains=keyword))
     games = game.order_by("-updateTime").all()
@@ -62,15 +63,19 @@ def activity_detail(request):
     # 定义参赛状态：1：未报名 2：已报名未上传参赛作品 3：已上传参赛作品
     rank = None
     score = None
+    name = None
     game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
     if game:
         status = 2
         if game.audioUuid != None:
             status = 3
-            games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).all()
+            games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).filter(Q(audioUuid__checkStatus__in=["check", "exemption"]) | Q(audioUuid__interfaceStatus="check")).exclude(
+        audioUuid__checkStatus="unCheck").filter(audioUuid__isDelete=False).all()
             games = sorted(games, key=lambda x: x.votes, reverse=True)
-            rank = games.index(game) + 1
-            score = game.votes
+            if game in games:
+                rank = games.index(game) + 1
+                score = game.votes
+            name = game.audioUuid.name
     userInfo = {
         "uuid": user.uuid,
         "avatar": user.avatar if user.avatar else '',
@@ -78,6 +83,7 @@ def activity_detail(request):
         "status": status,
         "rank": rank,
         "score": score,
+        "name": name,
     }
     return http_return(200, '成功', {"activityInfo": activityInfo, "userInfo": userInfo})
 
@@ -100,7 +106,8 @@ def activity_rank(request):
     act = Activity.objects.filter(uuid=uuid).first()
     if not act:
         return http_return(400, '活动信息不存在')
-    games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).all()
+    games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).filter(Q(audioUuid__checkStatus__in=["check", "exemption"]) | Q(audioUuid__interfaceStatus="check")).exclude(
+        audioUuid__checkStatus="unCheck").filter(audioUuid__isDelete=False).all()
     games = sorted(games, key=lambda x: x.votes, reverse=True)
     total, games = page_index(games, page, pageCount)
     activityRankList = activityRankList_format(games)
@@ -422,7 +429,7 @@ def prize_draw(request):
     prizeDraw.setWeight(objDict)
     resultUuid = prizeDraw.drawing()
     objPrize = Prize.objects.filter(uuid=resultUuid).first()
-    orderNum = str(time.time())
+    orderNum = str(int(time.time()*1000))+str(int(time.clock()*1000000))
     userPrize = UserPrize(
         uuid=get_uuid(),
         orderNum=orderNum,

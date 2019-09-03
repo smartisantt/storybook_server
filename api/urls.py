@@ -94,6 +94,9 @@ urlpatterns = [
     path('activity/user/logistics', activityViews.user_logistics, name='user_logistics'),  # 物流信息
     path('activity/audiostoryplay', activityViews.activity_audio_play, name='activity_audio_play'),  # 参赛作品详情
 
+    path('comment/list', views.comment_list, name='comment_list'),  # 评论列表
+    path('comment/create', views.commnet_create, name='commnet_create'),  # 发表评论
+
 
 
 

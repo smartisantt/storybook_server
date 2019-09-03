@@ -9,6 +9,7 @@ from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from common.mixFileAPI import MixAudio
+from common.textAPI import TextAudit
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL
 
 
@@ -1869,3 +1870,51 @@ def comment_list(request):
     audio = AudioStory.objects.filter(uuid=uuid).first()
     if not audio:
         return http_return(400, "未查询到作品信息")
+    comments = audio.bauUuid.filter(type=2).order_by("-createTime").all()
+    commentList = []
+    for comment in comments:
+        commentList.append({
+            "uuid": comment.uuid,
+            "avatar": comment.userUuid.userUuid,
+            "nickName": comment.userUuid.nickName,
+            "createTime": datetime_to_unix(comment.createTime),
+            "content": comment.remarks
+        })
+    return http_return(200, "成功", commentList)
+
+
+@check_identify
+def commnet_create(request):
+    """
+    发表评论
+    :param requesst:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get("uuid", "")
+    content = data.get("content", "")
+    if not uuid:
+        return http_return(400, "请选择要评论的作品")
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    if not audio:
+        return http_return(400, "未查询到作品信息")
+    if not content:
+        return http_return(400, "请输入评论内容")
+    text = TextAudit()
+    if not text.work_on("金三胖"):
+        return http_return(400, "你的评论内容包含非法信息，请重新输入")
+    user = User.objects.filter(uuid=data['_cache']['uuid']).first()
+    try:
+        Behavior.objects.create(
+            uuid=get_uuid(),
+            userUuid=user,
+            audioUuid=audio,
+            type=2,
+            remarks=content,
+        )
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '评论失败')
+    return http_return(400, '评论成功')

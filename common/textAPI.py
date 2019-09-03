@@ -43,10 +43,10 @@ class TextAudit(object):
         try:
             if re.status_code == 200:
                 if re.json().get('result').get('spam') == 0:
-                    print("审核通过")
+                    # print("审核通过")
                     return True
                 else:
-                    print("审核不通过")
+                    # print("审核不通过")
                     return False
             else:
                 return False
@@ -61,6 +61,7 @@ class TextAudit(object):
             result = audit.text_audit(text)
             if result:
                 return result
+        return False
 
 
 if __name__ == "__main__":

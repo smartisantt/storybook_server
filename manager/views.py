@@ -26,7 +26,7 @@ from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
 from utils.errors import ParamsException
 
-import jpush
+# import jpush
 
 q = (Q(isDelete=False) & Q(isUpload=1) & (
             Q(checkStatus='check') | Q(interfaceStatus="check") | Q(checkStatus='exemption')))

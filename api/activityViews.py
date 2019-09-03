@@ -64,8 +64,7 @@ def activity_detail(request):
     rank = None
     score = None
     name = None
-    game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).filter(Q(audioUuid__checkStatus__in=["check", "exemption"]) | Q(audioUuid__interfaceStatus="check")).exclude(
-        audioUuid__checkStatus="unCheck").filter(audioUuid__isDelete=False).first()
+    game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
     if game:
         status = 2
         if game.audioUuid != None:
@@ -73,8 +72,9 @@ def activity_detail(request):
             games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).filter(Q(audioUuid__checkStatus__in=["check", "exemption"]) | Q(audioUuid__interfaceStatus="check")).exclude(
         audioUuid__checkStatus="unCheck").filter(audioUuid__isDelete=False).all()
             games = sorted(games, key=lambda x: x.votes, reverse=True)
-            rank = games.index(game) + 1
-            score = game.votes
+            if game in games:
+                rank = games.index(game) + 1
+                score = game.votes
             name = game.audioUuid.name
     userInfo = {
         "uuid": user.uuid,

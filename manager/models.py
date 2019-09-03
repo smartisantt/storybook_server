@@ -25,6 +25,7 @@ class Activity(BaseModle, models.Model):
     icon = models.CharField(max_length=256, verbose_name="活动图片", null=True)
     startTime = models.DateTimeField(verbose_name='活动开始时间', null=True)
     endTime = models.DateTimeField(verbose_name='活动结束时间', null=True)
+
     # isParticipationPrize = models.IntegerField(default=1)  # 1 没有参与奖 2 有参与奖
     # offeringPrizeType = models.IntegerField(null=True)  # 奖品发放形式 1 多选一抽取  2 固定奖品
     # isBrokerage = models.IntegerField(default=1)    # 门店推广是否返佣金 1 是  2 否
@@ -181,9 +182,10 @@ class Shop(BaseModle, models.Model):
 
 class FriendShip(BaseModle, models.Model):
     """当前用户和其他用户关系表"""
-    follows = models.ForeignKey('User', on_delete=models.CASCADE, related_name='follows',null=True)
-    followers = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followers',null=True)
+    follows = models.ForeignKey('User', on_delete=models.CASCADE, related_name='follows', null=True)
+    followers = models.ForeignKey('User', on_delete=models.CASCADE, related_name='followers', null=True)
     status = models.BooleanField(default=False)  # 状态，是否取消0/关注1
+    isRead = models.BooleanField(default=False)  # 已读未读
 
     class Meta:
         db_table = 'tb_friend'
@@ -400,6 +402,7 @@ class Behavior(BaseModle, models.Model):
     type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:收藏 4:播放记录 5:最近录过
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.TextField(null=True)
+    isRead = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'tb_behavior'
@@ -499,7 +502,7 @@ class ReceivingInfo(BaseModle):
     userUuid = models.ForeignKey('User', on_delete=models.CASCADE, related_name='userShippingAddressUuid',
                                  to_field='uuid',
                                  null=True, verbose_name="用户")
-    area = models.CharField(max_length=64,null=True)
+    area = models.CharField(max_length=64, null=True)
     address = models.CharField(max_length=255, verbose_name='收货地址', null=True)
     isDefault = models.IntegerField(default=False)  # 1 不设置为默认地址， 2设置为默认地址
     contact = models.CharField(max_length=32, null=False)  # 收件人
@@ -515,7 +518,8 @@ class ChinaArea(BaseModle):
     中国省市区（县）列表
     数据来源于高德地图
     """
-    fatherUuid = models.ForeignKey('self', on_delete=models.CASCADE, to_field='uuid', related_name="children", null=True, default=None)
+    fatherUuid = models.ForeignKey('self', on_delete=models.CASCADE, to_field='uuid', related_name="children",
+                                   null=True, default=None)
     level = models.CharField(max_length=32, verbose_name="级别")
     adcode = models.CharField(max_length=32, verbose_name="区域代码")
     name = models.CharField(max_length=64, verbose_name="区域名")
@@ -526,17 +530,22 @@ class ChinaArea(BaseModle):
         db_table = "tb_china_area"
 
 
-
 class SystemNotification(BaseModle):
+    """
+    存储系统消息：包含后台系统消息和作品审核消息
+    """
+    userUuid = models.CharField(max_length=64, null=True)
+    type = models.IntegerField(null=True, default=1)  # 系统消息类型 1：后台通知 2：审核信息 3：活动邀请
     title = models.CharField(max_length=256, verbose_name="标题")
     content = models.CharField(max_length=256, verbose_name="内容")
     publishDate = models.DateTimeField(null=False)
     linkAddress = models.CharField(max_length=256, null=True)
     linkText = models.CharField(max_length=256, null=True)
-    publishState = models.IntegerField(default=2) # 1 已发布 2 未发布  3 发布失败
+    publishState = models.IntegerField(default=2)  # 1 已发布 2 未发布
     isDelete = models.BooleanField(default=False)
     scheduleId = models.CharField(max_length=256, null=True)  # 定时 推送唯一标识符
+    audioUuid = models.CharField(max_length=64, null=True)
+    isRead = models.BooleanField(default=False)
 
     class Meta:
         db_table = "tb_system_notification"
-

@@ -69,7 +69,8 @@ def activity_detail(request):
         status = 2
         if game.audioUuid != None:
             status = 3
-            games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).all()
+            games = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).filter(Q(audioUuid__checkStatus__in=["check", "exemption"]) | Q(audioUuid__interfaceStatus="check")).exclude(
+        audioUuid__checkStatus="unCheck").filter(audioUuid__isDelete=False).all()
             games = sorted(games, key=lambda x: x.votes, reverse=True)
             rank = games.index(game) + 1
             score = game.votes

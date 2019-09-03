@@ -204,6 +204,13 @@ def recording_send(request):
         return http_return(400, '请选择录制类型')
     if not name:
         return http_return(400, '请输入标题')
+    #审核标题
+    text = TextAudit()
+    if not text.work_on(name):
+        return http_return(400,"你输入的标题包含非法信息，请重新输入")
+    if remarks:
+        if not text.work_on(remarks):
+            return http_return(400, "你输入的录制感受包含非法信息，请重新输入")
     if not icon:
         return http_return(400, '请上传背景图片')
     if not fileSize:
@@ -1918,3 +1925,16 @@ def commnet_create(request):
         logging.error(str(e))
         return http_return(400, '评论失败')
     return http_return(400, '评论成功')
+
+
+@check_identify
+def message_count(request):
+    """
+    消息首页
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+

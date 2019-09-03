@@ -538,7 +538,7 @@ def index_list(request):
             everList.append({
                 "uuid": ever.audioUuid.uuid,
                 "name": ever.audioUuid.name if ever.audioUuid.name else '',
-                "content": ever.audioUuid.remarks if ever.audioUuid.remarks else '',
+                "content": ever.audioUuid.storyUuid.intro if ever.audioUuid.storyUuid else '',
                 "icon": ever.audioUuid.bgIcon if ever.audioUuid.bgIcon else '',
                 "type": 2,
                 "target": ever.audioUuid.uuid,

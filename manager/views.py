@@ -26,7 +26,7 @@ from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
 from utils.errors import ParamsException
 
-# import jpush as jpush
+# import jpush
 
 q = (Q(isDelete=False) & Q(isUpload=1) & (
             Q(checkStatus='check') | Q(interfaceStatus="check") | Q(checkStatus='exemption')))
@@ -2557,7 +2557,7 @@ class NotificationView(ListAPIView):
         if startTimestamp and endTimestamp:
             try:
                 starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
-                return self.queryset.filter(createTime__range=(starttime, endtime))
+                return self.queryset.filter(publishDate__range=(starttime, endtime))
             except Exception as e:
                 logging.error(str(e))
                 raise ParamsException(e.detail)
@@ -2713,32 +2713,31 @@ def del_notification(request):
 
 
 
-# @api_view(['POST'])
-# @authentication_classes((CustomAuthentication,))
-# def MyJpush(request):
-#     app_key = 'b878563acc58979e1bdc1c1f'
-#     master_secret = '8a68fd8e94cc345f0b680dd1'
-#
-#     _jpush = jpush.JPush(app_key, master_secret)
-#     _jpush.set_logging("DEBUG")
-#
-#     push = _jpush.create_push()
-#     push.audience = jpush.all_
-#     push.notification = jpush.notification(alert="绘童温馨提示：天冷加衣！+1")
-#     push.platform = jpush.all_
-#
-#     # trigger = jpush.schedulepayload.trigger('2019-09-02 17:08:00')
-#     # schedule_payload = jpush.schedulepayload.schedulepayload("name", True, trigger, push)
-#
-#     try:
-#         response = push.send()
-#         # response = schedule.post_schedule(schedule_payload)
-#         if response.status_code != 200:
-#             return http_return(400, "推送失败")
-#         return http_return(200, "推送成功")
-#     except Exception as e:
-#         logging.error(str(e))
-#         return http_return(400, "推送失败")
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication,))
+def MyJpush(request):
+
+
+    _jpush = jpush.JPush(app_key, master_secret)
+    _jpush.set_logging("DEBUG")
+
+    push = _jpush.create_push()
+    push.audience = jpush.all_
+    push.notification = jpush.notification(alert="绘童温馨提示：天冷加衣！+1")
+    push.platform = jpush.all_
+
+    # trigger = jpush.schedulepayload.trigger('2019-09-02 17:08:00')
+    # schedule_payload = jpush.schedulepayload.schedulepayload("name", True, trigger, push)
+
+    try:
+        response = push.send()
+        # response = schedule.post_schedule(schedule_payload)
+        if response.status_code != 200:
+            return http_return(400, "推送失败")
+        return http_return(200, "推送成功")
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, "推送失败")
 
 
 

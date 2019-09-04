@@ -9,7 +9,7 @@ from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from common.mixFileAPI import MixAudio
-from common.textAPI import TextAudit
+from common.textAPI import *
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL
 
 

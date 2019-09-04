@@ -1958,10 +1958,10 @@ def message_count(request):
     likeMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1, isRead=False).count()
     commentMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, isRead=False).count()
     return http_return(200, "成功", {
-        "systemMsgCount": systemMsgCount if systemMsgCount else 0,
-        "followMsgCount": followMsgCount if followMsgCount else 0,
-        "likeMsgCount": likeMsgCount if likeMsgCount else 0,
-        "commentMsgCount": commentMsgCount if commentMsgCount else 0,
+        "systemUnread": systemMsgCount if systemMsgCount else 0,
+        "followUnread": followMsgCount if followMsgCount else 0,
+        "likeUnread": likeMsgCount if likeMsgCount else 0,
+        "commentUnread": commentMsgCount if commentMsgCount else 0,
     })
 
 

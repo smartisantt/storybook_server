@@ -1881,21 +1881,7 @@ def comment_list(request):
         return http_return(400, "未查询到作品信息")
     comments = audio.bauUuid.filter(type=2).order_by("-createTime").all()
     total, comments = page_index(comments, page, pageCount)
-    commentList = []
-    for comment in comments:
-        user = comment.userUuid
-        if user:
-            users = []
-            users.append(user)
-            userInfo = userList_format(users)[0]
-        commentList.append({
-            "uuid": comment.uuid,
-            "createTime": datetime_to_unix(comment.createTime),
-            "replyUuid": "",
-            "replyType": 0,
-            "content": comment.remarks,
-            "user": userInfo,
-        })
+    commentList = commentList_format(comments)
     return http_return(200, "成功", {"total": total, "list": commentList})
 
 
@@ -1918,22 +1904,26 @@ def commnet_create(request):
         return http_return(400, "未查询到作品信息")
     if not content:
         return http_return(400, "请输入评论内容")
-    # text = TextAudit()
-    # if not text.work_on(content):
-    #     return http_return(400, "你的评论内容包含非法信息，请重新输入")
+    text = TextAudit()
+    if not text.work_on(content):
+        return http_return(400, "你的评论内容包含非法信息，请重新输入")
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
+    behavior = Behavior(
+        uuid=get_uuid(),
+        userUuid=user,
+        audioUuid=audio,
+        type=2,
+        remarks=content,
+    )
     try:
-        Behavior.objects.create(
-            uuid=get_uuid(),
-            userUuid=user,
-            audioUuid=audio,
-            type=2,
-            remarks=content,
-        )
+        behavior.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '评论失败')
-    return http_return(200, '评论成功')
+    comments = []
+    comments.append(behavior)
+    commentInfo = userList_format(comments)[0]
+    return http_return(200, '评论成功', commentInfo)
 
 
 @check_identify

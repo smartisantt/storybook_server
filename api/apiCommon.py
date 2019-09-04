@@ -608,3 +608,26 @@ def prizeList_format(prizes):
             "type": prize.type if prize.type else "",
         })
     return prizeList
+
+def commentList_format(comments):
+    """
+    评论返回模型
+    :param comments:
+    :return:
+    """
+    commentList = []
+    for comment in comments:
+        user = comment.userUuid
+        if user:
+            users = []
+            users.append(user)
+            userInfo = userList_format(users)[0]
+        commentList.append({
+            "uuid": comment.uuid,
+            "createTime": datetime_to_unix(comment.createTime),
+            "replyUuid": "",
+            "replyType": 0,
+            "content": comment.remarks,
+            "user": userInfo,
+        })
+    return commentList

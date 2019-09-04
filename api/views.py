@@ -2086,10 +2086,9 @@ def message_like(request):
     likeMessage = []
     for msg in likeMsg:
         userInfo = None
-        user = User.objects.filter(uuid=msg.userUuid).first()
-        if user:
+        if msg.userUuid:
             users = []
-            users.append(user)
+            users.append(msg.userUuid)
             userInfo = userList_format(users)[0]
         audioStory = None
         audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
@@ -2133,10 +2132,9 @@ def message_comment(request):
     commentMessage = []
     for msg in commentMsg:
         userInfo = None
-        user = User.objects.filter(uuid=msg.userUuid).first()
-        if user:
+        if msg.userUuid:
             users = []
-            users.append(user)
+            users.append(msg.userUuid)
             userInfo = userList_format(users)[0]
         audioStory = None
         audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()

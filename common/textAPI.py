@@ -64,6 +64,9 @@ class TextAudit(object):
         return False
 
 
+text = TextAudit()
+
+
 if __name__ == "__main__":
     text = TextAudit()
     text.work_on("咕咚来了")

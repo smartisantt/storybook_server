@@ -9,7 +9,7 @@ from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
 from common.common import *
 from common.mixFileAPI import MixAudio
-from common.textAPI import *
+from common.textAPI import text
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL
 
 
@@ -205,7 +205,6 @@ def recording_send(request):
     if not name:
         return http_return(400, '请输入标题')
     # 审核标题
-    text = TextAudit()
     if not text.work_on(name):
         return http_return(400, "你输入的标题包含非法信息，请重新输入")
     if remarks:

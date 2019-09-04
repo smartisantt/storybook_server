@@ -204,10 +204,10 @@ def recording_send(request):
         return http_return(400, '请选择录制类型')
     if not name:
         return http_return(400, '请输入标题')
-    #审核标题
+    # 审核标题
     text = TextAudit()
     if not text.work_on(name):
-        return http_return(400,"你输入的标题包含非法信息，请重新输入")
+        return http_return(400, "你输入的标题包含非法信息，请重新输入")
     if remarks:
         if not text.work_on(remarks):
             return http_return(400, "你输入的录制感受包含非法信息，请重新输入")
@@ -1872,22 +1872,32 @@ def comment_list(request):
     if not data:
         return http_return(400, '请求错误')
     uuid = data.get("uuid", "")
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
     if not uuid:
         return http_return(400, "请选择要查看评论的作品")
     audio = AudioStory.objects.filter(uuid=uuid).first()
     if not audio:
         return http_return(400, "未查询到作品信息")
     comments = audio.bauUuid.filter(type=2).order_by("-createTime").all()
+    total, comments = page_index(comments, page, pageCount)
     commentList = []
     for comment in comments:
+        user = comment.userUuid
+        userInfo = {
+            "uuid": user.uuid,
+            "nickname": user.nickName if user.nickName else '',
+            "avatar": user.avatar if user.avatar else '',
+        }
         commentList.append({
             "uuid": comment.uuid,
-            "avatar": comment.userUuid.userUuid,
-            "nickName": comment.userUuid.nickName,
             "createTime": datetime_to_unix(comment.createTime),
-            "content": comment.remarks
+            "replyUuid": "",
+            "replyType": 0,
+            "content": comment.remarks,
+            "user": userInfo,
         })
-    return http_return(200, "成功", commentList)
+    return http_return(200, "成功", {"total": total, "list": commentList})
 
 
 @check_identify
@@ -1937,4 +1947,13 @@ def message_count(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-
+    systemMsg = 0
+    followMsg = 0
+    raiseMsg = 0
+    commentMsg = 0
+    return http_return(200, "成功", {
+        "systemMsgCount": systemMsg,
+        "followMsgCount": followMsg,
+        "raiseMsgCount": raiseMsg,
+        "commentMsgCount": commentMsg,
+    })

@@ -82,6 +82,7 @@ def activity_detail(request):
             gameFail = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).first()
             if gameFail.audioUuid.checkStatus == "checkFail" or gameFail.audioUuid.interfaceStatus == "checkFail":
                 checkStatus = 3
+            name = game.audioUuid.name
     userInfo = {
         "uuid": user.uuid,
         "avatar": user.avatar if user.avatar else '',

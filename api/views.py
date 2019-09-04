@@ -1881,22 +1881,7 @@ def comment_list(request):
         return http_return(400, "未查询到作品信息")
     comments = audio.bauUuid.filter(type=2).order_by("-createTime").all()
     total, comments = page_index(comments, page, pageCount)
-    commentList = []
-    for comment in comments:
-        user = comment.userUuid
-        userInfo = {
-            "uuid": user.uuid,
-            "nickname": user.nickName if user.nickName else '',
-            "avatar": user.avatar if user.avatar else '',
-        }
-        commentList.append({
-            "uuid": comment.uuid,
-            "createTime": datetime_to_unix(comment.createTime),
-            "replyUuid": "",
-            "replyType": 0,
-            "content": comment.remarks,
-            "user": userInfo,
-        })
+    commentList = commentList_format(comments)
     return http_return(200, "成功", {"total": total, "list": commentList})
 
 
@@ -1920,21 +1905,25 @@ def commnet_create(request):
     if not content:
         return http_return(400, "请输入评论内容")
     text = TextAudit()
-    if not text.work_on("金三胖"):
+    if not text.work_on(content):
         return http_return(400, "你的评论内容包含非法信息，请重新输入")
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
+    behavior = Behavior(
+        uuid=get_uuid(),
+        userUuid=user,
+        audioUuid=audio,
+        type=2,
+        remarks=content,
+    )
     try:
-        Behavior.objects.create(
-            uuid=get_uuid(),
-            userUuid=user,
-            audioUuid=audio,
-            type=2,
-            remarks=content,
-        )
+        behavior.save()
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '评论失败')
-    return http_return(400, '评论成功')
+    comments = []
+    comments.append(behavior)
+    commentInfo = userList_format(comments)[0]
+    return http_return(200, '评论成功', commentInfo)
 
 
 @check_identify
@@ -1954,13 +1943,198 @@ def message_count(request):
     for audio in audios:
         audioStoryList.append(audio.uuid)
     systemMsgCount = SystemNotification.objects.filter(
-        Q(type__in=[1, 2], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
+        Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
     followMsgCount = FriendShip.objects.filter(follows__uuid=selfUuid, isRead=False).count()
     likeMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1, isRead=False).count()
     commentMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, isRead=False).count()
     return http_return(200, "成功", {
-        "systemMsgCount": systemMsgCount if systemMsgCount else 0,
-        "followMsgCount": followMsgCount if followMsgCount else 0,
-        "likeMsgCount": likeMsgCount if likeMsgCount else 0,
-        "commentMsgCount": commentMsgCount,
+        "systemUnread": systemMsgCount if systemMsgCount else 0,
+        "followUnread": followMsgCount if followMsgCount else 0,
+        "likeUnread": likeMsgCount if likeMsgCount else 0,
+        "commentUnread": commentMsgCount if commentMsgCount else 0,
     })
+
+
+@check_identify
+def message_system(request):
+    """
+    系统消息
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
+    nowTime = datetime.datetime.now()
+    selfUuid = data['_cache']['uuid']
+    audioStoryList = []
+    audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
+    for audio in audios:
+        audioStoryList.append(audio.uuid)
+    try:
+        SystemNotification.objects.filter(
+            Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).update(isRead=True)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新已读失败')
+    systemMsg = SystemNotification.objects.filter(
+        Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
+        "-publishDate").all()
+    total, systemMsg = page_index(systemMsg, page, pageCount)
+    systemMessage = []
+    for msg in systemMsg:
+        router = {
+            "type": msg.type,
+            "target": msg.linkAddress,
+            "description": msg.linkText,
+        }
+        userInfo = None
+        user = User.objects.filter(uuid=msg.userUuid).first()
+        if user:
+            users = []
+            users.append(user)
+            userInfo = userList_format(users)[0]
+        audioStory = None
+        audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
+        if audio:
+            audios = []
+            audios.append(audio)
+            audioStory = audioList_format(audios, data)[0]
+        systemMessage.append({
+            "uuid": msg.uuid,
+            "createTime": datetime_to_unix(msg.createTime),
+            "title": msg.title,
+            "content": msg.content,
+            "router": router,
+            "user": userInfo,
+            "audioStory": audioStory,
+        })
+    return http_return(200, "成功", {"total": total, "list": systemMessage})
+
+
+@check_identify
+def message_follow(request):
+    """
+    关注消息
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
+    selfUuid = data['_cache']['uuid']
+    try:
+        FriendShip.objects.filter(follows__uuid=selfUuid).update(isRead=True)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新已读失败')
+    friendMsg = FriendShip.objects.filter(follows__uuid=selfUuid).order_by("-createTime").all()
+    total, friendMsg = page_index(friendMsg, page, pageCount)
+    friendMessage = []
+    for msg in friendMsg:
+        userInfo = None
+        if msg.followers:
+            users = []
+            users.append(msg.followers)
+            userInfo = userList_format(users)[0]
+        friendMessage.append({
+            "uuid": msg.uuid,
+            "createTime": datetime_to_unix(msg.createTime),
+            "user": userInfo,
+        })
+    return http_return(200, "成功", {"total": total, "list": friendMessage})
+
+
+@check_identify
+def message_like(request):
+    """
+    点赞信息
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
+    selfUuid = data['_cache']['uuid']
+    audioStoryList = []
+    audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
+    for audio in audios:
+        audioStoryList.append(audio.uuid)
+    try:
+        Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).update(isRead=True)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新已读失败')
+    likeMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).order_by("-createTime").all()
+    total, likeMsg = page_index(likeMsg, page, pageCount)
+    likeMessage = []
+    for msg in likeMsg:
+        userInfo = None
+        if msg.userUuid:
+            users = []
+            users.append(msg.userUuid)
+            userInfo = userList_format(users)[0]
+        audioStory = None
+        if msg.audioUuid:
+            audios = []
+            audios.append(msg.audioUuid)
+            audioStory = audioList_format(audios, data)[0]
+        likeMessage.append({
+            "uuid": msg.uuid,
+            "createTime": datetime_to_unix(msg.createTime),
+            "user": userInfo,
+            "audioStory": audioStory,
+        })
+    return http_return(200, "成功", {"total": total, "list": likeMessage})
+
+
+@check_identify
+def message_comment(request):
+    """
+    评论消息
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
+    selfUuid = data['_cache']['uuid']
+    audioStoryList = []
+    audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
+    for audio in audios:
+        audioStoryList.append(audio.uuid)
+    try:
+        Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).update(isRead=True)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新已读失败')
+    commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).order_by("-createTime").all()
+    total, commentMsg = page_index(commentMsg, page, pageCount)
+    commentMessage = []
+    for msg in commentMsg:
+        userInfo = None
+        if msg.userUuid:
+            users = []
+            users.append(msg.userUuid)
+            userInfo = userList_format(users)[0]
+        audioStory = None
+        if msg.audioUuid:
+            audios = []
+            audios.append(msg.audioUuid)
+            audioStory = audioList_format(audios, data)[0]
+        commentMessage.append({
+            "uuid": msg.uuid,
+            "createTime": datetime_to_unix(msg.createTime),
+            "user": userInfo,
+            "audioStory": audioStory,
+            "content": msg.content,
+        })
+    return http_return(200, "成功", {"total": total, "list": commentMessage})

@@ -1954,7 +1954,7 @@ def message_count(request):
     for audio in audios:
         audioStoryList.append(audio.uuid)
     systemMsgCount = SystemNotification.objects.filter(
-        Q(type__in=[1, 2], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
+        Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
     followMsgCount = FriendShip.objects.filter(follows__uuid=selfUuid, isRead=False).count()
     likeMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1, isRead=False).count()
     commentMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, isRead=False).count()
@@ -1962,5 +1962,57 @@ def message_count(request):
         "systemMsgCount": systemMsgCount if systemMsgCount else 0,
         "followMsgCount": followMsgCount if followMsgCount else 0,
         "likeMsgCount": likeMsgCount if likeMsgCount else 0,
-        "commentMsgCount": commentMsgCount,
+        "commentMsgCount": commentMsgCount if commentMsgCount else 0,
     })
+
+
+@check_identify
+def message_system(request):
+    """
+    系统消息
+    :param request:
+    :return:
+    """
+    data = request_body(request)
+    if not data:
+        return http_return(400, '请求错误')
+    nowTime = datetime.datetime.now()
+    selfUuid = data['_cache']['uuid']
+    audioStoryList = []
+    audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
+    for audio in audios:
+        audioStoryList.append(audio.uuid)
+    systemMsg = SystemNotification.objects.filter(
+        Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(
+        isRead=False).order_by("-publishDate").all()
+    systemMessage = []
+    for msg in systemMsg:
+        router = {
+            "type": msg.type,
+            "target": msg.linkAddress,
+            "description": msg.linkText,
+        }
+        userInfo = None
+        user = User.objects.filter(uuid=msg.userUuid).first()
+        if user:
+            userInfo = {
+                "uuid": user.uuid,
+                "nickName": user.nickName,
+                "avatar": user.avatar,
+            }
+        audioStory = None
+        audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
+        if audio:
+            audios = []
+            audios.append(audio)
+            audioStory = audioList_format(audios, data)[0]
+        systemMessage.append({
+            "uuid": msg.uuid,
+            "createTime": msg.createTime,
+            "title": msg.title,
+            "content": msg.content,
+            "router": router,
+            "user": userInfo,
+            "audioStory": audioStory,
+        })
+    return http_return(200, "成功", systemMessage)

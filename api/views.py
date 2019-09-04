@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-# Create your views here.
+# Create your views here.import sys
 from urllib.parse import urljoin
 
 from api.apiCommon import *
@@ -206,11 +206,6 @@ def recording_send(request):
         return http_return(400, '请输入标题')
     # 审核标题
     text = TextAudit()
-    logging.error("++++++++++++++++++++++++++++++++++++++++++++++")
-    logging.error(str(name))
-    logging.error("++++++++++++++++++++++++++++++++++++++++++++++")
-    logging.error(str(text.work_on(name)))
-    logging.error("++++++++++++++++++++++++++++++++++++++++++++++")
     if not text.work_on(name):
         return http_return(400, "你输入的标题包含非法信息，请重新输入")
     if remarks:

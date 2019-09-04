@@ -2,7 +2,6 @@
 import os
 import sys
 
-sys.setdefaultencoding("utf8mb4")
 
 if __name__ == '__main__':
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'storybook_sever.settings')

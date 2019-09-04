@@ -1933,7 +1933,7 @@ def commnet_create(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '评论失败')
-    return http_return(400, '评论成功')
+    return http_return(200, '评论成功')
 
 
 @check_identify

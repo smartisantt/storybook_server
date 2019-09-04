@@ -535,7 +535,7 @@ class SystemNotification(BaseModle):
     存储系统消息：包含后台系统消息和作品审核消息
     """
     userUuid = models.CharField(max_length=64, null=True)
-    type = models.IntegerField(null=True, default=1)  # 系统消息类型 1：后台通知 2：审核信息 3：活动邀请
+    type = models.IntegerField(null=True, default=1)  # 系统消息类型 1：后台通知（纯文本） 2：外部连接 3：活动邀请 4：审核信息
     title = models.CharField(max_length=256, verbose_name="标题")
     content = models.CharField(max_length=256, verbose_name="内容")
     publishDate = models.DateTimeField(null=False)

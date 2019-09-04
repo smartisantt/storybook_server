@@ -2014,7 +2014,7 @@ def message_system(request):
             audioStory = audioList_format(audios, data)[0]
         systemMessage.append({
             "uuid": msg.uuid,
-            "createTime": msg.createTime,
+            "createTime": datetime_to_unix(msg.createTime),
             "title": msg.title,
             "content": msg.content,
             "router": router,
@@ -2053,7 +2053,7 @@ def message_follow(request):
             userInfo = userList_format(users)[0]
         friendMessage.append({
             "uuid": msg.uuid,
-            "createTime": msg.createTime,
+            "createTime": datetime_to_unix(msg.createTime),
             "user": userInfo,
         })
     return http_return(200, "成功", {"total": total, "list": friendMessage})
@@ -2081,7 +2081,7 @@ def message_like(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')
-    likeMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).order_by("createTime").all()
+    likeMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).order_by("-createTime").all()
     total, likeMsg = page_index(likeMsg, page, pageCount)
     likeMessage = []
     for msg in likeMsg:
@@ -2128,10 +2128,10 @@ def message_comment(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')
-    likeMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).order_by("createTime").all()
-    total, likeMsg = page_index(likeMsg, page, pageCount)
+    commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).order_by("-createTime").all()
+    total, commentMsg = page_index(commentMsg, page, pageCount)
     commentMessage = []
-    for msg in likeMsg:
+    for msg in commentMsg:
         userInfo = None
         user = User.objects.filter(uuid=msg.userUuid).first()
         if user:

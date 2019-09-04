@@ -2091,10 +2091,9 @@ def message_like(request):
             users.append(msg.userUuid)
             userInfo = userList_format(users)[0]
         audioStory = None
-        audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
-        if audio:
+        if msg.audioUuid:
             audios = []
-            audios.append(audio)
+            audios.append(msg.audioUuid)
             audioStory = audioList_format(audios, data)[0]
         likeMessage.append({
             "uuid": msg.uuid,
@@ -2137,10 +2136,9 @@ def message_comment(request):
             users.append(msg.userUuid)
             userInfo = userList_format(users)[0]
         audioStory = None
-        audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
-        if audio:
+        if msg.audioUuid:
             audios = []
-            audios.append(audio)
+            audios.append(msg.audioUuid)
             audioStory = audioList_format(audios, data)[0]
         commentMessage.append({
             "uuid": msg.uuid,

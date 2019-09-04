@@ -1947,13 +1947,20 @@ def message_count(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-    systemMsg = 0
-    followMsg = 0
-    raiseMsg = 0
-    commentMsg = 0
+    nowTime = datetime.datetime.now()
+    selfUuid = data['_cache']['uuid']
+    audioStoryList = []
+    audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
+    for audio in audios:
+        audioStoryList.append(audio.uuid)
+    systemMsgCount = SystemNotification.objects.filter(
+        Q(type__in=[1, 2], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
+    followMsgCount = FriendShip.objects.filter(follows__uuid=selfUuid, isRead=False).count()
+    likeMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1, isRead=False).count()
+    commentMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, isRead=False).count()
     return http_return(200, "成功", {
-        "systemMsgCount": systemMsg,
-        "followMsgCount": followMsg,
-        "raiseMsgCount": raiseMsg,
-        "commentMsgCount": commentMsg,
+        "systemMsgCount": systemMsgCount if systemMsgCount else 0,
+        "followMsgCount": followMsgCount if followMsgCount else 0,
+        "likeMsgCount": likeMsgCount if likeMsgCount else 0,
+        "commentMsgCount": commentMsgCount,
     })

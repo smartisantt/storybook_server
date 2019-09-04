@@ -97,6 +97,8 @@ urlpatterns = [
     path('comment/list', views.comment_list, name='comment_list'),  # 评论列表
     path('comment/create', views.commnet_create, name='commnet_create'),  # 发表评论
 
+    path('message/count', views.message_count, name='message_count'),  # 未读消息统计
+
 
 
 

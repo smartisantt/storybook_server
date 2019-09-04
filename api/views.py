@@ -1923,7 +1923,7 @@ def commnet_create(request):
         return http_return(400, '评论失败')
     comments = []
     comments.append(behavior)
-    commentInfo = userList_format(comments)[0]
+    commentInfo = commentList_format(comments)[0]
     return http_return(200, '评论成功', commentInfo)
 
 

@@ -99,8 +99,6 @@ urlpatterns = [
 
     path('message/count', views.message_count, name='message_count'),  # 未读消息统计
     path('message/system', views.message_system, name='message_system'),  # 系统消息
-
-
-
+    path('message/follow', views.message_follow, name='message_follow'),  # 关注消息
 
 ]

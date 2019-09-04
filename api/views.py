@@ -1884,11 +1884,10 @@ def comment_list(request):
     commentList = []
     for comment in comments:
         user = comment.userUuid
-        userInfo = {
-            "uuid": user.uuid,
-            "nickname": user.nickName if user.nickName else '',
-            "avatar": user.avatar if user.avatar else '',
-        }
+        if user:
+            users = []
+            users.append(user)
+            userInfo = userList_format(users)[0]
         commentList.append({
             "uuid": comment.uuid,
             "createTime": datetime_to_unix(comment.createTime),
@@ -1920,7 +1919,7 @@ def commnet_create(request):
     if not content:
         return http_return(400, "请输入评论内容")
     text = TextAudit()
-    if not text.work_on("金三胖"):
+    if not text.work_on(content):
         return http_return(400, "你的评论内容包含非法信息，请重新输入")
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     try:
@@ -1973,7 +1972,7 @@ def message_system(request):
     :param request:
     :return:
     """
-    data = request_body(request)
+    data = request_body(request, "POST")
     if not data:
         return http_return(400, '请求错误')
     page = data.get("page", "")
@@ -1984,9 +1983,15 @@ def message_system(request):
     audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
     for audio in audios:
         audioStoryList.append(audio.uuid)
+    try:
+        SystemNotification.objects.filter(
+            Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).update(isRead=True)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新已读失败')
     systemMsg = SystemNotification.objects.filter(
-        Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(
-        isRead=False).order_by("-publishDate").all()
+        Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
+        "-publishDate").all()
     total, systemMsg = page_index(systemMsg, page, pageCount)
     systemMessage = []
     for msg in systemMsg:
@@ -1998,11 +2003,9 @@ def message_system(request):
         userInfo = None
         user = User.objects.filter(uuid=msg.userUuid).first()
         if user:
-            userInfo = {
-                "uuid": user.uuid,
-                "nickName": user.nickName,
-                "avatar": user.avatar,
-            }
+            users = []
+            users.append(user)
+            userInfo = userList_format(users)[0]
         audioStory = None
         audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
         if audio:
@@ -2019,3 +2022,42 @@ def message_system(request):
             "audioStory": audioStory,
         })
     return http_return(200, "成功", {"total": total, "list": systemMessage})
+
+
+@check_identify
+def message_follow(request):
+    """
+    关注消息
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
+    selfUuid = data['_cache']['uuid']
+    friendMsg = FriendShip.objects.filter(follows__uuid=selfUuid).order_by("-createTime").all()
+    total, friendMsg = page_index(friendMsg, page, pageCount)
+    friendMessage = []
+    for msg in friendMsg:
+        userInfo = None
+        if msg.followers:
+            users = []
+            users.append(msg.followers)
+            userInfo = userList_format(users)[0]
+        friendMessage.append({
+            "uuid": msg.uuid,
+            "createTime": msg.createTime,
+            "user": userInfo,
+        })
+    return http_return(200, "成功", {"total": total, "list": friendMessage})
+
+
+@check_identify
+def message_like(request):
+    """
+    点赞信息
+    :param request:
+    :return:
+    """

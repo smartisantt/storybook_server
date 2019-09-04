@@ -545,6 +545,7 @@ class SystemNotification(BaseModle):
     isDelete = models.BooleanField(default=False)
     scheduleId = models.CharField(max_length=256, null=True)  # 定时 推送唯一标识符
     audioUuid = models.CharField(max_length=64, null=True)
+    activityUuid = models.CharField(max_length=64, null=True)
     isRead = models.BooleanField(default=False)
 
     class Meta:

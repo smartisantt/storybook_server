@@ -1918,9 +1918,9 @@ def commnet_create(request):
         return http_return(400, "未查询到作品信息")
     if not content:
         return http_return(400, "请输入评论内容")
-    text = TextAudit()
-    if not text.work_on(content):
-        return http_return(400, "你的评论内容包含非法信息，请重新输入")
+    # text = TextAudit()
+    # if not text.work_on(content):
+    #     return http_return(400, "你的评论内容包含非法信息，请重新输入")
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     try:
         Behavior.objects.create(

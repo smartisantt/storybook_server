@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from urllib.parse import urljoin
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import authentication_classes, api_view, action
@@ -8,6 +9,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 
 from api.apiCommon import get_default_name
+from common.MyJpush import post_schedule_message, time2str, delete_schedule, put_schedule_message
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
@@ -26,7 +28,7 @@ from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
 from utils.errors import ParamsException
 
-# import jpush
+import jpush
 
 q = (Q(isDelete=False) & Q(isUpload=1) & (
             Q(checkStatus='check') | Q(interfaceStatus="check") | Q(checkStatus='exemption')))
@@ -2123,6 +2125,11 @@ def modify_user(request):
     if not user:
         return http_return(400, '没有用户')
 
+    if (not user.loginType == "USERPASSWD") or not user.loginType:
+        if pwd:
+            return http_return(400, '此用户不支持修改密码。')
+
+
     tel = user.tel
     if not tel:
         return http_return(400, '没有用户手机号')
@@ -2574,39 +2581,106 @@ def add_notification(request):
     title = data.get('title', '')
     content = data.get('content', '')
     publishDate = data.get('publishDate', '')  # 时间戳
+    # 系统消息类型 1：后台通知（纯文本） 2：外部连接 3：活动邀请 4：审核信息
+    type = data.get('type', '')
+    linkAddress = data.get('linkAddress', '')
+    linkText = data.get('linkText', '')
+    activityUuid = data.get('activityUuid', '')  # 活动的uuid
 
-    linkAddress = data.get('linkAddress', '')  # 非必填
-    linkText = data.get('linkText', '')  # 非必填
-
-    if linkText != "":
-        if not isinstance(linkAddress, str):
-            return http_return(400, "格式错误")
-        if not ((linkAddress.startswith("http")) or (linkAddress.startswith("www"))):
-            return http_return(400, "跳转地址错误")
-        # if linkText == "":
-        #     return http_return(400, "连接文本没有")
+    if not type in [1, 2, 3]:
+        return http_return(400, "type字段错误")
 
     if not all([title, content, publishDate]):
         return http_return(400, "参数有空")
+
+    if not isinstance(content, str):
+        return http_return(400, "消息内容格式需为字符串")
+
+    if len(content) > 256:
+        return http_return(400, "消息内容超出256个字符")
+
+    if type == 2:
+        if not linkAddress:
+            return http_return(400, "跳转地址不能为空")
+
+        if not isinstance(linkAddress, str):
+            return http_return(400, "格式错误")
+        if not linkAddress.startswith("http"):
+            return http_return(400, "跳转地址请以http或https开头")
 
     if SystemNotification.objects.filter(title=title).exists():
         return http_return(400, "重复活动标题")
 
     _, publishDate = timestamp2datetime(1, publishDate, convert=False)
 
+    if (publishDate - timezone.now()).total_seconds() < 0:
+        return http_return(400, "已过了发布时间，请重新填写发布时间。")
+
+    # 临近时间推送，建议间隔5分钟
+    if (publishDate-timezone.now()).total_seconds() < 5*60:
+        return http_return(400, "临近发送时间，建议发送时间在未来5分钟以上。")
+
+    if (publishDate - timezone.now()).days > 365:
+        return http_return(400, "发布日期不要超过一年")
+
+    # 跳转活动
+    if type == 3:
+        if not activityUuid:
+            return http_return(400, "活动参数不能为空")
+
+        activity = Activity.objects.filter(uuid=activityUuid, status="normal").first()
+        if not activity:
+            return http_return(400, "该活动不存在！")
+        if activity.endTime < timezone.now():
+            return http_return(400, "该活动已过期")
+        if publishDate > activity.endTime:
+            return http_return(400, "该发布时间活动已结束！")
+        # 跳转的是活动则拼接活动路由
+        linkAddress = urljoin(activity.url, activity.uuid) + "/false"
+
+    # 默认此账号为  绘童团队
+    user = User.objects.filter(tel="13333333333").exclude(status="destroy").first()
+    if user:
+        userUuid = user.uuid
+    else:
+        userUuid = ""
+
     try:
         with transaction.atomic():
+            # 添加到极光定时推送
+            # {value: 0, label: "活动"},
+            # {value: 1, label: "专辑"},
+            # {value: 2, label: "音频"},
+            # {value: 3, label: "商品"},
+            # {value: 4, label: "链接"},
+            # {value: 5, label: "模板"}
+
+            extras = {"linkAddress": linkAddress, "linkText": linkText}
+            timestr = time2str(publishDate)
+            result = post_schedule_message(content, title, extras, timestr, title)
+            if result.status_code == 200:
+                schedule_id = result.payload.get("schedule_id", "")
+                if not schedule_id:
+                    return http_return(400, "极光推送错误")
+            else:
+                return http_return(400, "连接极光错误")
+
             uuid = get_uuid()
             SystemNotification.objects.create(
                 uuid=uuid,
+                userUuid=userUuid,
                 title=title,
                 content=content,
                 publishDate=publishDate,
                 linkAddress=linkAddress,
                 linkText=linkText,
+                type=type,
+                activityUuid=activityUuid,
                 publishState=0,
+                scheduleId=schedule_id,
                 isDelete=False,
             )
+
             return http_return(200, '创建成功')
     except Exception as e:
         logging.error(str(e))
@@ -2650,38 +2724,109 @@ def modify_notification(request):
     title = data.get('title', '')
     content = data.get('content', '')
     publishDate = data.get('publishDate', '')  # 时间戳
+    # 系统消息类型 1：后台通知（纯文本） 2：外部连接 3：活动邀请 4：审核信息
+    type = data.get('type', '')
+    linkAddress = data.get('linkAddress', '')
+    linkText = data.get('linkText', '')
+    activityUuid = data.get('activityUuid', '')  # 活动的uuid
 
-    linkAddress = data.get('linkAddress', '')  # 非必填
-    linkText = data.get('linkText', '')  # 非必填
+    # 1.先判断参数是否合法
+    if not type in [1, 2, 3]:
+        return http_return(400, "type字段错误")
 
-    if linkText != "":
-        if not isinstance(linkAddress, str):
-            return http_return(400, "格式错误")
-        if not ((linkAddress.startswith("http")) or (linkAddress.startswith("www"))):
-            return http_return(400, "跳转地址错误")
-        # if linkText == "":
-        #     return http_return(400, "连接文本没有")
+    if type == 1:
+        linkAddress = ""
+        linkText = ""
+        activityUuid = ""
 
-    if not all([uuid, title, content, publishDate]):
+    if not all([title, content, publishDate, uuid]):
         return http_return(400, "参数有空")
 
     notification = SystemNotification.objects.filter(uuid=uuid, isDelete=False).first()
     if not notification:
         return http_return(400, "无此消息")
 
+    # 2.此时此刻是否支持修改
+    if (notification.publishDate - timezone.now()).total_seconds() < 0:
+        return http_return(400, "过期消息，不支持修改")
+
+    if (notification.publishDate - timezone.now()).total_seconds() < 5*60:
+        return http_return(400, "临近发送，不支持修改")
+
+    # 3. 判断参数逻辑
     if SystemNotification.objects.filter(title=title).exclude(uuid=uuid).exists():
         return http_return(400, "重复活动标题")
 
+
+    if not isinstance(content, str):
+        return http_return(400, "消息内容格式需为字符串")
+
+    if len(content) > 256:
+        return http_return(400, "消息内容超出256个字符")
+
+    if type == 2:
+        if not linkAddress:
+            return http_return(400, "跳转地址不能为空")
+
+        if not isinstance(linkAddress, str):
+            return http_return(400, "格式错误")
+        if not linkAddress.startswith("http"):
+            return http_return(400, "跳转地址请以http或https开头")
+
+    if SystemNotification.objects.filter(title=title).exists():
+        return http_return(400, "重复活动标题")
+
+    # 4. 判断发布时间合法
     _, publishDate = timestamp2datetime(1, publishDate, convert=False)
+
+    if (publishDate - timezone.now()).total_seconds() < 0:
+        return http_return(400, "已过了发布时间，请重新填写发布时间。")
+
+    # 临近时间推送，建议间隔5分钟
+    if (publishDate - timezone.now()).total_seconds() < 5 * 60:
+        return http_return(400, "临近发送时间，建议发送时间在未来5分钟以上。")
+
+    if (publishDate - timezone.now()).days > 365:
+        return http_return(400, "发布日期不要超过一年")
+
+    # 跳转活动
+    if type == 3:
+        if not activityUuid:
+            return http_return(400, "活动参数不能为空")
+
+        activity = Activity.objects.filter(uuid=activityUuid, status="normal").first()
+        if not activity:
+            return http_return(400, "该活动不存在！")
+        if activity.endTime < timezone.now():
+            return http_return(400, "该活动已过期")
+        if publishDate > activity.endTime:
+            return http_return(400, "该发布时间活动已结束！")
+        # 跳转的是活动则拼接活动路由
+        linkAddress = urljoin(activity.url, activity.uuid) + "/false"
+
+
+    # 修改极光推送
+    if notification.scheduleId:
+        if (notification.publishDate - timezone.now()).total_seconds() > 5 * 60:
+            extras = {"linkAddress": linkAddress, "linkText": linkText}
+            timestr = time2str(publishDate)
+            result = put_schedule_message(notification.scheduleId, content, title, extras, timestr, title)
+            if result.status_code != 200:
+                return http_return(400, "极光推送修改失败")
+        elif (notification.publishDate - timezone.now()).total_seconds() > 0:
+            return http_return(400, "临近发送时间，暂不支持修改")
 
     try:
         with transaction.atomic():
             notification.title = title
             notification.content = content
+            notification.type = type
             notification.publishDate = publishDate
             notification.linkAddress = linkAddress
             notification.linkText = linkText
+            notification.activityUuid = activityUuid
             notification.save()
+
             return http_return(200, '修改成功')
     except Exception as e:
         logging.error(str(e))
@@ -2698,9 +2843,25 @@ def del_notification(request):
     uuid = data.get('uuid', '')
     if not uuid:
         return http_return(400, '参数为空')
+
+
+    # 未删除未发布的消息，才可以删除
+
     notification = SystemNotification.objects.filter(uuid=uuid, isDelete=False).first()
     if not notification:
         return http_return(400, '没有对象')
+
+
+    # 删除还没有发送的极光推送
+    if notification.scheduleId:
+        if (notification.publishDate-timezone.now()).total_seconds() > 5*60:
+            result = delete_schedule(notification.scheduleId)
+            if result.status_code == 200 and result.payload == 'sucess':
+                pass
+            else:
+                return http_return(400, "极光删除错误")
+        else:
+            return http_return(400, "临近极光发布时间，暂无法删除！")
 
     try:
         with transaction.atomic():

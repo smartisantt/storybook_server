@@ -2037,6 +2037,11 @@ def message_follow(request):
     page = data.get("page", "")
     pageCount = data.get("pageCount", "")
     selfUuid = data['_cache']['uuid']
+    try:
+        FriendShip.objects.filter(follows__uuid=selfUuid).update(isRead=True)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新已读失败')
     friendMsg = FriendShip.objects.filter(follows__uuid=selfUuid).order_by("-createTime").all()
     total, friendMsg = page_index(friendMsg, page, pageCount)
     friendMessage = []
@@ -2061,3 +2066,89 @@ def message_like(request):
     :param request:
     :return:
     """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
+    selfUuid = data['_cache']['uuid']
+    audioStoryList = []
+    audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
+    for audio in audios:
+        audioStoryList.append(audio.uuid)
+    try:
+        FriendShip.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).update(isRead=True)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新已读失败')
+    likeMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).order_by("createTime").all()
+    total, likeMsg = page_index(likeMsg, page, pageCount)
+    likeMessage = []
+    for msg in likeMsg:
+        userInfo = None
+        user = User.objects.filter(uuid=msg.userUuid).first()
+        if user:
+            users = []
+            users.append(user)
+            userInfo = userList_format(users)[0]
+        audioStory = None
+        audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
+        if audio:
+            audios = []
+            audios.append(audio)
+            audioStory = audioList_format(audios, data)[0]
+        likeMessage.append({
+            "uuid": msg.uuid,
+            "createTiem": datetime_to_unix(msg.createTime),
+            "user": userInfo,
+            "audioStory": audioStory,
+        })
+    return http_return(200, "成功", {"total": total, "list": likeMessage})
+
+
+@check_identify
+def message_comment(request):
+    """
+    评论消息
+    :param request:
+    :return:
+    """
+    data = request_body(request, "POST")
+    if not data:
+        return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
+    selfUuid = data['_cache']['uuid']
+    audioStoryList = []
+    audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
+    for audio in audios:
+        audioStoryList.append(audio.uuid)
+    try:
+        FriendShip.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).update(isRead=True)
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '更新已读失败')
+    likeMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).order_by("createTime").all()
+    total, likeMsg = page_index(likeMsg, page, pageCount)
+    commentMessage = []
+    for msg in likeMsg:
+        userInfo = None
+        user = User.objects.filter(uuid=msg.userUuid).first()
+        if user:
+            users = []
+            users.append(user)
+            userInfo = userList_format(users)[0]
+        audioStory = None
+        audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
+        if audio:
+            audios = []
+            audios.append(audio)
+            audioStory = audioList_format(audios, data)[0]
+        commentMessage.append({
+            "uuid": msg.uuid,
+            "createTiem": datetime_to_unix(msg.createTime),
+            "user": userInfo,
+            "audioStory": audioStory,
+            "content": msg.content,
+        })
+    return http_return(200, "成功", {"total": total, "list": commentMessage})

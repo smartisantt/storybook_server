@@ -2099,7 +2099,7 @@ def message_like(request):
             audioStory = audioList_format(audios, data)[0]
         likeMessage.append({
             "uuid": msg.uuid,
-            "createTiem": datetime_to_unix(msg.createTime),
+            "createTime": datetime_to_unix(msg.createTime),
             "user": userInfo,
             "audioStory": audioStory,
         })
@@ -2146,7 +2146,7 @@ def message_comment(request):
             audioStory = audioList_format(audios, data)[0]
         commentMessage.append({
             "uuid": msg.uuid,
-            "createTiem": datetime_to_unix(msg.createTime),
+            "createTime": datetime_to_unix(msg.createTime),
             "user": userInfo,
             "audioStory": audioStory,
             "content": msg.content,

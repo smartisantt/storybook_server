@@ -1976,6 +1976,8 @@ def message_system(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
+    page = data.get("page", "")
+    pageCount = data.get("pageCount", "")
     nowTime = datetime.datetime.now()
     selfUuid = data['_cache']['uuid']
     audioStoryList = []
@@ -1985,6 +1987,7 @@ def message_system(request):
     systemMsg = SystemNotification.objects.filter(
         Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(
         isRead=False).order_by("-publishDate").all()
+    total, systemMsg = page_index(systemMsg, page, pageCount)
     systemMessage = []
     for msg in systemMsg:
         router = {
@@ -2015,4 +2018,4 @@ def message_system(request):
             "user": userInfo,
             "audioStory": audioStory,
         })
-    return http_return(200, "成功", systemMessage)
+    return http_return(200, "成功", {"total": total, "list": systemMessage})

@@ -10,7 +10,7 @@ from api.ssoSMS.sms import send_sms
 from common.common import *
 from common.mixFileAPI import MixAudio
 from common.textAPI import TextAudit
-from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL
+from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL, version
 
 
 def identify_code(request):
@@ -1904,9 +1904,10 @@ def commnet_create(request):
         return http_return(400, "未查询到作品信息")
     if not content:
         return http_return(400, "请输入评论内容")
-    text = TextAudit()
-    if not text.work_on(content):
-        return http_return(400, "你的评论内容包含非法信息，请重新输入")
+    if version == 'ali_test':
+        text = TextAudit()
+        if not text.work_on(content):
+            return http_return(400, "你的评论内容包含非法信息，请重新输入")
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     behavior = Behavior(
         uuid=get_uuid(),

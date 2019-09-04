@@ -2077,7 +2077,7 @@ def message_like(request):
     for audio in audios:
         audioStoryList.append(audio.uuid)
     try:
-        FriendShip.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).update(isRead=True)
+        Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).update(isRead=True)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')
@@ -2124,7 +2124,7 @@ def message_comment(request):
     for audio in audios:
         audioStoryList.append(audio.uuid)
     try:
-        FriendShip.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).update(isRead=True)
+        Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).update(isRead=True)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')

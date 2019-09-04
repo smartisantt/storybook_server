@@ -3,11 +3,7 @@
 
 
 # Create your views here.import sys
-from importlib import reload
 from urllib.parse import urljoin
-import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
 
 from api.apiCommon import *
 from api.ssoSMS.sms import send_sms

@@ -103,6 +103,7 @@ if version == 'debug':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '127.0.0.1',  # 主机
             'PORT': '3306',  # 数据库使用的端口
+            'OPTIONS': {'charset': 'utf8mb4'},
             # 'TIME_ZONE': 'Asia/Shanghai'
         }
     }
@@ -144,6 +145,7 @@ elif version == 'test':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '192.168.100.235',  # 主机
             'PORT': '3306',  # 数据库使用的端口
+            'OPTIONS': {'charset': 'utf8mb4'},
             # 'TIME_ZONE': 'Asia/Shanghai'
         }
     }
@@ -187,6 +189,7 @@ elif version == 'ali_test':
             'HOST': '39.97.233.65',  # 主机
             'PORT': '8002',  # 数据库使用的端口
             'TIME_ZONE': 'Asia/Shanghai',
+            'OPTIONS': {'charset': 'utf8mb4'},
         }
     }
     # 缓存配置

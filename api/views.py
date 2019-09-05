@@ -207,7 +207,6 @@ def recording_send(request):
     text = TextAudit()
     logging.error("-----------------------------------------------")
     logging.error(str(name))
-    logging.error(type(name))
     logging.error("-----------------------------------------------")
     if not text.work_on(str(name)):
         return http_return(400, "你输入的标题包含非法信息，请重新输入")

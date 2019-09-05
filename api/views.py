@@ -1,10 +1,5 @@
 # coding: utf-8
 
-import importlib
-import sys
-
-importlib.reload(sys)
-
 # Create your views here.import sys
 from urllib.parse import urljoin
 

@@ -144,7 +144,8 @@ def activity_audiostory_list(request):
         if game.audioUuid:
             activityUuidList.append(game.audioUuid.uuid)
     audio = AudioStory.objects.exclude(uuid__in=activityUuidList).filter(isDelete=False,
-                                                                         userUuid__uuid=data['_cache']['uuid'])
+                                                                         userUuid__uuid=data['_cache']['uuid']).exclude(
+        Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail"))
     # 只能使用活动时间内录制的作品参赛
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:

@@ -32,6 +32,8 @@ class TextAudit(object):
 
     def text_audit(self, text):
         """审核文本内容"""
+        if isinstance(text, bytes):
+            text = text.decode("utf-8")
         data = {
             "content": text,
             "access_token": self.access_token
@@ -39,8 +41,6 @@ class TextAudit(object):
         headers = {
             "Content-Type": 'application/x-www-form-urlencoded',
         }
-        if isinstance(text, bytes):
-            text = text.decode("utf-8")
         re = requests.post(self.textHost, headers=headers, params=data)
         try:
             if re.status_code == 200:

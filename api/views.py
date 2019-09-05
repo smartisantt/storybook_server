@@ -1967,8 +1967,11 @@ def message_system(request):
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '请求错误')
-    page = data.get("page", "")
+    refreshWay = data.get("refreshWay", None)
     pageCount = data.get("pageCount", "")
+    uuid = data.get("uuid", None)
+    if not pageCount:
+        return http_return(400, "请选择要查看的消息条数")
     nowTime = datetime.datetime.now()
     selfUuid = data['_cache']['uuid']
     audioStoryList = []
@@ -1984,7 +1987,7 @@ def message_system(request):
     systemMsg = SystemNotification.objects.filter(
         Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
         "-publishDate").all()
-    total, systemMsg = page_index(systemMsg, page, pageCount)
+    total, systemMsg = message_format(systemMsg, pageCount, 1, uuid, refreshWay)
     systemMessage = []
     for msg in systemMsg:
         router = {
@@ -2026,8 +2029,9 @@ def message_follow(request):
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '请求错误')
-    page = data.get("page", "")
+    refreshWay = data.get("refreshWay", None)
     pageCount = data.get("pageCount", "")
+    uuid = data.get("uuid", None)
     selfUuid = data['_cache']['uuid']
     try:
         FriendShip.objects.filter(follows__uuid=selfUuid).update(isRead=True)
@@ -2035,7 +2039,7 @@ def message_follow(request):
         logging.error(str(e))
         return http_return(400, '更新已读失败')
     friendMsg = FriendShip.objects.filter(follows__uuid=selfUuid).order_by("-createTime").all()
-    total, friendMsg = page_index(friendMsg, page, pageCount)
+    total, friendMsg = message_format(friendMsg, pageCount, 2, uuid, refreshWay)
     friendMessage = []
     for msg in friendMsg:
         userInfo = None
@@ -2061,8 +2065,9 @@ def message_like(request):
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '请求错误')
-    page = data.get("page", "")
+    refreshWay = data.get("refreshWay", None)
     pageCount = data.get("pageCount", "")
+    uuid = data.get("uuid", None)
     selfUuid = data['_cache']['uuid']
     audioStoryList = []
     audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
@@ -2074,7 +2079,7 @@ def message_like(request):
         logging.error(str(e))
         return http_return(400, '更新已读失败')
     likeMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1).order_by("-createTime").all()
-    total, likeMsg = page_index(likeMsg, page, pageCount)
+    total, likeMsg = message_format(likeMsg, pageCount, 3, uuid, refreshWay)
     likeMessage = []
     for msg in likeMsg:
         userInfo = None
@@ -2106,8 +2111,9 @@ def message_comment(request):
     data = request_body(request, "POST")
     if not data:
         return http_return(400, '请求错误')
-    page = data.get("page", "")
+    refreshWay = data.get("refreshWay", None)
     pageCount = data.get("pageCount", "")
+    uuid = data.get("uuid", None)
     selfUuid = data['_cache']['uuid']
     audioStoryList = []
     audios = AudioStory.objects.filter(userUuid__uuid=selfUuid).all()
@@ -2119,7 +2125,7 @@ def message_comment(request):
         logging.error(str(e))
         return http_return(400, '更新已读失败')
     commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).order_by("-createTime").all()
-    total, commentMsg = page_index(commentMsg, page, pageCount)
+    total, commentMsg = message_format(commentMsg, pageCount, 4, uuid, refreshWay)
     commentMessage = []
     for msg in commentMsg:
         userInfo = None

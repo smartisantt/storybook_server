@@ -662,9 +662,13 @@ def message_format(mylist, pageCount, ftype, uuid=None, way=None):
             return False
         targetIndex = mylist.index(targetObj)
         if way == "up":
-            resultList = mylist[targetIndex + 1:targetIndex + pageCount + 1]
+            end = targetIndex + pageCount + 1
+            resultList = mylist[targetIndex + 1:end]
         elif way == "down":
-            resultList = mylist[targetIndex - pageCount:targetIndex]
+            start = targetIndex - pageCount
+            if start < 0:
+                start = 0
+            resultList = mylist[start:targetIndex]
         else:
             return False
     return total, resultList

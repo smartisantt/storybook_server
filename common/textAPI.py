@@ -39,6 +39,8 @@ class TextAudit(object):
         headers = {
             "Content-Type": 'application/x-www-form-urlencoded',
         }
+        if isinstance(text, bytes):
+            text = text.decode("utf-8")
         re = requests.post(self.textHost, headers=headers, params=data)
         try:
             if re.status_code == 200:

@@ -40,7 +40,7 @@ class TextAudit(object):
             "access_token": self.access_token
         }
         headers = {
-            "Content-Type": 'application/x-www-form-urlencoded',
+            "Content-Type": 'application/x-www-form-urlencoded; charset=UTF-8',
         }
         re = requests.post(self.textHost, headers=headers, params=data)
         try:

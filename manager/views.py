@@ -9,7 +9,8 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 
 from api.apiCommon import get_default_name
-from common.MyJpush import post_schedule_message, time2str, delete_schedule, put_schedule_message
+from common.MyJpush import post_schedule_message, time2str, delete_schedule, put_schedule_message, \
+    post_schedule_notification
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
@@ -2611,6 +2612,7 @@ def add_notification(request):
     if SystemNotification.objects.filter(title=title).exists():
         return http_return(400, "重复活动标题")
 
+    # 判断推送时间是否合法
     _, publishDate = timestamp2datetime(1, publishDate, convert=False)
 
     if (publishDate - timezone.now()).total_seconds() < 0:
@@ -2645,26 +2647,30 @@ def add_notification(request):
     else:
         userUuid = ""
 
+    # 添加到极光定时推送
+    # {value: 0, label: "活动"},
+    # {value: 1, label: "专辑"},
+    # {value: 2, label: "音频"},
+    # {value: 3, label: "商品"},
+    # {value: 4, label: "链接"},
+    # {value: 5, label: "模板"}
+    # timestr = time2str(publishDate)
+    # if type == 3:  # 活动横幅通知
+    #     extras = {"type": 0, "target": linkAddress}
+    #     result = post_schedule_notification(title, content, extras, timestr, title)
+    # else:  # app内， 跳转外部连接，或者通知
+    #     extras = {"type": 4, "target": linkAddress}
+    #     result = post_schedule_message(title, content, extras, timestr, title, alias=None)
+    # if result.status_code == 200:
+    #     schedule_id = result.payload.get("schedule_id", "")
+    #     if not schedule_id:
+    #         return http_return(400, "极光推送错误")
+    # else:
+    #     return http_return(400, "连接极光错误")
+    schedule_id = ""
+
     try:
         with transaction.atomic():
-            # 添加到极光定时推送
-            # {value: 0, label: "活动"},
-            # {value: 1, label: "专辑"},
-            # {value: 2, label: "音频"},
-            # {value: 3, label: "商品"},
-            # {value: 4, label: "链接"},
-            # {value: 5, label: "模板"}
-
-            extras = {"linkAddress": linkAddress, "linkText": linkText}
-            timestr = time2str(publishDate)
-            result = post_schedule_message(content, title, extras, timestr, title)
-            if result.status_code == 200:
-                schedule_id = result.payload.get("schedule_id", "")
-                if not schedule_id:
-                    return http_return(400, "极光推送错误")
-            else:
-                return http_return(400, "连接极光错误")
-
             uuid = get_uuid()
             SystemNotification.objects.create(
                 uuid=uuid,
@@ -2804,15 +2810,15 @@ def modify_notification(request):
 
 
     # 修改极光推送
-    if notification.scheduleId:
-        if (notification.publishDate - timezone.now()).total_seconds() > 5 * 60:
-            extras = {"linkAddress": linkAddress, "linkText": linkText}
-            timestr = time2str(publishDate)
-            result = put_schedule_message(notification.scheduleId, content, title, extras, timestr, title)
-            if result.status_code != 200:
-                return http_return(400, "极光推送修改失败")
-        elif (notification.publishDate - timezone.now()).total_seconds() > 0:
-            return http_return(400, "临近发送时间，暂不支持修改")
+    # if notification.scheduleId:
+    #     if (notification.publishDate - timezone.now()).total_seconds() > 5 * 60:
+    #         extras = {"linkAddress": linkAddress, "linkText": linkText}
+    #         timestr = time2str(publishDate)
+    #         result = put_schedule_message(notification.scheduleId, content, title, extras, timestr, title)
+    #         if result.status_code != 200:
+    #             return http_return(400, "极光推送修改失败")
+    #     elif (notification.publishDate - timezone.now()).total_seconds() > 0:
+    #         return http_return(400, "临近发送时间，暂不支持修改")
 
     try:
         with transaction.atomic():
@@ -2853,11 +2859,12 @@ def del_notification(request):
     # 删除还没有发送的极光推送
     if notification.scheduleId:
         if (notification.publishDate-timezone.now()).total_seconds() > 5*60:
-            result = delete_schedule(notification.scheduleId)
-            if result.status_code == 200 and result.payload == 'sucess':
-                pass
-            else:
-                return http_return(400, "极光删除错误")
+            # result = delete_schedule(notification.scheduleId)
+            # if result.status_code == 200 and result.payload == 'sucess':
+            #     pass
+            # else:
+            #     return http_return(400, "极光删除错误")
+            pass
         else:
             return http_return(400, "临近极光发布时间，暂无法删除！")
 

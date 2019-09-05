@@ -1,4 +1,10 @@
 # coding: utf-8
+
+import importlib
+import sys
+
+importlib.reload(sys)
+
 import logging
 
 import requests

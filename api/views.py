@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 
 from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
+from common.MyJpush import jpush_platform_msg
 from common.common import *
 from common.mixFileAPI import MixAudio
 from common.textAPI import TextAudit
@@ -311,7 +312,7 @@ def become_fans(request):
     if not data:
         return http_return(400, '请求错误')
     uuid = data.get('uuid', '')
-    type = data.get('type', '')
+    type = data.get('type', '')  # 1取消关注 2关注
     selfUuid = data['_cache']['uuid']
     if selfUuid == uuid:
         return http_return(400, '不能自己关注自己')
@@ -339,6 +340,16 @@ def become_fans(request):
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '关注失败')
+            title = "关注提醒"
+            content = selfUser.nickName + "关注了" + user.nickName
+            extras = {"type": 1, "unread": 1}
+            alias = []
+            alias.append(uuid)
+            # 推送关注信息
+            try:
+                jpush_platform_msg(title, content, extras, alias)
+            except Exception as e:
+                logging.error(str(e))
         return http_return(200, '关注成功')
 
 
@@ -879,6 +890,16 @@ def audiostory_praise(request):
             except Exception as e:
                 logging.error(str(e))
                 return http_return(400, '点赞失败')
+            title = "点赞提醒"
+            content = user.nickName + "点赞了" + audio.name
+            extras = {"type": 2, "unread": 1}
+            alias = []
+            alias.append(audio.userUuid.uuid)
+            # 推送点赞信息
+            try:
+                jpush_platform_msg(title, content, extras, alias)
+            except Exception as e:
+                logging.error(str(e))
         return http_return(200, '点赞成功')
 
 
@@ -1922,6 +1943,16 @@ def commnet_create(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '评论失败')
+    title = "评论提醒"
+    content = user.nickName + "评论了了" + audio.name
+    extras = {"type": 3, "unread": 1}
+    alias = []
+    alias.append(audio.userUuid.uuid)
+    # 推送评论信息
+    try:
+        jpush_platform_msg(title, content, extras, alias)
+    except Exception as e:
+        logging.error(str(e))
     comments = []
     comments.append(behavior)
     commentInfo = commentList_format(comments)[0]

@@ -1,133 +1,86 @@
 
 # 极光推送
+
 import jpush
-from datetime import datetime
-from jpush import common
 
 from storybook_sever.config import version
 
-if version == "ali_test":
-    app_key = 'b878563acc58979e1bdc1c1f'
-    master_secret = '8a68fd8e94cc345f0b680dd1'
-else:
-    app_key = '946c0bba0a673da03bb0941f'
-    master_secret = '3fa24a0e9f341da0c0c436c7'
+# if version == "ali_test":
+# ios 测试和正式需要使用这个key ，测试需要设置" apns_production":False
+app_key = 'b878563acc58979e1bdc1c1f'
+master_secret = '8a68fd8e94cc345f0b680dd1'
+# else:
+# Android测试用这个key
+#     app_key = '946c0bba0a673da03bb0941f'
+#     master_secret = '3fa24a0e9f341da0c0c436c7'
 
 _jpush = jpush.JPush(app_key, master_secret)
 _jpush.set_logging("DEBUG")
 schedule = _jpush.create_schedule()
 
 
-def time2str(in_data):
-    str_time = in_data.strftime('%Y-%m-%d %H:%M:%S')
+def time2str(in_date):
+    """
+    日期转字符串，方便定时推送使用
+    :param in_date:
+    :return:
+    """
+    str_time = in_date.strftime('%Y-%m-%d %H:%M:%S')
     return str_time
 
 
-def all(msg):
+# 横幅使用 notification 通知 （广播，别名(使用用户uuid））
+# APP内使用  message 自定义消息 （别名（使用用户uuid））
+
+# 定时通知 活动邀请
+# 非定时 审核通过，关注，点赞
+
+def jpush_notification(title, msg, extras, alias=None):
     """
-    广播消息
+    广播消息  横幅 非定时
     :param msg: 消息内容
     :return:
     """
     push = _jpush.create_push()
-    push.audience = jpush.all_
+    if not alias:
+        push.audience = jpush.all_
+    else:
+        push.audience = jpush.alias(*alias)
     push.notification = jpush.notification(alert=msg)
+    ios = jpush.ios(alert=msg, sound="default", extras=extras)
+    android = jpush.android(alert=msg, title=title, extras=extras)
+    push.notification = jpush.notification(alert=msg, android=android, ios=ios)
+    if version != "ali_test":
+        push.options = {"apns_production":False}
     push.platform = jpush.all_
-    try:
-        response=push.send()
-    except common.Unauthorized:
-        raise common.Unauthorized("Unauthorized")
-    except common.APIConnectionException:
-        raise common.APIConnectionException("conn")
-    except common.JPushFailure:
-        print ("JPushFailure")
-    except:
-        print ("Exception")
+    response = push.send()
+    return response
 
 
-def test_tag(msg):
+def jpush_platform_msg(title, content, extras, alias=None):
     """
-    广播消息
-    :param msg: 消息内容
-    :return:
-    """
-    tags = ['test']
-    push = _jpush.create_push()
-    push.audience = jpush.tag(*tags)
-    push.notification = jpush.notification(alert=msg)
-    push.platform = jpush.all_
-    try:
-        response=push.send()
-    except common.Unauthorized:
-        raise common.Unauthorized("Unauthorized")
-    except common.APIConnectionException:
-        raise common.APIConnectionException("conn")
-    except common.JPushFailure:
-        print ("JPushFailure")
-    except:
-        print ("Exception")
-
-
-def test_alias(msg, alias):
-    """
-    :param msg: 消息内容
-    :return:
-    """
-    push = _jpush.create_push()
-    push.audience = jpush.alias(*alias)
-    push.notification = jpush.notification(alert=msg)
-    push.platform = jpush.all_
-    try:
-        response=push.send()
-    except common.Unauthorized:
-        raise common.Unauthorized("Unauthorized")
-    except common.APIConnectionException:
-        raise common.APIConnectionException("conn")
-    except common.JPushFailure:
-        print ("JPushFailure")
-    except:
-        print ("Exception")
-
-
-def platfrom_msg(content, title, extras):
-    """
-    自定义消息
+    自定义消息   app内 非定时
     :param content: 消息内容
     :param title: 消息标题
     :param extras: 附加消息 ，字典格式 {"title":"自定义标题","url":"http://www.baidu.com"}
     :return:
     """
     push = _jpush.create_push()
-    push.audience = jpush.all_
+    if not alias:
+        push.audience = jpush.all_
+    else:
+        push.audience = jpush.alias(*alias)
+    if version != "ali_test":
+        push.options = {"apns_production":False}
     push.platform = jpush.all_
-    push.message=jpush.message(content,title=title,content_type="text", extras=extras)
-    push.send()
-
-
-def platfrom_msg_alias(alias, content, title, extras):
-    """
-    自定义消息
-    :param content: 消息内容
-    :param alias: 消息听众
-    :param title: 消息标题
-    :param extras: 附加消息 ，字典格式 {"title":"自定义标题","url":"http://www.baidu.com"}
-    :return:
-    """
-    push = _jpush.create_push()
-    # push.audience = jpush.all_
-    push.audience = jpush.alias(*alias)
-    push.platform = jpush.all_
-    # ios_msg = jpush.ios(alert="Hello, IOS JPush!", badge="+1", sound="a.caf", extras={'k1':'v1'})
-    # android_msg = jpush.android(alert="Hello, android msg")
-    # push.notification = jpush.notification(alert="Hello, JPush!", android=android_msg, ios=ios_msg)
-    # push.notification = jpush.notification(alert="温馨提示：Hello, JPush!")
-    push.message=jpush.message(content,title=title,content_type="text", extras=extras)
+    push.message = jpush.message(content,title=title,content_type="text", extras=extras)
     res = push.send()
     return res
 
 
 def delete_schedule(schedule_id):
     """
+    删除定时推送
     :param schedule_id: string类型 推送唯一标识符
     :return:
     """
@@ -149,9 +102,9 @@ def get_schedule_list(page=1):
     schedule.get_schedule_list(page)
 
 
-def post_schedule_message(content, title, extras, timestr, name):
+def post_schedule_message(title, content, extras, timestr, name, alias=None):
     """
-    定时推送 自定义消息
+    定时推送 自定义消息  app内  定时
     :param content: 消息内容本身
     :param title: 消息标题
     :param extras: JSON 格式的可选参数
@@ -160,9 +113,14 @@ def post_schedule_message(content, title, extras, timestr, name):
     :return:
     """
     push = _jpush.create_push()
-    push.audience = jpush.all_
+    if not alias:
+        push.audience = jpush.all_
+    else:
+        push.audience = jpush.alias(*alias)
     push.platform = jpush.all_
-    push.message = jpush.message(content,title=title,content_type="text", extras=extras)
+    push.message = jpush.message(content, title=title, content_type="text", extras=extras)
+    if version != "ali_test":
+        push.options = {"apns_production":False}
     push=push.payload
 
     trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
@@ -171,9 +129,9 @@ def post_schedule_message(content, title, extras, timestr, name):
     return result
 
 
-def post_schedule_notification(msg, timestr, name):
+def post_schedule_notification(title, msg, extras, timestr, name, alias=None):
     """
-    定时推 通知
+    定时推 通知  --  横幅  定时  活动
     :param msg: 消息内容本身
     :param title: 消息标题
     :param timestr: 定时推送的时间字符串 ，格式为 2016-07-17 12:00:00
@@ -181,21 +139,27 @@ def post_schedule_notification(msg, timestr, name):
     :return:
     """
     push = _jpush.create_push()
-    push.audience = jpush.all_
+    if not alias:
+        push.audience = jpush.all_
+    else:
+        push.audience = jpush.alias(*alias)
     push.platform = jpush.all_
-    push.notification = jpush.notification(alert=msg)
+    ios = jpush.ios(alert=msg, sound="default", extras=extras)
+    android = jpush.android(alert=msg, title=title, extras=extras)
+    push.notification = jpush.notification(alert=msg, android=android, ios=ios)
+    if version != "ali_test":
+        push.options = {"apns_production":False}
     push=push.payload
 
     trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
     schedulepayload=jpush.schedulepayload.schedulepayload(name,True,trigger,push)
     result=schedule.post_schedule(schedulepayload)
-    # print (result.status_code)
     return result
 
 
 def put_schedule_notification(schedule_id, msg, timestr, name):
     """
-    修改定时推送
+    修改定时推送 -- 广播
     :param schedule_id:
     :param msg:         推送消息内容
     :param timestr:   时间字符串 2016-07-17 12:00:00
@@ -206,17 +170,16 @@ def put_schedule_notification(schedule_id, msg, timestr, name):
     push.audience = jpush.all_
     push.notification = jpush.notification(alert=msg)
     push.platform = jpush.all_
-    push=push.payload
-
-    trigger=jpush.schedulepayload.trigger(timestr)
-    schedulepayload=jpush.schedulepayload.schedulepayload(name, True, trigger, push)
+    push = push.payload
+    trigger = jpush.schedulepayload.trigger(timestr)
+    schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)
     res = schedule.put_schedule(schedulepayload, schedule_id)
     return res
 
 
 def put_schedule_message(schedule_id, content, title, extras, timestr, name):
     """
-    修改极光定时推送
+    修改极光定时推送 -- 广播
     :param schedule_id:
     :param content:  自定义消息内容
     :param title:
@@ -227,28 +190,17 @@ def put_schedule_message(schedule_id, content, title, extras, timestr, name):
     """
     push = _jpush.create_push()
     push.audience = jpush.all_
-    # push.notification = jpush.notification(alert=msg)
     push.message = jpush.message(content, title=title, content_type="text", extras=extras)
     push.platform = jpush.all_
     push=push.payload
 
-    trigger=jpush.schedulepayload.trigger(timestr)
-    schedulepayload=jpush.schedulepayload.schedulepayload(name, True, trigger, push)
+    trigger = jpush.schedulepayload.trigger(timestr)
+    schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)
     res = schedule.put_schedule(schedulepayload, schedule_id)
     return res
 
 
 if __name__ == '__main__':
-    # post_schedule("定时推送：中午好！", "2019-09-03 11:40:00")
-    # get_schedule_list()
-    # get_schedule("7b44ac6c-cdf1-11e9-970f-fa163e74a8d9")
-    # delete_schedule("7b44ac6c-cdf1-11e9-970f-fa163e74a8d9")
-    # platfrom_msg()
-    # all("test")
-    # test_alias("温馨提示：天冷加衣！注意保暖！", ["4F8920204ACB4500822272805CB2F5FC"])
-    # post_schedule_message(content="温馨提示：天冷加衣！", title="我是标题",
-    #                       extras={"title":"自定义标题","url":"http://www.baidu.com"},
-    #                       timestr="2019-09-03 15:17:00", name="定时发送")
-    # print(time2str(datetime.now()))
-    # print(type(time2str(datetime.now())))
-    platfrom_msg_alias(["4F8920204ACB4500822272805CB2F5FC"], "温馨提示", "这是标题", {"type":1, "target": "1234"})
+    extras = {"type": 0, "target": "http://www.baidu.com"}
+    # result = jpush_notification("温馨提示", "中午好，中秋快到了", extras, ["09AA7CA6B2F34185B6B568720C32FD27"])
+    result = jpush_platform_msg("温馨提示", "中午好，中秋快到了", extras, ["09AA7CA6B2F34185B6B568720C32FD27"])

@@ -80,7 +80,8 @@ def activity_detail(request):
                 rank = games.index(game) + 1
                 score = game.votes
             else:
-                checkStatus = 3
+                if game.audioUuid.checkStatus == "checkFail" or game.audioUuid.interfaceStatus == "checkFail":
+                    checkStatus = 3
             name = game.audioUuid.name
     userInfo = {
         "uuid": user.uuid,

@@ -65,6 +65,7 @@ class TextAudit(object):
                 logging.error("3-------------------------")
                 return result
         return False
+        logging.error("4-------------------------")
 
 
 if __name__ == "__main__":

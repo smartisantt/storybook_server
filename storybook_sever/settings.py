@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 Django settings for storybook_sever project.
 
@@ -350,6 +351,8 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = False
+
+DEFAULT_CHARSET = "UTF-8"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/

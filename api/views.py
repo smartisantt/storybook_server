@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
-
-# Create your views here.
+# Create your views here.import sys
 from urllib.parse import urljoin
 
 from api.apiCommon import *
@@ -10,7 +8,7 @@ from api.ssoSMS.sms import send_sms
 from common.common import *
 from common.mixFileAPI import MixAudio
 from common.textAPI import TextAudit
-from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL
+from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL, version
 
 
 def identify_code(request):
@@ -200,13 +198,16 @@ def recording_send(request):
         return http_return(400, '请选择用户音量')
     if not storyTagUuidList:
         return http_return(400, '请选择作品标签')
-    if type not in [0, 1]:
+    if type not in [0, 1, "0", "1"]:
         return http_return(400, '请选择录制类型')
     if not name:
         return http_return(400, '请输入标题')
     # 审核标题
     text = TextAudit()
-    if not text.work_on(name):
+    logging.error("-----------------------------------------------")
+    logging.error(str(name))
+    logging.error("-----------------------------------------------")
+    if not text.work_on(str(name)):
         return http_return(400, "你输入的标题包含非法信息，请重新输入")
     if remarks:
         if not text.work_on(remarks):
@@ -1904,9 +1905,10 @@ def commnet_create(request):
         return http_return(400, "未查询到作品信息")
     if not content:
         return http_return(400, "请输入评论内容")
-    text = TextAudit()
-    if not text.work_on(content):
-        return http_return(400, "你的评论内容包含非法信息，请重新输入")
+    if version == 'ali_test':
+        text = TextAudit()
+        if not text.work_on(content):
+            return http_return(400, "你的评论内容包含非法信息，请重新输入")
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     behavior = Behavior(
         uuid=get_uuid(),
@@ -1922,7 +1924,7 @@ def commnet_create(request):
         return http_return(400, '评论失败')
     comments = []
     comments.append(behavior)
-    commentInfo = userList_format(comments)[0]
+    commentInfo = commentList_format(comments)[0]
     return http_return(200, '评论成功', commentInfo)
 
 

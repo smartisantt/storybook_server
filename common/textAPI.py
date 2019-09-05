@@ -1,6 +1,7 @@
+# coding: utf-8
+
 import logging
 import requests
-
 
 class TextAudit(object):
     """内容审核"""
@@ -37,21 +38,22 @@ class TextAudit(object):
             "access_token": self.access_token
         }
         headers = {
-            "Content-Type": 'application/x-www-form-urlencoded',
+            "Content-Type": 'application/x-www-form-urlencoded; charset=UTF-8',
         }
         re = requests.post(self.textHost, headers=headers, params=data)
         try:
+
             if re.status_code == 200:
                 if re.json().get('result').get('spam') == 0:
-                    print("审核通过")
+                    # print("审核通过")
                     return True
                 else:
-                    print("审核不通过")
+                    # print("审核不通过")
                     return False
             else:
                 return False
         except Exception as e:
-            logging.error(e)
+            logging.error(str(e))
             return False
 
     def work_on(self, text):
@@ -66,4 +68,4 @@ class TextAudit(object):
 
 if __name__ == "__main__":
     text = TextAudit()
-    text.work_on("你们")
+    print(text.work_on("咕咚来了"))

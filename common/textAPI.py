@@ -44,14 +44,17 @@ class TextAudit(object):
             if re.status_code == 200:
                 if re.json().get('result').get('spam') == 0:
                     print("审核通过")
+                    logging.error("6-------------------------")
                     return True
                 else:
                     print("审核不通过")
+                    logging.error("7-------------------------")
                     return False
             else:
                 return False
         except Exception as e:
-            logging.error(e)
+            logging.error(str(e))
+            logging.error("8-------------------------")
             return False
 
     def work_on(self, text):

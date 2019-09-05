@@ -66,6 +66,7 @@ def activity_detail(request):
     score = None
     name = None
     checkStatus = 1
+    gameUuid = None
     game = GameInfo.objects.filter(userUuid__uuid=selfUuid, activityUuid__uuid=uuid).first()
     if game:
         status = 2
@@ -82,7 +83,9 @@ def activity_detail(request):
             else:
                 if game.audioUuid.checkStatus == "checkFail" or game.audioUuid.interfaceStatus == "checkFail":
                     checkStatus = 3
+                    status = 4
             name = game.audioUuid.name
+        gameUuid = game.uuid
     userInfo = {
         "uuid": user.uuid,
         "avatar": user.avatar if user.avatar else '',
@@ -92,6 +95,7 @@ def activity_detail(request):
         "score": score,
         "name": name,
         "checkStatus": checkStatus,
+        "gameUuid": gameUuid,
     }
     return http_return(200, '成功', {"activityInfo": activityInfo, "userInfo": userInfo})
 
@@ -239,6 +243,32 @@ def activity_join(request):
         logging.error(str(e))
         return http_return(400, '参赛失败')
     return http_return(200, '参赛成功')
+
+
+@check_identify
+def activity_change(request):
+    """
+    重新录制
+    :param request:
+    :return:
+    """
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '请求错误')
+    uuid = data.get("uuid", "")
+    if not uuid:
+        return http_return(400, "参数错误")
+    game = GameInfo.objects.filter(uuid=uuid, audioUuid__isnull=False).filter(
+        Q(audioUuid__checkStatus="checkFail") | Q(audioUuid__interfaceStatus="checkFail")).first()
+    if not game:
+        return http_return(400, "不能重新录制")
+    game.audioUuid = None
+    try:
+        game.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '失败')
+    return http_return(200, '成功')
 
 
 @check_identify

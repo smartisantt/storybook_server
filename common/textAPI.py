@@ -1,5 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import logging
 import requests
+# import sys
+# reload(sys)
+# sys.setdefaultencoding("utf8")
 
 
 class TextAudit(object):
@@ -32,8 +37,6 @@ class TextAudit(object):
 
     def text_audit(self, text):
         """审核文本内容"""
-        if isinstance(text, bytes):
-            text = text.decode("utf-8")
         data = {
             "content": text,
             "access_token": self.access_token

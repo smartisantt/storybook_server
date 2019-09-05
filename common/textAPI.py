@@ -49,21 +49,7 @@ class TextAudit(object):
         }
         re = requests.post(self.textHost, headers=headers, params=data)
         try:
-            logging.error("+++++++++++++++++++++++++++++++++++++++++-")
-            logging.error("+++++++++++++++++++++++++++++++++++++++++-")
-            logging.error("+++++++++++++++++++++++++++++++++++++++++-")
-            logging.error(re.text)
-            logging.error(re.json())
-            logging.error(type(re.json()))
-            logging.error("+++++++++++++++++++++++++++++++++++++++++-")
-            logging.error(re.json().get('result'))
-            logging.error(type(re.json().get('result')))
-            logging.error("+++++++++++++++++++++++++++++++++++++++++-")
-            logging.error(re.json().get('result').get('spam'))
-            logging.error(type(re.json().get('result').get('spam')))
-            logging.error("+++++++++++++++++++++++++++++++++++++++++-")
-            logging.error("+++++++++++++++++++++++++++++++++++++++++-")
-            logging.error("+++++++++++++++++++++++++++++++++++++++++-")
+
             if re.status_code == 200:
                 if re.json().get('result').get('spam') == 0:
                     # print("审核通过")

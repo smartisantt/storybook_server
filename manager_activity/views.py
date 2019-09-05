@@ -203,9 +203,11 @@ def activity_rank(request):
     if not act:
         return http_return(400, '活动信息不存在')
 
-    games = GameInfo.objects.filter(activityUuid__uuid=activityUuid).all()
+    totalUsers = GameInfo.objects.filter(activityUuid__uuid=activityUuid).count()
+    games = GameInfo.objects.filter(activityUuid__uuid=activityUuid, audioUuid__isnull=False, audioUuid__isDelete=False).all()
     games = sorted(games, key=lambda x: x.votes, reverse=True)
     total, games = page_index(games, page, page_size)
+    numberOfAudiostory = GameInfo.objects.filter(activityUuid__uuid=activityUuid, audioUuid__isnull=False, audioUuid__isDelete=False).count()
     activityRankList = []
     for index,game in enumerate(games):
         if not game.audioUuid:
@@ -230,7 +232,7 @@ def activity_rank(request):
             },
             "score": game.votes,
         })
-    return http_return(200, '成功', {"total": total, "activityRankList": activityRankList})
+    return http_return(200, '成功', {"total": totalUsers, "numberOfAudiostory": numberOfAudiostory, "activityRankList": activityRankList})
 
 com_dict = {
     "yunda": "韵达快递",

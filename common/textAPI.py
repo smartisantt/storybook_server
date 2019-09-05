@@ -35,8 +35,6 @@ class TextAudit(object):
 
     def text_audit(self, text):
         """审核文本内容"""
-        if isinstance(text, ascii):
-            logging.error("6666666666666666666666666666666")
         data = {
             "content": text,
             "access_token": self.access_token

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import logging
-import requests
 
+import requests
+import sys
+from imp import reload
+reload(sys)
+sys.setdefaultencoding("utf8")
 
 
 class TextAudit(object):

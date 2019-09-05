@@ -3,10 +3,6 @@
 import logging
 
 import requests
-import sys
-from imp import reload
-reload(sys)
-sys.setdefaultencoding("utf8")
 
 
 class TextAudit(object):

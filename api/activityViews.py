@@ -83,7 +83,6 @@ def activity_detail(request):
             else:
                 if game.audioUuid.checkStatus == "checkFail" or game.audioUuid.interfaceStatus == "checkFail":
                     checkStatus = 3
-                    status = 4
             name = game.audioUuid.name
         gameUuid = game.uuid
     userInfo = {

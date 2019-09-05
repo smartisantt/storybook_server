@@ -57,9 +57,12 @@ class TextAudit(object):
     def work_on(self, text):
         """执行审核"""
         audit = TextAudit()
+        logging.error("1-------------------------")
         if audit.get_token():
+            logging.error("2-------------------------")
             result = audit.text_audit(text)
             if result:
+                logging.error("3-------------------------")
                 return result
         return False
 

@@ -609,6 +609,7 @@ def prizeList_format(prizes):
         })
     return prizeList
 
+
 def commentList_format(comments):
     """
     评论返回模型
@@ -631,3 +632,43 @@ def commentList_format(comments):
             "user": userInfo,
         })
     return commentList
+
+
+def message_format(mylist, pageCount, ftype, uuid=None, way=None):
+    """
+    消息刷新返回
+    :param mylist:
+    :param pageCount:
+    :param uuid:
+    :param way:
+    :param ftype:
+    :return:
+    """
+    mylist = list(mylist)
+    pageCount = int(pageCount)
+    resultList = mylist[:pageCount]
+    total = len(mylist)
+    if uuid and way:
+        targetObj = None
+        if ftype == 1:
+            targetObj = SystemNotification.objects.filter(uuid=uuid).first()
+        elif ftype == 2:
+            targetObj = FriendShip.objects.filter(uuid=uuid).first()
+        elif ftype == 3:
+            targetObj = Behavior.objects.filter(uuid=uuid, type=1).first()
+        elif ftype == 4:
+            targetObj = Behavior.objects.filter(uuid=uuid, type=2).first()
+        if not targetObj:
+            return False
+        targetIndex = mylist.index(targetObj)
+        if way == "up":
+            end = targetIndex + pageCount + 1
+            resultList = mylist[targetIndex + 1:end]
+        elif way == "down":
+            start = targetIndex - pageCount
+            if start < 0:
+                start = 0
+            resultList = mylist[start:targetIndex]
+        else:
+            return False
+    return total, resultList

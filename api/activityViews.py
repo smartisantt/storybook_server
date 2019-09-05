@@ -79,8 +79,7 @@ def activity_detail(request):
                 checkStatus = 2
                 rank = games.index(game) + 1
                 score = game.votes
-            gameFail = GameInfo.objects.filter(activityUuid__uuid=uuid, audioUuid__isnull=False).first()
-            if gameFail.audioUuid.checkStatus == "checkFail" or gameFail.audioUuid.interfaceStatus == "checkFail":
+            else:
                 checkStatus = 3
             name = game.audioUuid.name
     userInfo = {

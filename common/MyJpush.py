@@ -62,7 +62,7 @@ def jpush_platform_msg(title, content, extras, alias=None):
     自定义消息   app内 非定时
     :param content: 消息内容
     :param title: 消息标题
-    :param extras: 附加消息 ，字典格式 {"title":"自定义标题","url":"http://www.baidu.com"}
+    :param extras: 附加消息 ，字典格式 {"type":3,"target":"uuid"}
     :return:
     """
     push = _jpush.create_push()
@@ -157,7 +157,7 @@ def post_schedule_notification(title, msg, extras, timestr, name, alias=None):
     return result
 
 
-def put_schedule_notification(schedule_id, msg, timestr, name):
+def put_schedule_notification(schedule_id, title, msg, extras, timestr, name):
     """
     修改定时推送 -- 广播
     :param schedule_id:
@@ -168,7 +168,10 @@ def put_schedule_notification(schedule_id, msg, timestr, name):
     """
     push = _jpush.create_push()
     push.audience = jpush.all_
-    push.notification = jpush.notification(alert=msg)
+    # push.notification = jpush.notification(alert=msg)
+    ios = jpush.ios(alert=msg, sound="default", extras=extras)
+    android = jpush.android(alert=msg, title=title, extras=extras)
+    push.notification = jpush.notification(alert=msg, android=android, ios=ios)
     push.platform = jpush.all_
     push = push.payload
     trigger = jpush.schedulepayload.trigger(timestr)
@@ -177,7 +180,7 @@ def put_schedule_notification(schedule_id, msg, timestr, name):
     return res
 
 
-def put_schedule_message(schedule_id, content, title, extras, timestr, name):
+def put_schedule_message(schedule_id, title, content, extras, timestr, name):
     """
     修改极光定时推送 -- 广播
     :param schedule_id:
@@ -203,4 +206,9 @@ def put_schedule_message(schedule_id, content, title, extras, timestr, name):
 if __name__ == '__main__':
     extras = {"type": 0, "target": "http://www.baidu.com"}
     # result = jpush_notification("温馨提示", "中午好，中秋快到了", extras, ["09AA7CA6B2F34185B6B568720C32FD27"])
-    result = jpush_platform_msg("温馨提示", "中午好，中秋快到了", extras, ["09AA7CA6B2F34185B6B568720C32FD27"])
+    # result = jpush_platform_msg("温馨提示", "中午好，中秋快到了", extras, ["09AA7CA6B2F34185B6B568720C32FD27"])
+    # res = post_schedule_message("温馨提示", "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "title", ["09AA7CA6B2F34185B6B568720C32FD27"])
+
+    put_schedule_message('76ad4986-cfaf-11e9-8106-fa163e93210b', "温馨提示",
+                         "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "name")
+    # res = post_schedule_message("温馨提示", "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "title", ["09AA7CA6B2F34185B6B568720C32FD27"])

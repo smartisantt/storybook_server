@@ -345,7 +345,7 @@ def become_fans(request):
             extras = {"type": 1, "unread": 1}
             alias = []
             alias.append(uuid)
-            # 推送点赞信息
+            # 推送关注信息
             try:
                 jpush_platform_msg(title, content, extras, alias)
             except Exception as e:

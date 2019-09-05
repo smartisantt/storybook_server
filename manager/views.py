@@ -2773,8 +2773,6 @@ def modify_notification(request):
         if not linkAddress.startswith("http"):
             return http_return(400, "跳转地址请以http或https开头")
 
-    if SystemNotification.objects.filter(title=title).exists():
-        return http_return(400, "重复活动标题")
 
     # 4. 判断发布时间合法
     _, publishDate = timestamp2datetime(1, publishDate, convert=False)

@@ -424,18 +424,18 @@ REST_FRAMEWORK = {
 
 
 # Celery settings
-import djcelery
-djcelery.setup_loader()
-
-BROKER_URL = 'redis://127.0.0.1:6379/2'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
+CELERY_BEAT_SCHEDULER  = 'django_celery_beat.schedulers.DatabaseScheduler'
+BROKER_URL = 'redis://127.0.0.1:6379/'
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/'
 if version == "ali_test":
-    BROKER_URL = 'redis://172.18.0.5:6379/2'
-    CELERY_RESULT_BACKEND = 'redis://172.18.0.5:6379/2'
-CELERY_ACCEPT_CONTENT = ['json']
+    BROKER_URL = 'redis://172.18.0.5:6379/'
+    CELERY_BROKER_URL = 'redis://172.18.0.5:6379/'
+CELERY_RESULT_BACKEND = 'redis://172.17.118.207:6379/2'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = TIME_ZONE
+DJANGO_CELERY_BEAT_TZ_AWARE = False
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-CELERY_TIMEZONE = TIME_ZONE
 
 

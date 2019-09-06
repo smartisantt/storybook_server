@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'api',
     'manager',
     'public',
-    'django-celery-beat',
+    'djcelery',
 ]
 
 MIDDLEWARE = [

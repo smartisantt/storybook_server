@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-version = "test"
+version = "ali_test"
 
 # 用户端端session过期时间
 USER_SESSION_OVER_TIME = 30 * 24 * 60 * 60
@@ -28,6 +28,6 @@ SHAREURL = "http://192.168.100.235:8009"
 SLECTAUDIOURL = "http://192.168.100.235:8010"
 if version == 'ali_test':
     SHAREURL = 'http://h5huitong.hbbclub.com'
-    SLECTAUDIOURL = "活动正式服域名"
+    SLECTAUDIOURL = "http://huitonghuodong.hbbclub.com"
 
 

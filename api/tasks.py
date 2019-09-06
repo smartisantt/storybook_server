@@ -1,19 +1,14 @@
-# coding: utf-8
-
-from __future__ import absolute_import, unicode_literals
+from celery import task
+from time import sleep
 
 import logging
-import time
 
-from celery import shared_task, task
-
-# logger = logging.getLogger(__name__)
 from common.textAPI import TextAudit
 from manager.models import Behavior, AudioStory
 
 
-@shared_task
-def audioWorker(uuid, type):
+@task()
+def textWorker(uuid, type):
     """
     消费者处理任务
     :param uuid:
@@ -41,6 +36,22 @@ def audioWorker(uuid, type):
                 audio.save()
             except Exception as e:
                 logging.error(str(e))
-    time.sleep(5)
+    sleep(5)
     print("end..........")
     return True
+
+
+def get_task_status(task_id):
+    task = textWorker.AsyncResult(task_id)
+
+    status = task.state
+    progress = 0
+
+    if status == u'SUCCESS':
+        progress = 100
+    elif status == u'FAILURE':
+        progress = 0
+    elif status == 'PROGRESS':
+        progress = task.info['progress']
+
+    return {'status': status, 'progress': progress}

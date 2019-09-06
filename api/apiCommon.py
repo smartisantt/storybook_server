@@ -645,7 +645,10 @@ def message_format(mylist, pageCount, ftype, uuid=None, way=None):
     :return:
     """
     mylist = list(mylist)
-    pageCount = int(pageCount)
+    if isinstance(pageCount,str) and pageCount == "":
+        pageCount = 10
+    else:
+        pageCount = int(pageCount)
     resultList = mylist[:pageCount]
     total = len(mylist)
     if uuid and way:

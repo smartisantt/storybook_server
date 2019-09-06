@@ -387,6 +387,7 @@ class AudioStory(BaseModle, models.Model):
     fileSize = models.IntegerField(null=True)  # 音频文件大小
     taskID = models.CharField(max_length=255, null=True)  # 任务轮训id
     interfaceStatus = models.CharField(max_length=64, default="unCheck")  # unCheck待审核 check审核通过 checkFail审核不通过
+    interfaceInfo = models.CharField(max_length=64, default="audioCheck")  # audioCheck textCheck 标记机器审核内容
 
     class Meta:
         db_table = 'tb_audio_story'
@@ -402,6 +403,7 @@ class Behavior(BaseModle, models.Model):
     type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:收藏 4:播放记录 5:最近录过
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.TextField(null=True)
+    checkStatus = models.CharField(max_length=64, default="unCheck")  # unCheck check checkFail
     isRead = models.BooleanField(default=False)
 
     class Meta:

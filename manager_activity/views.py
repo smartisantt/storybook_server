@@ -264,7 +264,7 @@ def query_expressage(request):
         return http_return(400, "用户发货管理没有此快递单号！")
 
     # 30分钟内的返回数据库中的数据
-    if not userPrize.lastQueryDate:
+    if userPrize.lastQueryDate:
         if (timezone.now() - userPrize.lastQueryDate).total_seconds() > 30*60 :
             return Response(
                 {"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})

@@ -1894,16 +1894,17 @@ def comment_list(request):
     data = request_body(request)
     if not data:
         return http_return(400, '请求错误')
-    uuid = data.get("uuid", "")
-    page = data.get("page", "")
+    audioStoryUuid = data.get("audioStoryUuid", "")
+    refreshWay = data.get("refreshWay", None)
     pageCount = data.get("pageCount", "")
+    uuid = data.get("uuid", None)
     if not uuid:
         return http_return(400, "请选择要查看评论的作品")
-    audio = AudioStory.objects.filter(uuid=uuid).first()
+    audio = AudioStory.objects.filter(uuid=audioStoryUuid).first()
     if not audio:
         return http_return(400, "未查询到作品信息")
-    comments = audio.bauUuid.filter(type=2).order_by("-createTime").all()
-    total, comments = page_index(comments, page, pageCount)
+    comments = audio.bauUuid.filter(type=2, checkStatus="check").order_by("-createTime").all()
+    total, commentMsg = message_format(comments, pageCount, 4, uuid, refreshWay)
     commentList = commentList_format(comments)
     return http_return(200, "成功", {"total": total, "list": commentList})
 
@@ -1955,7 +1956,7 @@ def commnet_create(request):
     commentInfo = commentList_format(comments)[0]
 
     # 评论内容审核
-    audioWorker.delay(behavior.uuid,1)
+    audioWorker.delay(behavior.uuid, 1)
 
     return http_return(200, '评论成功', commentInfo)
 
@@ -2152,11 +2153,11 @@ def message_comment(request):
     for audio in audios:
         audioStoryList.append(audio.uuid)
     try:
-        Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).update(isRead=True)
+        Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, checkStatus="check").update(isRead=True)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')
-    commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).order_by("-createTime").all()
+    commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2,checkStatus="check").order_by("-createTime").all()
     total, commentMsg = message_format(commentMsg, pageCount, 4, uuid, refreshWay)
     commentMessage = []
     for msg in commentMsg:

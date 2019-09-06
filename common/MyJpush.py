@@ -53,8 +53,8 @@ def jpush_notification(title, msg, extras, alias=None):
     ios = jpush.ios(alert=msg, sound="default", extras=extras)
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
-    # if version != "ali_test":
-    #     push.options = {"apns_production":False}
+    if version != "ali_test":
+        push.options = {"apns_production":False}
     push.platform = jpush.all_
     response = push.send()
     return response
@@ -73,8 +73,8 @@ def jpush_platform_msg(title, content, extras, alias=None):
         push.audience = jpush.all_
     else:
         push.audience = jpush.alias(*alias)
-    # if version != "ali_test":
-    #     push.options = {"apns_production":False}
+    if version != "ali_test":
+        push.options = {"apns_production":False}
     push.platform = jpush.all_
     push.message = jpush.message(content,title=title,content_type="text", extras=extras)
     res = push.send()
@@ -122,8 +122,8 @@ def post_schedule_message(title, content, extras, timestr, name, alias=None):
         push.audience = jpush.alias(*alias)
     push.platform = jpush.all_
     push.message = jpush.message(content, title=title, content_type="text", extras=extras)
-    # if version != "ali_test":
-    #     push.options = {"apns_production":False}
+    if version != "ali_test":
+        push.options = {"apns_production":False}
     push=push.payload
 
     trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
@@ -150,8 +150,8 @@ def post_schedule_notification(title, msg, extras, timestr, name, alias=None):
     ios = jpush.ios(alert=msg, sound="default", extras=extras)
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
-    # if version != "ali_test":
-    #     push.options = {"apns_production":False}
+    if version != "ali_test":
+        push.options = {"apns_production":False}
     push=push.payload
 
     trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
@@ -208,11 +208,13 @@ def put_schedule_message(schedule_id, title, content, extras, timestr, name):
 
 if __name__ == '__main__':
     extras = {"type": 0, "target": "http://www.baidu.com"}
+    # jpush_notification("温馨提示", "中秋快到了, 快来吧！", extras, alias=["2EFDC3A8B982416B9180226552B2F450"])
+    jpush_platform_msg("温馨提示", "中秋快到了, 快来吧！", extras, alias=["4F8920204ACB4500822272805CB2F5FC"])
     # put_schedule_message('76ad4986-cfaf-11e9-8106-fa163e93210b', "温馨提示",
     #                      "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "name")
     # res = post_schedule_message("温馨提示", "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "title", ["09AA7CA6B2F34185B6B568720C32FD27"])
     # get_schedule_list()
-    try:
-        delete_schedule("f9a6680a-cfb5-11e9-b74b-fa163e52e4931")
-    except:
-        print("aa")
+    # try:
+    #     delete_schedule("f9a6680a-cfb5-11e9-b74b-fa163e52e4931")
+    # except:
+    #     print("aa")

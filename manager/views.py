@@ -1075,9 +1075,13 @@ def check_audio(request):
     if JPUSH == "ON":
         try:
             jpush_platform_msg(title, content, extras, [userUuid])
+            jpush_notification(title, content, extras, [userUuid])
+            publishState = 1   # 成功
         except Exception as e:
+            publishState = 2  # 失败
             logging.error(str(e))
-            return http_return(400, '极光出错！')
+            # 极光出错
+            # return http_return(400, '极光出错！')
 
 
     try:
@@ -1092,8 +1096,9 @@ def check_audio(request):
                 linkAddress=audioStoryUuid,
                 linkText="",
                 type=type,
+                targetType=2,  # 音频
                 activityUuid="",
-                publishState=0,
+                publishState=publishState,
                 scheduleId="",
                 isDelete=False,
             )
@@ -2724,6 +2729,7 @@ def add_notification(request):
                 linkAddress=linkAddress,
                 linkText=linkText or linkAddress,
                 type=type,
+                targetType=0,  # 活动
                 activityUuid=activityUuid,
                 publishState=0,
                 scheduleId=schedule_id,
@@ -2866,12 +2872,16 @@ def modify_notification(request):
                 result = put_schedule_message(notification.scheduleId, content, title, extras, timestr, title)
 
             if result.status_code != 200:
-                return http_return(400, "极光推送连接失败")
+                publishState = 4
+                # return http_return(400, "极光推送连接失败")
             if result.payload.get("taskid") != notification.scheduleId:
-                return http_return(400, "极光推送修改失败")
+                publishState = 4
+                # return http_return(400, "极光推送修改失败")
+            publishState = 3
         except Exception as e:
+            publishState = 4
             logging.error(str(e))
-            return http_return(400, '极光推送出错！')
+            # return http_return(400, '极光推送出错！')
 
 
     try:
@@ -2880,6 +2890,7 @@ def modify_notification(request):
             notification.content = content
             notification.type = type
             notification.publishDate = publishDate
+            notification.publishState = publishState
             notification.linkAddress = linkAddress
             notification.linkText = linkText
             notification.activityUuid = activityUuid
@@ -2915,18 +2926,21 @@ def del_notification(request):
             try:
                 result = delete_schedule(notification.scheduleId)
                 if result.status_code == 200 and result.payload == 'sucess':
+                    publishState = 5
                     pass
                 else:
-                    return http_return(400, "极光删除错误")
+                    publishState = 6
+                    # return http_return(400, "极光删除错误")
             except Exception as e:
                 logging.error(str(e))
-                return http_return(400, '极光推送出错！')
+                # return http_return(400, '极光推送出错！')
         elif (notification.publishDate-timezone.now()).total_seconds()>0:
             return http_return(400, "临近极光发布时间，暂无法删除！")
 
     try:
         with transaction.atomic():
             notification.isDelete = True
+            notification.publishState = publishState
             notification.save()
             return http_return(200, '删除成功')
     except Exception as e:

@@ -110,7 +110,7 @@ urlpatterns = [
     # path('notification/publishnotification/', views.publish_notification, name='publishnotification'),
     path('notification/delnotification/', views.del_notification, name='delnotification'),
     path('notification/modifynotification/', views.modify_notification, name='modifynotification'),
-    # path('notification/jpush/', views.MyJpush, name='jpush'),
+    path('notification/jpush/', views.MyJpush, name='jpush'),
 
     # 专辑
     path('album/', AlbumView.as_view()),

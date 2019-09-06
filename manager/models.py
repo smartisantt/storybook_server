@@ -141,7 +141,7 @@ class GameInfo(BaseModle, models.Model):
     activityUuid = models.ForeignKey('Activity', models.CASCADE, null=True, related_name='activityRankUuid',
                                      to_field='uuid')
     audioUuid = models.ForeignKey('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid',
-                                  to_field='uuid')
+                                  to_field='uuid') # 为空则只是报名， 有则是上传作品
     votes = models.IntegerField(null=True, default=0)
     status = models.IntegerField(default=0)  # 状态 0正常 1禁用 2删除
     inviter = models.CharField(max_length=32, null=True)  # 邀请人 or 门店uuid
@@ -464,6 +464,7 @@ class UserPrize(BaseModle):
                                     null=True, verbose_name="收货信息")
 
     expressDate = models.DateTimeField(verbose_name='填写快递日期', null=True)
+    lastQueryDate = models.DateTimeField(verbose_name='上次查询时间', null=True)
     com = models.CharField(max_length=64, null=True, verbose_name="快递公司名字")
     # 物流的详细信息
     expressDetail = models.TextField(null=True)
@@ -535,7 +536,7 @@ class SystemNotification(BaseModle):
     存储系统消息：包含后台系统消息和作品审核消息
     """
     userUuid = models.CharField(max_length=64, null=True)
-    type = models.IntegerField(null=True, default=1)  # 系统消息类型 1：后台通知（纯文本） 2：外部连接 3：活动邀请 4：审核信息
+    type = models.IntegerField(null=True, default=1)  # 系统消息类型 1：后台通知（纯文本） 2：外部连接 3：活动邀请 4：审核通过  5：审核没有通过
     title = models.CharField(max_length=256, verbose_name="标题")
     content = models.CharField(max_length=256, verbose_name="内容")
     publishDate = models.DateTimeField(null=False)

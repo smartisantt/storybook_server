@@ -1,15 +1,12 @@
 import json
 import logging
-from datetime import datetime
-from functools import reduce
+from datetime import datetime, timedelta
 
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
-from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, mixins
-from rest_framework.decorators import api_view, authentication_classes, throttle_classes, action
+from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -19,7 +16,7 @@ from common.expressage import Express100
 from manager.auths import CustomAuthentication
 from manager.filters import ActivityFilter
 from manager.managerCommon import request_body, http_return, timestamp2datetime
-from manager.models import Activity, GameInfo, ActivityConfig, Shop, Prize, UserPrize, User, SystemNotification
+from manager.models import Activity, GameInfo, Shop, Prize, UserPrize, User, SystemNotification
 from manager.paginations import MyPagination
 from manager.serializers import ActivitySerializer
 from manager_activity.filters import ShopFilter, PrizeFilter, UserPrizeFilter, UserInvitationFilter, \
@@ -266,11 +263,18 @@ def query_expressage(request):
     if not userPrize:
         return http_return(400, "用户发货管理没有此快递单号！")
 
+    # 30分钟内的返回数据库中的数据
+    if not userPrize.lastQueryDate:
+        if (timezone.now() - userPrize.lastQueryDate).total_seconds() > 30*60 :
+            return Response(
+                {"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})
+
     # 超过30的单号直接读取数据库历史记录
     if userPrize.expressDate:
         if (timezone.now() - userPrize.expressDate).days > 30:
             return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})
 
+    # 如果已签收返回数据库数据
     if userPrize.expressState == 3:
         return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})
 
@@ -282,7 +286,6 @@ def query_expressage(request):
     state = res.get("state", "")
     com = res.get("com", "")
 
-
     if not info:
         return http_return(400, "查询无结果，请隔断时间再查！")
 
@@ -290,6 +293,7 @@ def query_expressage(request):
     com = com_dict.get(com, com)
     userPrize.expressDetail = json.dumps(info)
     userPrize.com = com
+    userPrize.lastQueryDate = timezone.now()
     userPrize.save()
     return Response({"info": info, "state": state, "com": com})
 
@@ -395,7 +399,7 @@ class PrizeView(ListAPIView):
     ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
-        # 更新物流信息（除签收以外）：
+
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')
 
@@ -590,10 +594,13 @@ def del_prize(request):
 
 def refresh_express():
     # 排除已签收和没有运单号的
-    deliveryNumQueryset  = UserPrize.objects.exclude(expressState__in=[3, 7]).values("deliveryNum")
-    deliveryNums = [item["deliveryNum"] for item in list(deliveryNumQueryset)]
-    for deliveryNum in deliveryNums:
-        res = Express100.get_express_info(deliveryNum)
+    time_30minutes = timezone.now() - timedelta(minutes=30)
+    userPrizes = UserPrize.objects.filter(Q(lastQueryDate__isnull=True)|Q(lastQueryDate__lt=time_30minutes)).\
+        exclude(expressState__in=[3, 7])
+    for userPrize in userPrizes:
+        if not userPrize.deliveryNum:
+            continue
+        res = Express100.get_express_info(userPrize.deliveryNum)
         if not res:
             continue
         res = json.loads(res.text)
@@ -602,16 +609,17 @@ def refresh_express():
         com = res.get("com", "")
 
         if not info:
+            userPrize.lastQueryDate = timezone.now()
+            userPrize.save()
             continue
 
-        # 如快递状态有更新，则更新显示
-        userPrizes = UserPrize.objects.filter(deliveryNum=deliveryNum).all()
-        for userPrize in userPrizes:
-            userPrize.expressState = state
-            userPrize.expressDetail = json.dumps(info)
-            com = com_dict.get(com, com)
-            userPrize.com = com
-            userPrize.save()
+        userPrize.expressState = state
+        userPrize.expressDetail = json.dumps(info)
+        com = com_dict.get(com, com)
+        userPrize.com = com
+        userPrize.lastQueryDate = timezone.now()
+        userPrize.save()
+
 
 
 class UserPrizeView(ListAPIView):
@@ -624,6 +632,7 @@ class UserPrizeView(ListAPIView):
     ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
+        # 更新物流信息（除签收以外）：
         refresh_express()
         startTimestamp = self.request.query_params.get('starttime', '')
         endTimestamp = self.request.query_params.get('endtime', '')

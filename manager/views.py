@@ -10,7 +10,7 @@ from rest_framework.response import Response
 
 from api.apiCommon import get_default_name
 from common.MyJpush import post_schedule_message, time2str, delete_schedule, put_schedule_message, \
-    post_schedule_notification
+    post_schedule_notification, put_schedule_notification, jpush_notification, jpush_platform_msg
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
@@ -1058,14 +1058,51 @@ def check_audio(request):
     if not audioStory:
         return http_return(400, '对象错误')
 
+    userUuid = audioStory.userUuid
+
+    # 审核通过，通知该音频作者   并存入系统消息表
+    if checkStatus == "check":
+        type = 4
+        title = "你的作品已通过审核"
+        content = "您好，您录制的《{}》已通过审核，快去分享吧。".format(audioStory.name)
+        extras = {"type": 2, "target": audioStoryUuid}
+    else:
+        type = 5
+        title = "您的作品审核未通过"
+        content = "您好，您录制的《{}》因含有违禁信息，审核不通过，将不能发布。请您遵守《绘童用户守则》，避免账号被封禁。如有疑问，请至客服中心反馈。".format(audioStory.name)
+        extras = {}
+
+    if JPUSH == "ON":
+        try:
+            jpush_platform_msg(title, content, extras, [userUuid])
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '极光出错！')
+
+
     try:
         with transaction.atomic():
+            uuid = get_uuid()
+            SystemNotification.objects.create(
+                uuid=uuid,
+                userUuid=userUuid,
+                title=title,
+                content=content,
+                publishDate=timezone.now(),
+                linkAddress=audioStoryUuid,
+                linkText="",
+                type=type,
+                activityUuid="",
+                publishState=0,
+                scheduleId="",
+                isDelete=False,
+            )
             audioStory.checkStatus = checkStatus
             audioStory.save()
-        return http_return(200, '添加成功')
+        return http_return(200, '审核成功')
     except Exception as e:
         logging.error(str(e))
-        return http_return(400, '添加失败')
+        return http_return(400, '审核失败')
 
 
 @api_view(['POST'])
@@ -2647,27 +2684,33 @@ def add_notification(request):
     else:
         userUuid = ""
 
-    # 添加到极光定时推送
+    # ===================添加到极光定时推送  横幅 全部用户 定时 =================
     # {value: 0, label: "活动"},
     # {value: 1, label: "专辑"},
     # {value: 2, label: "音频"},
     # {value: 3, label: "商品"},
     # {value: 4, label: "链接"},
     # {value: 5, label: "模板"}
-    # timestr = time2str(publishDate)
-    # if type == 3:  # 活动横幅通知
-    #     extras = {"type": 0, "target": linkAddress}
-    #     result = post_schedule_notification(title, content, extras, timestr, title)
-    # else:  # app内， 跳转外部连接，或者通知
-    #     extras = {"type": 4, "target": linkAddress}
-    #     result = post_schedule_message(title, content, extras, timestr, title, alias=None)
-    # if result.status_code == 200:
-    #     schedule_id = result.payload.get("schedule_id", "")
-    #     if not schedule_id:
-    #         return http_return(400, "极光推送错误")
-    # else:
-    #     return http_return(400, "连接极光错误")
-    schedule_id = ""
+    timestr = time2str(publishDate)
+    if JPUSH == "ON":
+        try:
+            if type == 3:  # 活动横幅通知
+                extras = {"type": 0, "target": linkAddress}
+                result = post_schedule_notification(title, content, extras, timestr, title)
+            else:  # app内， 跳转外部连接，（系统纯文字通知，或者有外部链接）
+                extras = {"type": 4, "target": linkAddress}
+                result = post_schedule_message(title, content, extras, timestr, title, alias=None)
+            if result.status_code == 200:
+                schedule_id = result.payload.get("schedule_id", "")
+                if not schedule_id:
+                    return http_return(400, "极光推送错误")
+            else:
+                return http_return(400, "连接极光错误")
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '极光推送出错！')
+    else:
+        schedule_id = ""
 
     try:
         with transaction.atomic():
@@ -2679,7 +2722,7 @@ def add_notification(request):
                 content=content,
                 publishDate=publishDate,
                 linkAddress=linkAddress,
-                linkText=linkText,
+                linkText=linkText or linkAddress,
                 type=type,
                 activityUuid=activityUuid,
                 publishState=0,
@@ -2752,6 +2795,10 @@ def modify_notification(request):
     if not notification:
         return http_return(400, "无此消息")
 
+    # 不支持type字段修改
+    if notification.type != type:
+        return http_return(400, "不支持类型修改")
+
     # 2.此时此刻是否支持修改
     if (notification.publishDate - timezone.now()).total_seconds() < 0:
         return http_return(400, "过期消息，不支持修改")
@@ -2760,9 +2807,8 @@ def modify_notification(request):
         return http_return(400, "临近发送，不支持修改")
 
     # 3. 判断参数逻辑
-    if SystemNotification.objects.filter(title=title).exclude(uuid=uuid).exists():
+    if SystemNotification.objects.filter(title=title, isDelete=False).exclude(uuid=uuid).exists():
         return http_return(400, "重复活动标题")
-
 
     if not isinstance(content, str):
         return http_return(400, "消息内容格式需为字符串")
@@ -2797,7 +2843,6 @@ def modify_notification(request):
     if type == 3:
         if not activityUuid:
             return http_return(400, "活动参数不能为空")
-
         activity = Activity.objects.filter(uuid=activityUuid, status="normal").first()
         if not activity:
             return http_return(400, "该活动不存在！")
@@ -2809,16 +2854,25 @@ def modify_notification(request):
         linkAddress = urljoin(activity.url, activity.uuid) + "/false"
 
 
-    # 修改极光推送
-    # if notification.scheduleId:
-    #     if (notification.publishDate - timezone.now()).total_seconds() > 5 * 60:
-    #         extras = {"linkAddress": linkAddress, "linkText": linkText}
-    #         timestr = time2str(publishDate)
-    #         result = put_schedule_message(notification.scheduleId, content, title, extras, timestr, title)
-    #         if result.status_code != 200:
-    #             return http_return(400, "极光推送修改失败")
-    #     elif (notification.publishDate - timezone.now()).total_seconds() > 0:
-    #         return http_return(400, "临近发送时间，暂不支持修改")
+    # =====================修改极光推送  修改定时的极光推送
+    if notification.scheduleId:
+        try:
+            timestr = time2str(publishDate)
+            if type == 3:  # 活动横幅通知
+                extras = {"type": 0, "target": linkAddress}
+                result = put_schedule_notification(notification.scheduleId, content, title, extras, timestr, title)
+            else:  # app内， 跳转外部连接，（系统纯文字通知，或者有外部链接）
+                extras = {"type": 4, "target": linkAddress}
+                result = put_schedule_message(notification.scheduleId, content, title, extras, timestr, title)
+
+            if result.status_code != 200:
+                return http_return(400, "极光推送连接失败")
+            if result.payload.get("taskid") != notification.scheduleId:
+                return http_return(400, "极光推送修改失败")
+        except Exception as e:
+            logging.error(str(e))
+            return http_return(400, '极光推送出错！')
+
 
     try:
         with transaction.atomic():
@@ -2850,7 +2904,6 @@ def del_notification(request):
 
 
     # 未删除未发布的消息，才可以删除
-
     notification = SystemNotification.objects.filter(uuid=uuid, isDelete=False).first()
     if not notification:
         return http_return(400, '没有对象')
@@ -2859,13 +2912,16 @@ def del_notification(request):
     # 删除还没有发送的极光推送
     if notification.scheduleId:
         if (notification.publishDate-timezone.now()).total_seconds() > 5*60:
-            # result = delete_schedule(notification.scheduleId)
-            # if result.status_code == 200 and result.payload == 'sucess':
-            #     pass
-            # else:
-            #     return http_return(400, "极光删除错误")
-            pass
-        else:
+            try:
+                result = delete_schedule(notification.scheduleId)
+                if result.status_code == 200 and result.payload == 'sucess':
+                    pass
+                else:
+                    return http_return(400, "极光删除错误")
+            except Exception as e:
+                logging.error(str(e))
+                return http_return(400, '极光推送出错！')
+        elif (notification.publishDate-timezone.now()).total_seconds()>0:
             return http_return(400, "临近极光发布时间，暂无法删除！")
 
     try:

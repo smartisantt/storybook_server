@@ -64,6 +64,10 @@ if __name__ == "__main__":
     #     res = Express100.get_express_info(str(code).strip())
     #     print(json.dumps(res, ensure_ascii=False, sort_keys=True, indent=4))
     #     print(res.text,type(res))
+    # code = "YT4002369100629"
+    # code = "75168187845896"
+    # code = "YT4069653742681"
     code = "YT4002369100629"
+    # code = "70358425544720"
     res = Express100.get_express_info(str(code).strip())
-    print(res.json()["data"])
+    print(res.json().get('data'))

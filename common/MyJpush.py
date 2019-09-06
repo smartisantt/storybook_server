@@ -1,3 +1,4 @@
+
 # 极光推送
 
 import jpush
@@ -36,8 +37,11 @@ def time2str(in_date):
 
 def jpush_notification(title, msg, extras, alias=None):
     """
-    广播消息  横幅 非定时
-    :param msg: 消息内容
+
+    :param title:
+    :param msg:
+    :param extras:
+    :param alias:
     :return:
     """
     push = _jpush.create_push()
@@ -50,7 +54,7 @@ def jpush_notification(title, msg, extras, alias=None):
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
     if version != "ali_test":
-        push.options = {"apns_production": False}
+        push.options = {"apns_production":False}
     push.platform = jpush.all_
     response = push.send()
     return response
@@ -70,9 +74,9 @@ def jpush_platform_msg(title, content, extras, alias=None):
     else:
         push.audience = jpush.alias(*alias)
     if version != "ali_test":
-        push.options = {"apns_production": False}
+        push.options = {"apns_production":False}
     push.platform = jpush.all_
-    push.message = jpush.message(content, title=title, content_type="text", extras=extras)
+    push.message = jpush.message(content,title=title,content_type="text", extras=extras)
     res = push.send()
     return res
 
@@ -119,12 +123,12 @@ def post_schedule_message(title, content, extras, timestr, name, alias=None):
     push.platform = jpush.all_
     push.message = jpush.message(content, title=title, content_type="text", extras=extras)
     if version != "ali_test":
-        push.options = {"apns_production": False}
-    push = push.payload
+        push.options = {"apns_production":False}
+    push=push.payload
 
-    trigger = jpush.schedulepayload.trigger(timestr)  # timestr "2016-07-17 12:00:00"
-    schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)
-    result = schedule.post_schedule(schedulepayload)
+    trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
+    schedulepayload=jpush.schedulepayload.schedulepayload(name, True, trigger, push)
+    result=schedule.post_schedule(schedulepayload)
     return result
 
 
@@ -147,12 +151,12 @@ def post_schedule_notification(title, msg, extras, timestr, name, alias=None):
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
     if version != "ali_test":
-        push.options = {"apns_production": False}
-    push = push.payload
+        push.options = {"apns_production":False}
+    push=push.payload
 
-    trigger = jpush.schedulepayload.trigger(timestr)  # timestr "2016-07-17 12:00:00"
-    schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)
-    result = schedule.post_schedule(schedulepayload)
+    trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
+    schedulepayload=jpush.schedulepayload.schedulepayload(name,True,trigger,push)
+    result=schedule.post_schedule(schedulepayload)
     return result
 
 
@@ -194,7 +198,7 @@ def put_schedule_message(schedule_id, title, content, extras, timestr, name):
     push.audience = jpush.all_
     push.message = jpush.message(content, title=title, content_type="text", extras=extras)
     push.platform = jpush.all_
-    push = push.payload
+    push=push.payload
 
     trigger = jpush.schedulepayload.trigger(timestr)
     schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)
@@ -203,13 +207,12 @@ def put_schedule_message(schedule_id, title, content, extras, timestr, name):
 
 
 if __name__ == '__main__':
-    # extras = {"type": 0, "target": "http://www.baidu.com"}
-    # result = jpush_notification("温馨提示", "中午好，中秋快到了", extras, ["09AA7CA6B2F34185B6B568720C32FD27"])
-    # result = jpush_platform_msg("温馨提示", "中午好，中秋快到了", extras, ["09AA7CA6B2F34185B6B568720C32FD27"])
-    # res = post_schedule_message("温馨提示", "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "title", ["09AA7CA6B2F34185B6B568720C32FD27"])
-
+    extras = {"type": 0, "target": "http://www.baidu.com"}
     # put_schedule_message('76ad4986-cfaf-11e9-8106-fa163e93210b', "温馨提示",
     #                      "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "name")
     # res = post_schedule_message("温馨提示", "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "title", ["09AA7CA6B2F34185B6B568720C32FD27"])
-    res = jpush_platform_msg("title", "content", {"type": 1, "unread": 1}, ["09AA7CA6B2F34185B6B568720C32FD27"])
-    print(type(res.status_code))
+    # get_schedule_list()
+    try:
+        delete_schedule("f9a6680a-cfb5-11e9-b74b-fa163e52e4931")
+    except:
+        print("aa")

@@ -634,7 +634,7 @@ def commentList_format(comments):
     return commentList
 
 
-def message_format(mylist, pageCount, ftype, uuid=None, way=None):
+def message_format(mylist, pageCount=10, ftype=None, uuid=None, way=None):
     """
     消息刷新返回
     :param mylist:

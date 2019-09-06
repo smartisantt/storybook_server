@@ -2035,7 +2035,7 @@ def message_system(request):
             audioStory = audioList_format(audios, data)[0]
         systemMessage.append({
             "uuid": msg.uuid,
-            "createTime": datetime_to_unix(msg.createTime),
+            "createTime": datetime_to_unix(msg.publishDate),
             "title": msg.title,
             "content": msg.content,
             "router": router,

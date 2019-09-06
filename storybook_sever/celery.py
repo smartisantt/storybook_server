@@ -8,7 +8,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'storybook_sever.settings')
 
 app = Celery('storybook_sever')
 
-app.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object('django.conf:settings')
 app.now = timezone.now
 
 # Load task modules from all registered Django app configs.

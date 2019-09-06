@@ -429,6 +429,9 @@ djcelery.setup_loader()
 
 BROKER_URL = 'redis://127.0.0.1:6379/2'
 CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
+if version == "ali_test":
+    BROKER_URL = 'redis://172.18.0.5:6379/2'
+    CELERY_RESULT_BACKEND = 'redis://172.18.0.5:6379/2'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

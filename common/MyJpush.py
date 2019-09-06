@@ -5,14 +5,14 @@ import jpush
 
 from storybook_sever.config import version
 
-# if version == "ali_test":
-# ios 测试和正式需要使用这个key ，测试需要设置" apns_production":False
-app_key = 'b878563acc58979e1bdc1c1f'
-master_secret = '8a68fd8e94cc345f0b680dd1'
-# else:
-# Android测试用这个key
-#     app_key = '946c0bba0a673da03bb0941f'
-#     master_secret = '3fa24a0e9f341da0c0c436c7'
+if version == "ali_test":
+    # 阿里测试----->  ios release
+    app_key = 'b878563acc58979e1bdc1c1f'
+    master_secret = '8a68fd8e94cc345f0b680dd1'
+else:
+    #  235测试------> ios debug
+    app_key = '946c0bba0a673da03bb0941f'
+    master_secret = '3fa24a0e9f341da0c0c436c7'
 
 _jpush = jpush.JPush(app_key, master_secret)
 _jpush.set_logging("DEBUG")
@@ -53,8 +53,8 @@ def jpush_notification(title, msg, extras, alias=None):
     ios = jpush.ios(alert=msg, sound="default", extras=extras)
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
-    if version != "ali_test":
-        push.options = {"apns_production":False}
+    # if version != "ali_test":
+    #     push.options = {"apns_production":False}
     push.platform = jpush.all_
     response = push.send()
     return response
@@ -73,8 +73,8 @@ def jpush_platform_msg(title, content, extras, alias=None):
         push.audience = jpush.all_
     else:
         push.audience = jpush.alias(*alias)
-    if version != "ali_test":
-        push.options = {"apns_production":False}
+    # if version != "ali_test":
+    #     push.options = {"apns_production":False}
     push.platform = jpush.all_
     push.message = jpush.message(content,title=title,content_type="text", extras=extras)
     res = push.send()
@@ -122,8 +122,8 @@ def post_schedule_message(title, content, extras, timestr, name, alias=None):
         push.audience = jpush.alias(*alias)
     push.platform = jpush.all_
     push.message = jpush.message(content, title=title, content_type="text", extras=extras)
-    if version != "ali_test":
-        push.options = {"apns_production":False}
+    # if version != "ali_test":
+    #     push.options = {"apns_production":False}
     push=push.payload
 
     trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
@@ -150,8 +150,8 @@ def post_schedule_notification(title, msg, extras, timestr, name, alias=None):
     ios = jpush.ios(alert=msg, sound="default", extras=extras)
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
-    if version != "ali_test":
-        push.options = {"apns_production":False}
+    # if version != "ali_test":
+    #     push.options = {"apns_production":False}
     push=push.payload
 
     trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"

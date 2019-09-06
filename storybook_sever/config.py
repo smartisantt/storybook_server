@@ -18,6 +18,11 @@ if version == 'ali_test':
 else:
     IS_SEND = False
 
+# 极光推送开关，ON打开极光推送  OFF 关闭（默认关闭）
+# 针对创建定时推送，立即推送有效， 修改，删除无效
+JPUSH = "ON"
+
+
 # 分享域名
 SHAREURL = "http://192.168.100.235:8009"
 SLECTAUDIOURL = "http://192.168.100.235:8010"

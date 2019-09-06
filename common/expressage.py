@@ -30,7 +30,6 @@ class Express100(object):
         else:
             return
 
-
         param = {}
         param['com'] = company_code or ''  # 快递公司编码
         param['num'] = express_code  # 快递单号

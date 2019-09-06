@@ -2934,35 +2934,6 @@ def del_notification(request):
         return http_return(400, '删除失败')
 
 
-
-@api_view(['POST'])
-@authentication_classes((CustomAuthentication,))
-def MyJpush(request):
-
-
-    _jpush = jpush.JPush(app_key, master_secret)
-    _jpush.set_logging("DEBUG")
-
-    push = _jpush.create_push()
-    push.audience = jpush.all_
-    push.notification = jpush.notification(alert="绘童温馨提示：天冷加衣！+1")
-    push.platform = jpush.all_
-
-    # trigger = jpush.schedulepayload.trigger('2019-09-02 17:08:00')
-    # schedule_payload = jpush.schedulepayload.schedulepayload("name", True, trigger, push)
-
-    try:
-        response = push.send()
-        # response = schedule.post_schedule(schedule_payload)
-        if response.status_code != 200:
-            return http_return(400, "推送失败")
-        return http_return(200, "推送成功")
-    except Exception as e:
-        logging.error(str(e))
-        return http_return(400, "推送失败")
-
-
-
 class AlbumView(ListAPIView):
     queryset = Album.objects.filter(isDelete=False, checkStatus__in=["check", "exemption"]). \
         prefetch_related('audioStory')

@@ -545,7 +545,7 @@ class SystemNotification(BaseModle):
     publishDate = models.DateTimeField(null=False)
     linkAddress = models.CharField(max_length=256, null=True)
     linkText = models.CharField(max_length=256, null=True)
-    publishState = models.IntegerField(default=0)  # 0未推送 1 极光发布成功 2 极光推送失败
+    publishState = models.IntegerField(default=0)  # 0未推送 1 极光发布成功 2 极光推送失败  3 修改成功 4 修改失败 5 删除成功 6 删除失败
     isDelete = models.BooleanField(default=False)
     scheduleId = models.CharField(max_length=256, null=True)  # 定时 推送唯一标识符
     audioUuid = models.CharField(max_length=64, null=True)

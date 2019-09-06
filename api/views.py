@@ -5,11 +5,11 @@ from urllib.parse import urljoin
 
 from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
+from api.tasks import textWorker
 from common.MyJpush import jpush_platform_msg
 from common.common import *
 from common.mixFileAPI import MixAudio
-from common.taskMQ import audioWorker
-from common.textAPI import TextAudit
+
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL, version
 
 
@@ -267,7 +267,7 @@ def recording_send(request):
         url = urljoin(SLECTAUDIOURL, "/huodong/selectEntries/" + game.activityUuid.uuid)
 
     # 标题和录制感受生产者提交
-    audioWorker.delay(uuid, 2)
+    textWorker.delay(uuid, 2)
 
     return http_return(200, '发布成功', url)
 
@@ -1949,7 +1949,7 @@ def commnet_create(request):
     commentInfo = commentList_format(comments)[0]
 
     # 评论内容审核
-    audioWorker.delay(behavior.uuid, 1)
+    textWorker.delay(behavior.uuid, 1)
 
     return http_return(200, '评论成功', commentInfo)
 

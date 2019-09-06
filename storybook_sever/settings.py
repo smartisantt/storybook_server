@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'api',
     'manager',
     'public',
-    # 'djcelery',
+    'manager_activity',
 ]
 
 MIDDLEWARE = [

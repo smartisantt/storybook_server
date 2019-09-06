@@ -204,16 +204,6 @@ def recording_send(request):
         return http_return(400, '请选择录制类型')
     if not name:
         return http_return(400, '请输入标题')
-    # 审核标题
-    text = TextAudit()
-    logging.error("-----------------------------------------------")
-    logging.error(str(name))
-    logging.error("-----------------------------------------------")
-    if not text.work_on(str(name)):
-        return http_return(400, "你输入的标题包含非法信息，请重新输入")
-    if remarks:
-        if not text.work_on(remarks):
-            return http_return(400, "你输入的录制感受包含非法信息，请重新输入")
     if not icon:
         return http_return(400, '请上传背景图片')
     if not fileSize:
@@ -275,6 +265,9 @@ def recording_send(request):
     url = ""
     if game:
         url = urljoin(SLECTAUDIOURL, "/huodong/selectEntries/" + game.activityUuid.uuid)
+
+    # 标题和录制感受生产者提交
+    audioWorker.delay(uuid, 2)
 
     return http_return(200, '发布成功', url)
 
@@ -1898,7 +1891,7 @@ def comment_list(request):
     refreshWay = data.get("refreshWay", None)
     pageCount = data.get("pageCount", "")
     uuid = data.get("uuid", None)
-    if not uuid:
+    if not audioStoryUuid:
         return http_return(400, "请选择要查看评论的作品")
     audio = AudioStory.objects.filter(uuid=audioStoryUuid).first()
     if not audio:

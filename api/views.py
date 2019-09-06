@@ -2017,7 +2017,7 @@ def message_system(request):
     systemMessage = []
     for msg in systemMsg:
         router = {
-            "type": msg.targetType,
+            "type": msg.type,
             "target": msg.linkAddress,
             "description": msg.linkText,
         }

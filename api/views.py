@@ -2174,6 +2174,6 @@ def message_comment(request):
             "createTime": datetime_to_unix(msg.createTime),
             "user": userInfo,
             "audioStory": audioStory,
-            "content": msg.content,
+            "content": msg.remarks,
         })
     return http_return(200, "成功", {"total": total, "list": commentMessage})

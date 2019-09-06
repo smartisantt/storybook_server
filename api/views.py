@@ -8,6 +8,7 @@ from api.ssoSMS.sms import send_sms
 from common.MyJpush import jpush_platform_msg
 from common.common import *
 from common.mixFileAPI import MixAudio
+from common.taskMQ import audioWorker
 from common.textAPI import TextAudit
 from storybook_sever.config import IS_SEND, TEL_IDENTIFY_CODE, SHAREURL, SLECTAUDIOURL, version
 
@@ -1926,10 +1927,6 @@ def commnet_create(request):
         return http_return(400, "未查询到作品信息")
     if not content:
         return http_return(400, "请输入评论内容")
-    if version == 'ali_test':
-        text = TextAudit()
-        if not text.work_on(content):
-            return http_return(400, "你的评论内容包含非法信息，请重新输入")
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     behavior = Behavior(
         uuid=get_uuid(),
@@ -1956,6 +1953,10 @@ def commnet_create(request):
     comments = []
     comments.append(behavior)
     commentInfo = commentList_format(comments)[0]
+
+    # 评论内容审核
+    audioWorker.delay(behavior.uuid,1)
+
     return http_return(200, '评论成功', commentInfo)
 
 
@@ -2016,7 +2017,7 @@ def message_system(request):
         logging.error(str(e))
         return http_return(400, '更新已读失败')
     systemMsg = SystemNotification.objects.filter(
-        Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
+        Q(type__in=[1, 2, 3], publishDate__lte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
         "-publishDate").all()
     total, systemMsg = message_format(systemMsg, pageCount, 1, uuid, refreshWay)
     systemMessage = []
@@ -2174,6 +2175,6 @@ def message_comment(request):
             "createTime": datetime_to_unix(msg.createTime),
             "user": userInfo,
             "audioStory": audioStory,
-            "content": msg.content,
+            "content": msg.remarks,
         })
     return http_return(200, "成功", {"total": total, "list": commentMessage})

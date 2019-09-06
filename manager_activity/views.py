@@ -148,6 +148,10 @@ def modify_activity(request):
     activity = Activity.objects.filter(uuid=uuid).first()
     if not activity:
         return http_return(400, '没有对象')
+    # 判断活动是否过期，过期活动无法修改
+    if activity.endTime < timezone.now():
+        return http_return(400, "过期活动，无法修改！")
+
     myName = activity.name
     if myName != name:
         if Activity.objects.filter(name=name).exists():

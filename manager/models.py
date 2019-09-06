@@ -539,12 +539,13 @@ class SystemNotification(BaseModle):
     """
     userUuid = models.CharField(max_length=64, null=True)
     type = models.IntegerField(null=True, default=1)  # 系统消息类型 1：后台通知（纯文本） 2：外部连接 3：活动邀请 4：审核通过  5：审核没有通过
+    targetType = models.IntegerField(null=True)      # 跳转类型分类：0 活动 1 专辑 2 音频 3 商品 4 链接 5 模板
     title = models.CharField(max_length=256, verbose_name="标题")
     content = models.CharField(max_length=256, verbose_name="内容")
     publishDate = models.DateTimeField(null=False)
     linkAddress = models.CharField(max_length=256, null=True)
     linkText = models.CharField(max_length=256, null=True)
-    publishState = models.IntegerField(default=2)  # 1 已发布 2 未发布
+    publishState = models.IntegerField(default=0)  # 0未推送 1 极光发布成功 2 极光推送失败
     isDelete = models.BooleanField(default=False)
     scheduleId = models.CharField(max_length=256, null=True)  # 定时 推送唯一标识符
     audioUuid = models.CharField(max_length=64, null=True)

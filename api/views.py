@@ -1974,7 +1974,8 @@ def message_count(request):
         Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
     followMsgCount = FriendShip.objects.filter(follows__uuid=selfUuid, isRead=False).count()
     likeMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1, isRead=False).count()
-    commentMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, isRead=False).count()
+    commentMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, isRead=False,
+                                              checkStatus="check").count()
     return http_return(200, "成功", {
         "systemUnread": systemMsgCount if systemMsgCount else 0,
         "followUnread": followMsgCount if followMsgCount else 0,

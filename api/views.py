@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 from api.apiCommon import *
 from api.ssoSMS.sms import send_sms
-# from api.tasks import textWorker
+from api.tasks import textWorker
 from common.MyJpush import jpush_platform_msg
 from common.common import *
 from common.mixFileAPI import MixAudio
@@ -267,7 +267,7 @@ def recording_send(request):
         url = urljoin(SLECTAUDIOURL, "/huodong/selectEntries/" + game.activityUuid.uuid)
 
     # 标题和录制感受生产者提交
-    # textWorker.delay(uuid, 2)
+    textWorker.delay(uuid, 2)
 
     return http_return(200, '发布成功', url)
 
@@ -599,7 +599,7 @@ def index_more(request):
         checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
     if type in [1, 2, 3]:
         typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
-        audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False)
+        audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False, moduleAudioUuid__isDelete=False)
         if type == 1:
             audio = audio.filter(audioStoryType=True)
     elif type == 4:
@@ -1935,7 +1935,7 @@ def commnet_create(request):
         logging.error(str(e))
         return http_return(400, '评论失败')
     title = "评论提醒"
-    content = user.nickName + "评论了了" + audio.name
+    content = user.nickName + "评论了" + audio.name
     extras = {"type": 3, "unread": 1}
     alias = []
     alias.append(audio.userUuid.uuid)
@@ -1949,7 +1949,7 @@ def commnet_create(request):
     commentInfo = commentList_format(comments)[0]
 
     # 评论内容审核
-    # textWorker.delay(behavior.uuid, 1)
+    textWorker.delay(behavior.uuid, 1)
 
     return http_return(200, '评论成功', commentInfo)
 
@@ -2017,7 +2017,7 @@ def message_system(request):
     systemMessage = []
     for msg in systemMsg:
         router = {
-            "type": msg.type,
+            "type": msg.targetType,
             "target": msg.linkAddress,
             "description": msg.linkText,
         }
@@ -2150,7 +2150,8 @@ def message_comment(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')
-    commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2,checkStatus="check").order_by("-createTime").all()
+    commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, checkStatus="check").order_by(
+        "-createTime").all()
     total, commentMsg = message_format(commentMsg, pageCount, 4, uuid, refreshWay)
     commentMessage = []
     for msg in commentMsg:

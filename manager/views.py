@@ -1058,7 +1058,7 @@ def check_audio(request):
     if not audioStory:
         return http_return(400, '对象错误')
 
-    userUuid = audioStory.userUuid
+    userUuid = audioStory.userUuid_id
 
     # 审核通过，通知该音频作者   并存入系统消息表
     if checkStatus == "check":

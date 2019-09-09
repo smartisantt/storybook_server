@@ -1,10 +1,8 @@
 import json
 import logging
 from datetime import datetime, timedelta
-
 from django.db import transaction
 from django.db.models import Q, Sum
-from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.filters import OrderingFilter
@@ -146,7 +144,7 @@ def modify_activity(request):
     if not activity:
         return http_return(400, '没有对象')
     # 判断活动是否过期，过期活动无法修改
-    if activity.endTime < timezone.now():
+    if activity.endTime < datetime.now():
         return http_return(400, "过期活动，无法修改！")
 
     myName = activity.name
@@ -265,13 +263,13 @@ def query_expressage(request):
 
     # 30分钟内的返回数据库中的数据
     if userPrize.lastQueryDate:
-        if (timezone.now() - userPrize.lastQueryDate).total_seconds() > 30*60 :
+        if (datetime.now() - userPrize.lastQueryDate).total_seconds() > 30*60 :
             return Response(
                 {"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})
 
     # 超过30的单号直接读取数据库历史记录
     if userPrize.expressDate:
-        if (timezone.now() - userPrize.expressDate).days > 30:
+        if (datetime.now() - userPrize.expressDate).days > 30:
             return Response({"info": json.loads(userPrize.expressDetail), "state": userPrize.expressState, "com": userPrize.com})
 
     # 如果已签收返回数据库数据
@@ -293,7 +291,7 @@ def query_expressage(request):
     com = com_dict.get(com, com)
     userPrize.expressDetail = json.dumps(info)
     userPrize.com = com
-    userPrize.lastQueryDate = timezone.now()
+    userPrize.lastQueryDate = datetime.now()
     userPrize.save()
     return Response({"info": info, "state": state, "com": com})
 
@@ -594,7 +592,7 @@ def del_prize(request):
 
 def refresh_express():
     # 排除已签收和没有运单号的
-    time_30minutes = timezone.now() - timedelta(minutes=30)
+    time_30minutes = datetime.now() - timedelta(minutes=30)
     userPrizes = UserPrize.objects.filter(Q(lastQueryDate__isnull=True)|Q(lastQueryDate__lt=time_30minutes)).\
         exclude(expressState__in=[3, 7])
     for userPrize in userPrizes:
@@ -609,7 +607,7 @@ def refresh_express():
         com = res.get("com", "")
 
         if not info:
-            userPrize.lastQueryDate = timezone.now()
+            userPrize.lastQueryDate = datetime.now()
             userPrize.save()
             continue
 
@@ -617,7 +615,7 @@ def refresh_express():
         userPrize.expressDetail = json.dumps(info)
         com = com_dict.get(com, com)
         userPrize.com = com
-        userPrize.lastQueryDate = timezone.now()
+        userPrize.lastQueryDate = datetime.now()
         userPrize.save()
 
 
@@ -675,7 +673,7 @@ def add_user_prize(request):
             userPrize.expressState = 8
             userPrize.expressDetail = ""
             userPrize.com = ""
-            userPrize.expressDate = timezone.now()
+            userPrize.expressDate = datetime.now()
             userPrize.save()
         return http_return(200, '添加运单号成功')
     except Exception as e:

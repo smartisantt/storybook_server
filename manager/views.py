@@ -170,7 +170,7 @@ def total_data(request):
     endTimestamp = data.get('endTime', '')
 
     if not all([startTimestamp, endTimestamp]):  # 最近7天数据，不包含今天的数据
-        currentTime = timezone.now()
+        currentTime = datetime.now()
         t1 = currentTime + timedelta(days=-8)
         t2 = currentTime + timedelta(days=-1)
         t1 = datetime(t1.year, t1.month, t1.day)
@@ -1092,7 +1092,7 @@ def check_audio(request):
                 userUuid=userUuid,
                 title=title,
                 content=content,
-                publishDate=timezone.now(),
+                publishDate=datetime.now(),
                 linkAddress=audioStoryUuid,
                 linkText="",
                 type=type,
@@ -2657,14 +2657,14 @@ def add_notification(request):
     # 判断推送时间是否合法
     _, publishDate = timestamp2datetime(1, publishDate, convert=False)
 
-    if (publishDate - timezone.now()).total_seconds() < 0:
+    if (publishDate - datetime.now()).total_seconds() < 0:
         return http_return(400, "已过了发布时间，请重新填写发布时间。")
 
     # 临近时间推送，建议间隔5分钟
-    if (publishDate-timezone.now()).total_seconds() < 5*60:
+    if (publishDate-datetime.now()).total_seconds() < 5*60:
         return http_return(400, "临近发送时间，建议发送时间在未来5分钟以上。")
 
-    if (publishDate - timezone.now()).days > 365:
+    if (publishDate - datetime.now()).days > 365:
         return http_return(400, "发布日期不要超过一年")
 
     # 跳转活动
@@ -2675,7 +2675,7 @@ def add_notification(request):
         activity = Activity.objects.filter(uuid=activityUuid, status="normal").first()
         if not activity:
             return http_return(400, "该活动不存在！")
-        if activity.endTime < timezone.now():
+        if activity.endTime < datetime.now():
             return http_return(400, "该活动已过期")
         if publishDate > activity.endTime:
             return http_return(400, "该发布时间活动已结束！")
@@ -2813,10 +2813,10 @@ def modify_notification(request):
         return http_return(400, "不支持类型修改")
 
     # 2.此时此刻是否支持修改
-    if (notification.publishDate - timezone.now()).total_seconds() < 0:
+    if (notification.publishDate - datetime.now()).total_seconds() < 0:
         return http_return(400, "过期消息，不支持修改")
 
-    if (notification.publishDate - timezone.now()).total_seconds() < 5*60:
+    if (notification.publishDate - datetime.now()).total_seconds() < 5*60:
         return http_return(400, "临近发送，不支持修改")
 
     # 3. 判断参数逻辑
@@ -2842,14 +2842,14 @@ def modify_notification(request):
     # 4. 判断发布时间合法
     _, publishDate = timestamp2datetime(1, publishDate, convert=False)
 
-    if (publishDate - timezone.now()).total_seconds() < 0:
+    if (publishDate - datetime.now()).total_seconds() < 0:
         return http_return(400, "已过了发布时间，请重新填写发布时间。")
 
     # 临近时间推送，建议间隔5分钟
-    if (publishDate - timezone.now()).total_seconds() < 5 * 60:
+    if (publishDate - datetime.now()).total_seconds() < 5 * 60:
         return http_return(400, "临近发送时间，建议发送时间在未来5分钟以上。")
 
-    if (publishDate - timezone.now()).days > 365:
+    if (publishDate - datetime.now()).days > 365:
         return http_return(400, "发布日期不要超过一年")
 
     # 跳转活动
@@ -2859,7 +2859,7 @@ def modify_notification(request):
         activity = Activity.objects.filter(uuid=activityUuid, status="normal").first()
         if not activity:
             return http_return(400, "该活动不存在！")
-        if activity.endTime < timezone.now():
+        if activity.endTime < datetime.now():
             return http_return(400, "该活动已过期")
         if publishDate > activity.endTime:
             return http_return(400, "该发布时间活动已结束！")
@@ -2930,7 +2930,7 @@ def del_notification(request):
     # 删除还没有发送的极光推送
     publishState = 0
     if notification.scheduleId:
-        if (notification.publishDate-timezone.now()).total_seconds() > 5*60:
+        if (notification.publishDate-datetime.now()).total_seconds() > 5*60:
             try:
                 result = delete_schedule(notification.scheduleId)
                 if result.status_code == 200 and result.payload == 'success':
@@ -2942,7 +2942,7 @@ def del_notification(request):
                 publishState = 6
                 logging.error(str(e))
                 # return http_return(400, '极光推送出错！')
-        elif 5*60 > (notification.publishDate-timezone.now()).total_seconds()>0:
+        elif 5*60 > (notification.publishDate-datetime.now()).total_seconds()>0:
             publishState = 6
             return http_return(400, "临近极光发布时间，暂无法删除！")
 

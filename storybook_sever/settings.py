@@ -104,6 +104,7 @@ if version == 'debug':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '127.0.0.1',  # 主机
             'PORT': '3306',  # 数据库使用的端口
+            # 'TIME_ZONE': 'Asia/Shanghai',
             'OPTIONS': {
                     'charset': 'utf8mb4',
                     'use_unicode': True, },
@@ -148,6 +149,7 @@ elif version == 'test':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '192.168.100.235',  # 主机
             'PORT': '3306',  # 数据库使用的端口
+            # 'TIME_ZONE': 'Asia/Shanghai',
             'OPTIONS': {
                     'charset': 'utf8mb4',
                     'use_unicode': True, },
@@ -193,7 +195,7 @@ elif version == 'ali_test':
             'PASSWORD': 'hbb123',  # 密码
             'HOST': '39.97.233.65',  # 主机
             'PORT': '8002',  # 数据库使用的端口
-            'TIME_ZONE': 'Asia/Shanghai',
+            # 'TIME_ZONE': 'Asia/Shanghai',
             'OPTIONS': {
                     'charset': 'utf8mb4',
                     'use_unicode': True, },
@@ -360,7 +362,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 DEFAULT_CHARSET = "UTF-8"
 

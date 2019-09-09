@@ -1,6 +1,6 @@
 # Create your tasks here
 from __future__ import absolute_import, unicode_literals
-from storybook_sever.celery import app
+from storybook_sever.celeryconfig import app
 from time import sleep
 
 import logging

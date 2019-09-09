@@ -1961,7 +1961,7 @@ def message_count(request):
     for audio in audios:
         audioStoryList.append(audio.uuid)
     systemMsgCount = SystemNotification.objects.filter(
-        Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
+        Q(type__in=[1, 2, 3, 4, 5], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
     followMsgCount = FriendShip.objects.filter(follows__uuid=selfUuid, isRead=False).count()
     likeMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1, isRead=False).count()
     commentMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, isRead=False,
@@ -2004,7 +2004,7 @@ def message_system(request):
     total = 0
     systemMessage = []
     systemMsg = SystemNotification.objects.filter(
-        Q(type__in=[1, 2, 3], publishDate__lte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
+        Q(type__in=[1, 2, 3, 4, 5], publishDate__lte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
         "-publishDate").all()
     if systemMsg:
         total, systemMsg = message_format(systemMsg, pageCount, 1, uuid, refreshWay)

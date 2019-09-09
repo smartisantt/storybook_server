@@ -59,7 +59,6 @@ class TextAudit(object):
                 return False
         except Exception as e:
             logging.error(str(e))
-            # print("re:  ", re, "\nre.json:  ", re.json())
             return False
 
     def work_on(self, text):
@@ -83,5 +82,5 @@ class TextAudit(object):
 
 if __name__ == "__main__":
     text = TextAudit()
-    print(text.work_on("咕咚来了"))
+    # print(text.work_on("咕咚来了"))
     # text.thread_test()

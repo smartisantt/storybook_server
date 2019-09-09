@@ -1961,7 +1961,8 @@ def message_count(request):
     for audio in audios:
         audioStoryList.append(audio.uuid)
     systemMsgCount = SystemNotification.objects.filter(
-        Q(type__in=[1, 2, 3, 4, 5], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(isRead=False).count()
+        Q(type__in=[1, 2, 3, 4, 5], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).filter(
+        isRead=False).count()
     followMsgCount = FriendShip.objects.filter(follows__uuid=selfUuid, isRead=False).count()
     likeMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=1, isRead=False).count()
     commentMsgCount = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, isRead=False,
@@ -1997,7 +1998,7 @@ def message_system(request):
         audioStoryList.append(audio.uuid)
     try:
         SystemNotification.objects.filter(
-            Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).update(isRead=True)
+            Q(type__in=[1, 2, 3, 4, 5], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).update(isRead=True)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')

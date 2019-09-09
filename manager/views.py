@@ -170,7 +170,7 @@ def total_data(request):
     endTimestamp = data.get('endTime', '')
 
     if not all([startTimestamp, endTimestamp]):  # 最近7天数据，不包含今天的数据
-        currentTime = timezone.now()
+        currentTime = datetime.now()
         t1 = currentTime + timedelta(days=-8)
         t2 = currentTime + timedelta(days=-1)
         t1 = datetime(t1.year, t1.month, t1.day)
@@ -1065,20 +1065,20 @@ def check_audio(request):
         type = 4
         title = "你的作品已通过审核"
         content = "您好，您录制的《{}》已通过审核，快去分享吧。".format(audioStory.name)
-        extras = {"type": 2, "target": audioStoryUuid}
+        extras = {"type": 0}
     else:
         type = 5
         title = "您的作品审核未通过"
         content = "您好，您录制的《{}》因含有违禁信息，审核不通过，将不能发布。请您遵守《绘童用户守则》，避免账号被封禁。如有疑问，请至客服中心反馈。".format(audioStory.name)
-        extras = {}
+        extras = {"type": 0}
 
+    publishState = 0
     if JPUSH == "ON":
         try:
-            jpush_platform_msg(title, content, extras, [userUuid])
             jpush_notification(title, content, extras, [userUuid])
-            publishState = 1   # 成功
+            publishState = 1   # 推送成功
         except Exception as e:
-            publishState = 2  # 失败
+            publishState = 2  # 推送失败
             logging.error(str(e))
             # 极光出错
             # return http_return(400, '极光出错！')
@@ -1092,7 +1092,7 @@ def check_audio(request):
                 userUuid=userUuid,
                 title=title,
                 content=content,
-                publishDate=timezone.now(),
+                publishDate=datetime.now(),
                 linkAddress=audioStoryUuid,
                 linkText="",
                 type=type,
@@ -2657,14 +2657,14 @@ def add_notification(request):
     # 判断推送时间是否合法
     _, publishDate = timestamp2datetime(1, publishDate, convert=False)
 
-    if (publishDate - timezone.now()).total_seconds() < 0:
+    if (publishDate - datetime.now()).total_seconds() < 0:
         return http_return(400, "已过了发布时间，请重新填写发布时间。")
 
     # 临近时间推送，建议间隔5分钟
-    if (publishDate-timezone.now()).total_seconds() < 5*60:
+    if (publishDate-datetime.now()).total_seconds() < 5*60:
         return http_return(400, "临近发送时间，建议发送时间在未来5分钟以上。")
 
-    if (publishDate - timezone.now()).days > 365:
+    if (publishDate - datetime.now()).days > 365:
         return http_return(400, "发布日期不要超过一年")
 
     # 跳转活动
@@ -2675,7 +2675,7 @@ def add_notification(request):
         activity = Activity.objects.filter(uuid=activityUuid, status="normal").first()
         if not activity:
             return http_return(400, "该活动不存在！")
-        if activity.endTime < timezone.now():
+        if activity.endTime < datetime.now():
             return http_return(400, "该活动已过期")
         if publishDate > activity.endTime:
             return http_return(400, "该发布时间活动已结束！")
@@ -2700,22 +2700,29 @@ def add_notification(request):
     if JPUSH == "ON":
         try:
             if type == 3:  # 活动横幅通知
-                extras = {"type": 0, "target": linkAddress}
+                extras = {"type": 0}  # 这里的自定义消息type： 0 系统消息 1 关注 2 点赞 3 评论
                 result = post_schedule_notification(title, content, extras, timestr, title)
             else:  # app内， 跳转外部连接，（系统纯文字通知，或者有外部链接）
-                extras = {"type": 4, "target": linkAddress}
+                extras = {"type": 0} # 这里的自定义消息type： 0 系统消息 1 关注 2 点赞 3 评论
                 result = post_schedule_message(title, content, extras, timestr, title, alias=None)
             if result.status_code == 200:
                 schedule_id = result.payload.get("schedule_id", "")
+                publishState = 7
                 if not schedule_id:
-                    return http_return(400, "极光推送错误")
+                    publishState = 8
+                    # return http_return(400, "极光推送错误")
             else:
-                return http_return(400, "连接极光错误")
+                schedule_id = ""
+                publishState = 8
+                # return http_return(400, "连接极光错误")
         except Exception as e:
+            schedule_id = ""
+            publishState = 8
             logging.error(str(e))
-            return http_return(400, '极光推送出错！')
+            # return http_return(400, '极光推送出错！')
     else:
         schedule_id = ""
+        publishState = 0
 
     try:
         with transaction.atomic():
@@ -2731,7 +2738,7 @@ def add_notification(request):
                 type=type,
                 targetType=0,  # 活动
                 activityUuid=activityUuid,
-                publishState=0,
+                publishState=publishState,
                 scheduleId=schedule_id,
                 isDelete=False,
             )
@@ -2806,10 +2813,10 @@ def modify_notification(request):
         return http_return(400, "不支持类型修改")
 
     # 2.此时此刻是否支持修改
-    if (notification.publishDate - timezone.now()).total_seconds() < 0:
+    if (notification.publishDate - datetime.now()).total_seconds() < 0:
         return http_return(400, "过期消息，不支持修改")
 
-    if (notification.publishDate - timezone.now()).total_seconds() < 5*60:
+    if (notification.publishDate - datetime.now()).total_seconds() < 5*60:
         return http_return(400, "临近发送，不支持修改")
 
     # 3. 判断参数逻辑
@@ -2835,14 +2842,14 @@ def modify_notification(request):
     # 4. 判断发布时间合法
     _, publishDate = timestamp2datetime(1, publishDate, convert=False)
 
-    if (publishDate - timezone.now()).total_seconds() < 0:
+    if (publishDate - datetime.now()).total_seconds() < 0:
         return http_return(400, "已过了发布时间，请重新填写发布时间。")
 
     # 临近时间推送，建议间隔5分钟
-    if (publishDate - timezone.now()).total_seconds() < 5 * 60:
+    if (publishDate - datetime.now()).total_seconds() < 5 * 60:
         return http_return(400, "临近发送时间，建议发送时间在未来5分钟以上。")
 
-    if (publishDate - timezone.now()).days > 365:
+    if (publishDate - datetime.now()).days > 365:
         return http_return(400, "发布日期不要超过一年")
 
     # 跳转活动
@@ -2852,7 +2859,7 @@ def modify_notification(request):
         activity = Activity.objects.filter(uuid=activityUuid, status="normal").first()
         if not activity:
             return http_return(400, "该活动不存在！")
-        if activity.endTime < timezone.now():
+        if activity.endTime < datetime.now():
             return http_return(400, "该活动已过期")
         if publishDate > activity.endTime:
             return http_return(400, "该发布时间活动已结束！")
@@ -2865,19 +2872,19 @@ def modify_notification(request):
         try:
             timestr = time2str(publishDate)
             if type == 3:  # 活动横幅通知
-                extras = {"type": 0, "target": linkAddress}
+                extras = {"type": 0}
                 result = put_schedule_notification(notification.scheduleId, content, title, extras, timestr, title)
             else:  # app内， 跳转外部连接，（系统纯文字通知，或者有外部链接）
-                extras = {"type": 4, "target": linkAddress}
+                extras = {"type": 0}
                 result = put_schedule_message(notification.scheduleId, content, title, extras, timestr, title)
-
+            publishState = 3
             if result.status_code != 200:
                 publishState = 4
                 # return http_return(400, "极光推送连接失败")
             if result.payload.get("taskid") != notification.scheduleId:
                 publishState = 4
                 # return http_return(400, "极光推送修改失败")
-            publishState = 3
+
         except Exception as e:
             publishState = 4
             logging.error(str(e))
@@ -2921,21 +2928,24 @@ def del_notification(request):
 
 
     # 删除还没有发送的极光推送
+    publishState = 0
     if notification.scheduleId:
-        if (notification.publishDate-timezone.now()).total_seconds() > 5*60:
+        if (notification.publishDate-datetime.now()).total_seconds() > 5*60:
             try:
                 result = delete_schedule(notification.scheduleId)
-                if result.status_code == 200 and result.payload == 'sucess':
+                if result.status_code == 200 and result.payload == 'success':
                     publishState = 5
-                    pass
                 else:
                     publishState = 6
                     # return http_return(400, "极光删除错误")
             except Exception as e:
+                publishState = 6
                 logging.error(str(e))
                 # return http_return(400, '极光推送出错！')
-        elif (notification.publishDate-timezone.now()).total_seconds()>0:
+        elif 5*60 > (notification.publishDate-datetime.now()).total_seconds()>0:
+            publishState = 6
             return http_return(400, "临近极光发布时间，暂无法删除！")
+
 
     try:
         with transaction.atomic():

@@ -1898,7 +1898,7 @@ def comment_list(request):
         return http_return(400, "未查询到作品信息")
     comments = audio.bauUuid.filter(type=2, checkStatus="check").order_by("-createTime").all()
     total, commentMsg = message_format(comments, pageCount, 4, uuid, refreshWay)
-    commentList = commentList_format(comments)
+    commentList = commentList_format(commentMsg)
     return http_return(200, "成功", {"total": total, "list": commentList})
 
 

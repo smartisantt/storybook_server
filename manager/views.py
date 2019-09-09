@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from api.apiCommon import get_default_name
 from common.MyJpush import post_schedule_message, time2str, delete_schedule, put_schedule_message, \
     post_schedule_notification, put_schedule_notification, jpush_notification, jpush_platform_msg
+from common.common import limit_of_text
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
@@ -686,6 +687,15 @@ def add_story(request):
     if story:
         return http_return(400, '重复模板名')
 
+    if not limit_of_text(content, 16000):
+        return http_return("故事内容字符超出16000")
+
+    if not limit_of_text(name, 14):
+        return http_return("模板故事名大于14个字符")
+
+    if not limit_of_text(intro, 512):
+        return http_return("模板故事介绍512个字符")
+
     try:
         with transaction.atomic():
             uuid = get_uuid()
@@ -730,6 +740,15 @@ def modify_story(request):
     story = Story.objects.filter(uuid=uuid).exclude(status='destroy').first()
     if not story:
         return http_return(400, '没有对象')
+
+    if not limit_of_text(content, 16000):
+        return http_return("故事内容字符超出16000")
+
+    if not limit_of_text(name, 14):
+        return http_return("模板故事名大于14个字符")
+
+    if not limit_of_text(intro, 512):
+        return http_return("模板故事介绍512个字符")
 
     myName = story.name
     # 如果修改标题
@@ -1058,15 +1077,17 @@ def check_audio(request):
     if not audioStory:
         return http_return(400, '对象错误')
 
-    userUuid = audioStory.userUuid
+    userUuid = audioStory.userUuid_id
 
     # 审核通过，通知该音频作者   并存入系统消息表
     if checkStatus == "check":
+        # 审核通过 audiouuid 这个作品
         type = 4
         title = "你的作品已通过审核"
         content = "您好，您录制的《{}》已通过审核，快去分享吧。".format(audioStory.name)
         extras = {"type": 0}
     else:
+        # 没有审核通过存入
         type = 5
         title = "您的作品审核未通过"
         content = "您好，您录制的《{}》因含有违禁信息，审核不通过，将不能发布。请您遵守《绘童用户守则》，避免账号被封禁。如有疑问，请至客服中心反馈。".format(audioStory.name)
@@ -1083,13 +1104,19 @@ def check_audio(request):
             # 极光出错
             # return http_return(400, '极光出错！')
 
+    # 绘童团队
+    user = User.objects.filter(tel=HTTD).exclude(status="destroy").first()
+    if user:
+        httd = user.uuid
+    else:
+        httd = ""
 
     try:
         with transaction.atomic():
             uuid = get_uuid()
             SystemNotification.objects.create(
                 uuid=uuid,
-                userUuid=userUuid,
+                userUuid=httd,
                 title=title,
                 content=content,
                 publishDate=datetime.now(),
@@ -1099,6 +1126,7 @@ def check_audio(request):
                 targetType=2,  # 音频
                 activityUuid="",
                 publishState=publishState,
+                audioUuid=audioStoryUuid,
                 scheduleId="",
                 isDelete=False,
             )
@@ -2630,6 +2658,11 @@ def add_notification(request):
     linkText = data.get('linkText', '')
     activityUuid = data.get('activityUuid', '')  # 活动的uuid
 
+    if not all([limit_of_text(content, 256), limit_of_text(title, 256)]):
+        return http_return(400, "标题或内容格式错误或超出长度！")
+    if not all([limit_of_text(linkAddress, 256), limit_of_text(linkText, 256)]):
+        return http_return(400, "链接或链接地址格式错误或超出长度！")
+
     if not type in [1, 2, 3]:
         return http_return(400, "type字段错误")
 
@@ -2683,11 +2716,12 @@ def add_notification(request):
         linkAddress = urljoin(activity.url, activity.uuid) + "/false"
 
     # 默认此账号为  绘童团队
-    user = User.objects.filter(tel="13333333333").exclude(status="destroy").first()
+    # 绘童团度
+    user = User.objects.filter(tel=HTTD).exclude(status="destroy").first()
     if user:
-        userUuid = user.uuid
+        httd = user.uuid
     else:
-        userUuid = ""
+        httd = ""
 
     # ===================添加到极光定时推送  横幅 全部用户 定时 =================
     # {value: 0, label: "活动"},
@@ -2729,7 +2763,7 @@ def add_notification(request):
             uuid = get_uuid()
             SystemNotification.objects.create(
                 uuid=uuid,
-                userUuid=userUuid,
+                userUuid=httd,
                 title=title,
                 content=content,
                 publishDate=publishDate,
@@ -2791,6 +2825,12 @@ def modify_notification(request):
     linkAddress = data.get('linkAddress', '')
     linkText = data.get('linkText', '')
     activityUuid = data.get('activityUuid', '')  # 活动的uuid
+
+    if not all([limit_of_text(content, 256), limit_of_text(title, 256)]):
+        return http_return(400, "标题或内容格式错误或超出长度！")
+    if not all([limit_of_text(linkAddress, 256), limit_of_text(linkText, 256)]):
+        return http_return(400, "链接或链接地址格式错误或超出长度！")
+
 
     # 1.先判断参数是否合法
     if not type in [1, 2, 3]:
@@ -3028,7 +3068,7 @@ def add_album(request):
     if not all([title, intro, faceIcon, authorUuid]):
         return http_return(400, '参数错误')
 
-    if len(str(title)) > 14:
+    if not limit_of_text(str(title), 14):
         return http_return(400, '名字长度超过14个字符')
 
     author = User.objects.exclude(status="destroy").filter(uuid=authorUuid).first()
@@ -3081,7 +3121,7 @@ def modify_album(request):
     if not all([albumUuid, title, intro, faceIcon]):
         return http_return(400, '参数错误')
 
-    if len(str(title)) > 14:
+    if not limit_of_text(str(title), 14):
         return http_return(400, '名字长度超过14个字符')
 
     if Album.objects.filter(title=title, isDelete=False).exclude(uuid=albumUuid).exists():

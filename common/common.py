@@ -7,7 +7,7 @@ import uuid
 
 from django.core.cache import cache, caches
 from django.http import HttpResponse
-from common.fileApi import FileInfo
+
 
 
 def request_body(request, method='GET'):
@@ -191,3 +191,17 @@ def tel_match(tel):
         return True
     else:
         return False
+
+
+def limit_of_text(inputStr, length):
+    if not isinstance(inputStr, str):
+        return False
+    if not isinstance(length, int):
+        return False
+    if len(inputStr) > length:
+        return False
+    return True
+
+
+if __name__ == '__main__':
+    print(limit_of_text("aa", 6))

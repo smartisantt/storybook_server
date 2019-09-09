@@ -1081,11 +1081,13 @@ def check_audio(request):
 
     # 审核通过，通知该音频作者   并存入系统消息表
     if checkStatus == "check":
+        # 审核通过 audiouuid 这个作品
         type = 4
         title = "你的作品已通过审核"
         content = "您好，您录制的《{}》已通过审核，快去分享吧。".format(audioStory.name)
         extras = {"type": 0}
     else:
+        # 没有审核通过存入
         type = 5
         title = "您的作品审核未通过"
         content = "您好，您录制的《{}》因含有违禁信息，审核不通过，将不能发布。请您遵守《绘童用户守则》，避免账号被封禁。如有疑问，请至客服中心反馈。".format(audioStory.name)
@@ -1102,13 +1104,19 @@ def check_audio(request):
             # 极光出错
             # return http_return(400, '极光出错！')
 
+    # 绘童团队
+    user = User.objects.filter(tel=HTTD).exclude(status="destroy").first()
+    if user:
+        httd = user.uuid
+    else:
+        httd = ""
 
     try:
         with transaction.atomic():
             uuid = get_uuid()
             SystemNotification.objects.create(
                 uuid=uuid,
-                userUuid=userUuid,
+                userUuid=httd,
                 title=title,
                 content=content,
                 publishDate=datetime.now(),
@@ -1118,6 +1126,7 @@ def check_audio(request):
                 targetType=2,  # 音频
                 activityUuid="",
                 publishState=publishState,
+                audioUuid=audioStoryUuid,
                 scheduleId="",
                 isDelete=False,
             )
@@ -2707,11 +2716,12 @@ def add_notification(request):
         linkAddress = urljoin(activity.url, activity.uuid) + "/false"
 
     # 默认此账号为  绘童团队
-    user = User.objects.filter(tel="13333333333").exclude(status="destroy").first()
+    # 绘童团度
+    user = User.objects.filter(tel=HTTD).exclude(status="destroy").first()
     if user:
-        userUuid = user.uuid
+        httd = user.uuid
     else:
-        userUuid = ""
+        httd = ""
 
     # ===================添加到极光定时推送  横幅 全部用户 定时 =================
     # {value: 0, label: "活动"},
@@ -2753,7 +2763,7 @@ def add_notification(request):
             uuid = get_uuid()
             SystemNotification.objects.create(
                 uuid=uuid,
-                userUuid=userUuid,
+                userUuid=httd,
                 title=title,
                 content=content,
                 publishDate=publishDate,

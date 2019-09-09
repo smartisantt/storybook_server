@@ -537,7 +537,7 @@ class SystemNotification(BaseModle):
     """
     存储系统消息：包含后台系统消息和作品审核消息
     """
-    userUuid = models.CharField(max_length=64, null=True)
+    userUuid = models.CharField(max_length=64, null=True) # 绘童团队
     type = models.IntegerField(null=True, default=1)  # 系统消息类型 1：后台通知（纯文本） 2：外部连接 3：活动邀请 4：审核通过  5：审核没有通过
     targetType = models.IntegerField(null=True)      # 跳转类型分类：0 活动 1 专辑 2 音频 3 商品 4 链接 5 模板
     title = models.CharField(max_length=256, verbose_name="标题")

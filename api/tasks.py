@@ -18,7 +18,6 @@ def textWorker(uuid, ftype):
     :param type:
     :return:
     """
-    # print("start..........")
     text = TextAudit()
     if ftype == 1:
         behavior = Behavior.objects.filter(uuid=uuid).first()

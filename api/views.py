@@ -1921,6 +1921,8 @@ def commnet_create(request):
         return http_return(400, "未查询到作品信息")
     if not content:
         return http_return(400, "请输入评论内容")
+    if len(content) > 120:
+        return http_return(400, "评论长度超过限制")
     user = User.objects.filter(uuid=data['_cache']['uuid']).first()
     behavior = Behavior(
         uuid=get_uuid(),

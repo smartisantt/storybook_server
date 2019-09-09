@@ -1934,16 +1934,6 @@ def commnet_create(request):
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '评论失败')
-    title = "评论提醒"
-    content = user.nickName + "评论了" + audio.name
-    extras = {"type": 3, "unread": 1}
-    alias = []
-    alias.append(audio.userUuid.uuid)
-    # 推送评论信息
-    try:
-        jpush_platform_msg(title, content, extras, alias)
-    except Exception as e:
-        logging.error(str(e))
     comments = []
     comments.append(behavior)
     commentInfo = commentList_format(comments)[0]

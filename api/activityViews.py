@@ -593,6 +593,7 @@ def user_logistics(request):
                     userPrize.expressState = state
                     userPrize.expressDetail = logisticsInfo
                     userPrize.com = company
+                    userPrize.lastQueryDate = datetime.datetime.now()
                     userPrize.save()
                 except Exception as e:
                     logging.error(str(e))

@@ -369,7 +369,7 @@ def audioList_format(audios, data=None):
             "praiseCount": audio.bauUuid.filter(type=1, status=0).count(),
             "isCollection": True if checkLike else False,
             "collectionCount": audio.bauUuid.filter(type=3, status=0).count(),
-            "commentsCount": audio.bauUuid.filter(type=2, status=0).count(),
+            "commentsCount": audio.bauUuid.filter(type=2, status=0, checkStatus="check").count(),
             "tagList": tagList,
             "share": share,
         })
@@ -645,7 +645,7 @@ def message_format(mylist, pageCount, ftype, uuid=None, way=None):
     :return:
     """
     mylist = list(mylist)
-    if isinstance(pageCount,str) and pageCount == "":
+    if isinstance(pageCount, str) and pageCount == "":
         pageCount = 10
     else:
         pageCount = int(pageCount)

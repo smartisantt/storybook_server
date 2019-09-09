@@ -212,8 +212,8 @@ def put_schedule_message(schedule_id, title, content, extras, timestr, name):
 
 
 if __name__ == '__main__':
-    extras = {"type": 2, "target": "http://www.baidu.com"}
-    jpush_notification("中秋快乐", "绘童团队祝你中秋节快乐！", extras, alias=["28635974EF97474DBB42A6D2F17CCA0A"])
+    # extras = {"type": 0, "target": "http://www.baidu.com"}
+    # jpush_notification("温馨提示", "中秋快到了, 快来吧！", extras, alias=["2EFDC3A8B982416B9180226552B2F450"])
     # jpush_platform_msg("温馨提示", "中秋快到了, 快来吧！", extras, alias=["4F8920204ACB4500822272805CB2F5FC"])
     # put_schedule_message('76ad4986-cfaf-11e9-8106-fa163e93210b', "温馨提示",
     #                      "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "name")
@@ -224,3 +224,13 @@ if __name__ == '__main__':
     # except:
     #     print("aa")
     # post_schedule_notification("温馨提示", "发月饼啦！", extras, "2019-09-15 15:50:30", "温馨提示")
+    title = "title"
+    content = "content"
+    extras = {"type": 2, "unread": 1}
+    alias = ["68CA0CEC08DC4BA1973A76DBC79EEB6C"]
+    # 推送点赞信息
+    try:
+        re = jpush_platform_msg(title, content, extras, alias)
+        print(re)
+    except Exception as e:
+        print(str(e))

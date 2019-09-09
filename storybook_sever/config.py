@@ -12,6 +12,8 @@ TEL_IDENTIFY_CODE = 5 * 60
 # 管理端cache过期时间
 USER_CACHE_OVER_TIME = 12 * 60 * 60
 
+TEXT_AUDIO_TIMEOUT = 30 * 24 * 60 * 60
+
 # 是否正式发送短信
 if version == 'ali_test':
     IS_SEND = True
@@ -32,5 +34,3 @@ SLECTAUDIOURL = "http://192.168.100.235:8010"
 if version == 'ali_test':
     SHAREURL = 'http://h5huitong.hbbclub.com'
     SLECTAUDIOURL = "http://huitonghuodong.hbbclub.com"
-
-

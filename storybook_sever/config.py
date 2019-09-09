@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-version = "ali_test"
+version = "debug"
 
 # 用户端端session过期时间
 USER_SESSION_OVER_TIME = 30 * 24 * 60 * 60
@@ -21,6 +21,7 @@ else:
 # 极光推送开关，ON打开极光推送  OFF 关闭（默认关闭）
 # 针对创建定时推送，立即推送有效， 修改，删除无效
 JPUSH = "ON"
+
 
 
 # 分享域名

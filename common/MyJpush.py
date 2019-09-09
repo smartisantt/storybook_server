@@ -1,4 +1,3 @@
-
 # 极光推送
 
 import jpush
@@ -6,11 +5,11 @@ import jpush
 from storybook_sever.config import version
 
 if version == "ali_test":
-    # 阿里测试----->  ios release
+    # 阿里测试
     app_key = 'b878563acc58979e1bdc1c1f'
     master_secret = '8a68fd8e94cc345f0b680dd1'
 else:
-    #  235测试------> ios debug
+    #  235测试
     app_key = '946c0bba0a673da03bb0941f'
     master_secret = '3fa24a0e9f341da0c0c436c7'
 
@@ -37,7 +36,7 @@ def time2str(in_date):
 
 def jpush_notification(title, msg, extras, alias=None):
     """
-
+    横幅 和 自定义通知
     :param title:
     :param msg:
     :param extras:
@@ -49,10 +48,11 @@ def jpush_notification(title, msg, extras, alias=None):
         push.audience = jpush.all_
     else:
         push.audience = jpush.alias(*alias)
-    push.notification = jpush.notification(alert=msg)
+    # push.notification = jpush.notification(alert=msg)
     ios = jpush.ios(alert=msg, sound="default", extras=extras)
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
+    push.message = jpush.message(msg, title=title, content_type="text", extras=extras)
     if version != "ali_test":
         push.options = {"apns_production":False}
     push.platform = jpush.all_
@@ -124,11 +124,11 @@ def post_schedule_message(title, content, extras, timestr, name, alias=None):
     push.message = jpush.message(content, title=title, content_type="text", extras=extras)
     if version != "ali_test":
         push.options = {"apns_production":False}
-    push=push.payload
+    push = push.payload
 
-    trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
-    schedulepayload=jpush.schedulepayload.schedulepayload(name, True, trigger, push)
-    result=schedule.post_schedule(schedulepayload)
+    trigger = jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
+    schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)
+    result = schedule.post_schedule(schedulepayload)
     return result
 
 
@@ -150,6 +150,7 @@ def post_schedule_notification(title, msg, extras, timestr, name, alias=None):
     ios = jpush.ios(alert=msg, sound="default", extras=extras)
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
+    push.message = jpush.message(msg, title=title, content_type="text", extras=extras)
     if version != "ali_test":
         push.options = {"apns_production":False}
     push=push.payload
@@ -175,6 +176,7 @@ def put_schedule_notification(schedule_id, title, msg, extras, timestr, name):
     ios = jpush.ios(alert=msg, sound="default", extras=extras)
     android = jpush.android(alert=msg, title=title, extras=extras)
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
+    push.message = jpush.message(msg, title=title, content_type="text", extras=extras)
     push.platform = jpush.all_
     push = push.payload
     trigger = jpush.schedulepayload.trigger(timestr)
@@ -206,15 +208,19 @@ def put_schedule_message(schedule_id, title, content, extras, timestr, name):
     return res
 
 
+#  横幅（notification)和自定义消息同时推送
+
+
 if __name__ == '__main__':
     extras = {"type": 0, "target": "http://www.baidu.com"}
     # jpush_notification("温馨提示", "中秋快到了, 快来吧！", extras, alias=["2EFDC3A8B982416B9180226552B2F450"])
-    jpush_platform_msg("温馨提示", "中秋快到了, 快来吧！", extras, alias=["4F8920204ACB4500822272805CB2F5FC"])
+    # jpush_platform_msg("温馨提示", "中秋快到了, 快来吧！", extras, alias=["4F8920204ACB4500822272805CB2F5FC"])
     # put_schedule_message('76ad4986-cfaf-11e9-8106-fa163e93210b', "温馨提示",
     #                      "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "name")
     # res = post_schedule_message("温馨提示", "下午好，中秋快到了", extras, "2019-09-05 15:50:30", "title", ["09AA7CA6B2F34185B6B568720C32FD27"])
     # get_schedule_list()
-    # try:
-    #     delete_schedule("f9a6680a-cfb5-11e9-b74b-fa163e52e4931")
-    # except:
-    #     print("aa")
+    try:
+        delete_schedule("f99fbbce-d2b1-11e9-8106-fa163e93210b")
+    except:
+        print("aa")
+    # post_schedule_notification("温馨提示", "发月饼啦！", extras, "2019-09-15 15:50:30", "温馨提示")

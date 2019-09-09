@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'api',
     'manager',
     'public',
-    'django_celery_beat',
+    'manager_activity',
 ]
 
 MIDDLEWARE = [
@@ -360,7 +360,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = False
+USE_TZ = True
 
 DEFAULT_CHARSET = "UTF-8"
 
@@ -423,14 +423,19 @@ REST_FRAMEWORK = {
 }
 
 
-# celery相关配置
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/3'
+# Celery settings
+CELERY_BEAT_SCHEDULER  = 'django_celery_beat.schedulers.DatabaseScheduler'
+BROKER_URL = 'redis://127.0.0.1:6379/'
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/'
 if version == "ali_test":
-    CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
-    CELERY_BROKER_URL = 'redis://127.0.0.1:6379/3'
-CELERY_ACCEPT_CONTENT = ['json']
+    BROKER_URL = 'redis://172.18.0.5:6379/'
+    CELERY_BROKER_URL = 'redis://172.18.0.5:6379/'
+CELERY_RESULT_BACKEND = 'redis://172.17.118.207:6379/2'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = TIME_ZONE
+DJANGO_CELERY_BEAT_TZ_AWARE = False
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_RESULT_SERIALIZER = 'json'
 
 

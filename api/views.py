@@ -2018,32 +2018,32 @@ def message_system(request):
     if systemMsg:
         total, systemMsg = message_format(systemMsg, pageCount, 1, uuid, refreshWay)
         for msg in systemMsg:
-            router = {
-                "type": msg.targetType,
-                "target": msg.linkAddress,
-                "description": msg.linkText,
+            targetData = {
+                "uuid": msg.uuid,
+                "createTime": datetime_to_unix(msg.publishDate),
+                "title": msg.title,
+                "content": msg.content,
             }
-            userInfo = None
+            if msg.type != 1:
+                router = {
+                    "type": msg.targetType,
+                    "target": msg.linkAddress,
+                    "description": msg.linkText,
+                }
+                targetData["router"] = router
             user = User.objects.filter(uuid=msg.userUuid).first()
             if user:
                 users = []
                 users.append(user)
                 userInfo = userList_format(users)[0]
-            audioStory = None
+                targetData["user"] = userInfo
             audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
             if audio:
                 audios = []
                 audios.append(audio)
                 audioStory = audioList_format(audios, data)[0]
-            systemMessage.append({
-                "uuid": msg.uuid,
-                "createTime": datetime_to_unix(msg.publishDate),
-                "title": msg.title,
-                "content": msg.content,
-                "router": router,
-                "user": userInfo,
-                "audioStory": audioStory,
-            })
+                targetData["audioStory"] = audioStory
+            systemMessage.append(targetData)
     return http_return(200, "成功", {"total": total, "list": systemMessage})
 
 

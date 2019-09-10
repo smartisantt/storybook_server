@@ -2158,7 +2158,9 @@ def message_comment(request):
         return http_return(400, '更新已读失败')
     total = 0
     commentMessage = []
-    commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2, checkStatus="check").order_by(
+    commentMsg = Behavior.objects.filter(audioUuid__uuid__in=audioStoryList, type=2).filter(
+        Q(checkStatus="check") | Q(adminStatus="check")).exclude(checkStatus="checkFail").exclude(
+        adminStatus="checkFail").order_by(
         "-createTime").all()
     if commentMsg:
         total, commentMsg = message_format(commentMsg, pageCount, 4, uuid, refreshWay)

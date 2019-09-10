@@ -1183,7 +1183,7 @@ def feedback_reply_info(request):
             feed.save()
     except Exception as e:
         logging.error(str(e))
-        print(str(e))
+        # print(str(e))
         return http_return(400, '查看失败')
     replyInfo = {
         "uuid": feed.uuid,

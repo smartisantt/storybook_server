@@ -36,4 +36,4 @@ if __name__ == "__main__":
         if result == "8":
             target += 1
     per = target/testNo
-    print(per)
+    # print(per)

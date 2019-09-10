@@ -265,7 +265,7 @@ def area_create(request):
                             area.save()
         except Exception as e:
             logging.error(str(e))
-            print(str(e))
+            # print(str(e))
             return http_return(400, '失败')
     else:
         return http_return(400, '响应失败')

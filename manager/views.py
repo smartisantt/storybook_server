@@ -12,6 +12,7 @@ from api.apiCommon import get_default_name
 from common.MyJpush import post_schedule_message, time2str, delete_schedule, put_schedule_message, \
     post_schedule_notification, put_schedule_notification, jpush_notification, jpush_platform_msg
 from common.common import limit_of_text
+from common.textAPI import TextAudit
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
@@ -2673,6 +2674,15 @@ def add_notification(request):
     if not limit_of_text(content, 256):
         return http_return(400, "消息内容格式错误或超出256个字符")
 
+    # 使用百度接口审核title 、content文字内容
+    text = TextAudit()
+    res, msg = text.work_on(title + content)
+    # 如果是int整数，则是百度接口的错误码
+    if isinstance(res, int):
+        return http_return(400, msg)
+    if res == "checkFail":
+        if msg != "恶意推广":
+            return http_return(400, "发布文字涉及违规信息，请重新编辑！")
     # if not isinstance(content, str):
     #     return http_return(400, "消息内容格式需为字符串")
     #
@@ -2910,8 +2920,18 @@ def modify_notification(request):
         # 跳转的是活动则拼接活动路由
         linkAddress = urljoin(activity.url, activity.uuid) + "/false"
 
+    # 使用百度接口审核title 、content文字内容
+    text = TextAudit()
+    res, msg = text.work_on(title + content)
+    # 如果是int整数，则是百度接口的错误码
+    if isinstance(res, int):
+        return http_return(400, msg)
+    if res == "checkFail":
+        if msg != "恶意推广":
+            return http_return(400, "发布文字涉及违规信息，请重新编辑！")
 
     # =====================修改极光推送  修改定时的极光推送
+    publishState = notification.publishState
     if notification.scheduleId:
         try:
             timestr = time2str(publishDate)
@@ -2924,15 +2944,12 @@ def modify_notification(request):
             publishState = 3
             if result.status_code != 200:
                 publishState = 4
-                # return http_return(400, "极光推送连接失败")
             if result.payload.get("taskid") != notification.scheduleId:
                 publishState = 4
-                # return http_return(400, "极光推送修改失败")
 
         except Exception as e:
             publishState = 4
             logging.error(str(e))
-            # return http_return(400, '极光推送出错！')
 
 
     try:

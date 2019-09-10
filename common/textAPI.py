@@ -31,12 +31,9 @@ class TextAudit(object):
             if re.status_code == 200:
                 self.access_token = re.json().get('access_token')
                 caches['api'].set("textAudioToken", self.access_token, TEXT_AUDIO_TIMEOUT)
-                return True
-            else:
-                return False
         except Exception as e:
             logging.error(e)
-            return False
+
 
     def text_audit(self):
         """审核文本内容"""

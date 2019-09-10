@@ -368,7 +368,7 @@ class AudioStory(BaseModle, models.Model):
     bgmVolume = models.FloatField(default=1.0)  # 背景音乐音量
     type = models.IntegerField(null=True)  # 录制形式 0宝宝录制 1爸妈录制
     audioStoryType = models.BooleanField(default=True)  # 1模板录制 0 自由音频
-    playTimes = models.IntegerField(null=True)  # 播放次数
+    playTimes = models.IntegerField(default=0)  # 播放次数
     name = models.CharField(max_length=128, null=True)  # 自由录制的标题
     bgIcon = models.CharField(max_length=255, null=True)  # 封面图片
     remarks = models.CharField(max_length=512, null=True)  # 录制感受

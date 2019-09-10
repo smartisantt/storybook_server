@@ -1001,7 +1001,8 @@ def personal_audiostory(request):
     if uuid:
         selfUuid = uuid
     audio = AudioStory.objects.filter(
-        isDelete=False).filter(userUuid__uuid=selfUuid)
+        isDelete=False).filter(userUuid__uuid=selfUuid).filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        checkStatus="unCheck").exclude(checkStatus="unCheck")
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
@@ -2000,14 +2001,14 @@ def message_system(request):
         audioStoryList.append(audio.uuid)
     try:
         SystemNotification.objects.filter(
-            Q(type__in=[1, 2, 3, 4, 5], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).update(isRead=True)
+            Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).update(isRead=True)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')
     total = 0
     systemMessage = []
     systemMsg = SystemNotification.objects.filter(
-        Q(type__in=[1, 2, 3, 4, 5], publishDate__lte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
+        Q(type__in=[1, 2, 3], publishDate__lte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
         "-publishDate").all()
     if systemMsg:
         total, systemMsg = message_format(systemMsg, pageCount, 1, uuid, refreshWay)
@@ -2032,7 +2033,7 @@ def message_system(request):
                 userInfo = userList_format(users)[0]
                 targetData["user"] = userInfo
             audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
-            if audio:
+            if audio and msg.type != 5:
                 audios = []
                 audios.append(audio)
                 audioStory = audioList_format(audios, data)[0]

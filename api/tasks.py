@@ -27,6 +27,7 @@ def textWorker(uuid, ftype):
                 textWorker.delay(uuid, 1)
             if checkResult in [0, 1, 2]:
                 if checkResult == 0:
+                    checkInfo = "评论通过审核"
                     # 评论通过审核 推送评论信息
                     title = "评论提醒"
                     content = behavior.userUuid.nickName + "评论了" + behavior.audioUuid.name
@@ -37,6 +38,8 @@ def textWorker(uuid, ftype):
                         jpush_platform_msg(title, content, extras, alias)
                     except Exception as e:
                         logging.error(str(e))
+                if checkResult == 0:
+                    checkInfo = "建议人工复审"
                 checkDict = {
                     0: "check",
                     1: "checkFail",

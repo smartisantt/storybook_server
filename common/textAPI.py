@@ -46,7 +46,7 @@ class TextAudit(object):
         re = requests.post(self.textHost, headers=headers, params=data)
         try:
             if re.status_code == 200:
-                if re.json().get('error_code') == 18:
+                if re.json().get('error_code'):
                     return re.json().get('error_code'), re.json().get('error_msg')
                 code = re.json().get('result').get('spam')
                 if code in [0, 1, 2]:

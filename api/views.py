@@ -1001,7 +1001,8 @@ def personal_audiostory(request):
     if uuid:
         selfUuid = uuid
     audio = AudioStory.objects.filter(
-        isDelete=False).filter(userUuid__uuid=selfUuid)
+        isDelete=False).filter(userUuid__uuid=selfUuid).filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        checkStatus="unCheck").exclude(checkStatus="unCheck")
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
@@ -2032,7 +2033,7 @@ def message_system(request):
                 userInfo = userList_format(users)[0]
                 targetData["user"] = userInfo
             audio = AudioStory.objects.filter(uuid=msg.audioUuid).first()
-            if audio:
+            if audio and msg.type != 5:
                 audios = []
                 audios.append(audio)
                 audioStory = audioList_format(audios, data)[0]

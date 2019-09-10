@@ -2679,15 +2679,12 @@ def add_notification(request):
     res, msg = text.work_on(title + content)
     # 如果是int整数，则是百度接口的错误码
     if isinstance(res, int):
+        if res == 18:
+            return http_return(400, "请求接口频繁，请重试。")
         return http_return(400, msg)
     if res == "checkFail":
         if msg != "恶意推广":
             return http_return(400, "发布文字涉及违规信息，请重新编辑！")
-    # if not isinstance(content, str):
-    #     return http_return(400, "消息内容格式需为字符串")
-    #
-    # if len(content) > 256:
-    #     return http_return(400, "消息内容超出256个字符")
 
     if type == 2:
         if not linkAddress:
@@ -2925,6 +2922,8 @@ def modify_notification(request):
     res, msg = text.work_on(title + content)
     # 如果是int整数，则是百度接口的错误码
     if isinstance(res, int):
+        if res == 18:
+            return http_return(400, "请求接口频繁，请重试。")
         return http_return(400, msg)
     if res == "checkFail":
         if msg != "恶意推广":

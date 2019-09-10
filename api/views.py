@@ -2000,14 +2000,14 @@ def message_system(request):
         audioStoryList.append(audio.uuid)
     try:
         SystemNotification.objects.filter(
-            Q(type__in=[1, 2, 3, 4, 5], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).update(isRead=True)
+            Q(type__in=[1, 2, 3], publishDate__gte=nowTime) | Q(audioUuid__in=audioStoryList)).update(isRead=True)
     except Exception as e:
         logging.error(str(e))
         return http_return(400, '更新已读失败')
     total = 0
     systemMessage = []
     systemMsg = SystemNotification.objects.filter(
-        Q(type__in=[1, 2, 3, 4, 5], publishDate__lte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
+        Q(type__in=[1, 2, 3], publishDate__lte=nowTime) | Q(audioUuid__in=audioStoryList)).order_by(
         "-publishDate").all()
     if systemMsg:
         total, systemMsg = message_format(systemMsg, pageCount, 1, uuid, refreshWay)

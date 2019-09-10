@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 
 from common.MyJpush import jpush_platform_msg
 from storybook_sever.celeryconfig import app
+from twitter.exceptions import FailWhaleError
 
 import logging
 
@@ -10,7 +11,7 @@ from common.textAPI import TextAudit
 from manager.models import Behavior, AudioStory
 
 
-@app.task
+@app.task(autoretry_for=(FailWhaleError,))
 def textWorker(uuid, ftype):
     """
     消费者处理任务

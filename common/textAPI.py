@@ -55,6 +55,11 @@ class TextAudit(object):
                         1: "reject",
                         2: "review",
                     }
+                    checkDict = {
+                        0: "check",
+                        1: "checkFail",
+                        2: "checkAgain",
+                    }
                     targetDict = {
                         1: "暴恐违禁",
                         2: "文本色情",
@@ -66,7 +71,7 @@ class TextAudit(object):
                     labelList = []
                     for label in re.json().get('result').get(labelDict[code]):
                         labelList.append(targetDict[label["label"]])
-                    return code, ",".join(labelList)
+                    return checkDict[code], ",".join(labelList)
         except Exception as e:
             logging.error(str(e))
         return False, False

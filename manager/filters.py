@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import django_filters
+from django.db.models import Q
 from django.utils import timezone
 
 from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity, CycleBanner, Ad, Feedback, \
@@ -224,10 +225,25 @@ class NotificationFilter(django_filters.FilterSet):
 class CommentFilter(django_filters.FilterSet):
     remarks = django_filters.CharFilter(field_name='remarks', lookup_expr='icontains')
     nickName = django_filters.CharFilter(method='filter_by_nickName')
+    checkStatus = django_filters.CharFilter(method='filter_by_checkStatus')
+
+    @staticmethod
+    def filter_by_checkStatus(queryset, name, value):
+        if value == "unCheck":
+            return queryset.filter(Q(checkStatus="unCheck")&Q(adminStatus="unCheck"))
+        elif value == "check":
+            return queryset.filter((Q(checkStatus="check")&Q(adminStatus="unCheck"))|Q(adminStatus="check"))
+        elif value == "checkFail":
+            return queryset.filter((Q(checkStatus="checkFail")&Q(adminStatus="unCheck"))|Q(adminStatus="checkFail"))
+        elif value == "checkAgain":
+            return queryset.filter(Q(checkStatus="checkAgain")&Q(adminStatus="unCheck"))
+        else:
+            return queryset
 
     @staticmethod
     def filter_by_nickName(queryset, name, value):
         return queryset.filter(userUuid__nickName__icontains=value)
+
 
     class Meta:
         model = Behavior

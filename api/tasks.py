@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from common.MyJpush import jpush_platform_msg
+from common.exceptions import QPSError
 from storybook_sever.celeryconfig import app
 
 import logging
@@ -10,7 +11,7 @@ from common.textAPI import TextAudit
 from manager.models import Behavior, AudioStory
 
 
-@app.task
+@app.task(autoretry_for=(QPSError,), retry_kwargs={'max_retries': 5})
 def textWorker(uuid, ftype):
     """
     消费者处理任务
@@ -24,7 +25,7 @@ def textWorker(uuid, ftype):
         checkResult, checkInfo, = text.work_on(behavior.remarks)
         if checkResult or checkInfo:
             if checkResult == 18:
-                textWorker.delay(uuid, 1)
+                raise QPSError
             if checkResult in ["check", "checkFail", "checkAgain"]:
                 if checkResult == "check":
                     checkInfo = "评论通过审核"
@@ -53,7 +54,7 @@ def textWorker(uuid, ftype):
         checkResult, checkInfo = text.work_on(targetStr)
         if checkResult or checkInfo:
             if checkResult == 18:
-                textWorker.delay(uuid, 1)
+                raise QPSError
             if checkResult in [0, 1, 2]:
                 interfaceDict = {
                     1: "check",

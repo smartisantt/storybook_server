@@ -999,10 +999,14 @@ def personal_audiostory(request):
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
     if uuid:
-        selfUuid = uuid
-    audio = AudioStory.objects.filter(
-        isDelete=False).filter(userUuid__uuid=selfUuid).filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-        checkStatus="unCheck").exclude(checkStatus="unCheck")
+        audio = AudioStory.objects.filter(
+            isDelete=False).filter(userUuid__uuid=uuid).filter(
+            Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+            checkStatus="unCheck").exclude(checkStatus="unCheck")
+    else:
+        audio = AudioStory.objects.filter(
+            isDelete=False).filter(userUuid__uuid=selfUuid).filter(
+            Q(checkStatus__in=["check", "exemption", ""]) | Q(interfaceStatus="check"))
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
@@ -1897,7 +1901,8 @@ def comment_list(request):
     audio = AudioStory.objects.filter(uuid=audioStoryUuid).first()
     if not audio:
         return http_return(400, "未查询到作品信息")
-    comments = audio.bauUuid.filter(type=2, checkStatus="check").order_by("-createTime").all()
+    comments = audio.bauUuid.filter(type=2).filter(
+        Q(checkStatus="check") | Q(userUuid__uuid=data['_cache']['uuid'])).order_by("-createTime").all()
     total, commentMsg = message_format(comments, pageCount, 4, uuid, refreshWay)
     commentList = commentList_format(commentMsg)
     return http_return(200, "成功", {"total": total, "list": commentList})

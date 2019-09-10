@@ -461,7 +461,9 @@ def audio_play(request):
             if flag:
                 selfUser.save()
     except Exception as e:
+        logging.error("--------------------------")
         logging.error(str(e))
+        logging.error("--------------------------")
         return http_return(400, '数据库错误')
     return http_return(200, '成功', playDict)
 

@@ -426,9 +426,7 @@ def audio_play(request):
     selfUuid = data['_cache']['uuid']
     selfUser = User.objects.filter(uuid=selfUuid).first()
     checkPlayHistory = Behavior.objects.filter(userUuid__uuid=selfUuid, audioUuid__uuid=uuid, type=4).first()
-    if checkPlayHistory:
-        checkPlayHistory.updateTime = datetime.datetime.now()
-    else:
+    if not checkPlayHistory:
         checkPlayHistory = Behavior(
             uuid=get_uuid(),
             userUuid=selfUser,

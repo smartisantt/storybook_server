@@ -2,7 +2,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
-    Feedback, Album, AlbumAudioStory, SystemNotification
+    Feedback, Album, AlbumAudioStory, SystemNotification, Behavior
 from utils.errors import ParamsException
 
 
@@ -613,6 +613,19 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = ("uuid", "title", "content", "createTime",
                   "publishDate", "isPublish", "linkAddress", "linkText",
                   "type", "activityUuid")
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    nickName = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_nickName(comment):
+        return comment.userUuid.nickName
+
+    class Meta:
+        model = Behavior
+        fields = ("uuid", "nickName", "remarks", "createTime", "checkInfo", "checkStatus", "adminStatus")
+
 
 
 

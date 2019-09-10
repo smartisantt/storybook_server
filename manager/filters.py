@@ -4,7 +4,7 @@ import django_filters
 from django.utils import timezone
 
 from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity, CycleBanner, Ad, Feedback, \
-    Album, SystemNotification
+    Album, SystemNotification, Behavior
 from utils.errors import ParamsException
 
 
@@ -219,5 +219,21 @@ class NotificationFilter(django_filters.FilterSet):
     class Meta:
         model = SystemNotification
         fields = ("title", )
+
+
+class CommentFilter(django_filters.FilterSet):
+    remarks = django_filters.CharFilter(field_name='remarks', lookup_expr='icontains')
+    nickName = django_filters.CharFilter(method='filter_by_nickName')
+
+    @staticmethod
+    def filter_by_nickName(queryset, name, value):
+        return queryset.filter(userUuid__nickName__icontains=value)
+
+    class Meta:
+        model = Behavior
+        fields = ("checkStatus", )
+
+
+
 
 

@@ -12,10 +12,12 @@ from api.apiCommon import get_default_name
 from common.MyJpush import post_schedule_message, time2str, delete_schedule, put_schedule_message, \
     post_schedule_notification, put_schedule_notification, jpush_notification, jpush_platform_msg
 from common.common import limit_of_text
+from common.textAPI import TextAudit
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
-    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter, AuthorAudioStoryFilter, NotificationFilter
+    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter, AuthorAudioStoryFilter, NotificationFilter, \
+    CommentFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -24,7 +26,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, CycleBannerSerializer, FeedbackSerializer, \
     TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, CheckAlbumSerializer, \
-    AuthorAudioStorySerializer, AlbumDetailSerializer, NotificationSerializer
+    AuthorAudioStorySerializer, AlbumDetailSerializer, NotificationSerializer, CommentSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
@@ -2669,11 +2671,23 @@ def add_notification(request):
     if not all([title, content, publishDate]):
         return http_return(400, "参数有空")
 
-    if not isinstance(content, str):
-        return http_return(400, "消息内容格式需为字符串")
+    if not limit_of_text(content, 256):
+        return http_return(400, "消息内容格式错误或超出256个字符")
 
-    if len(content) > 256:
-        return http_return(400, "消息内容超出256个字符")
+    # 使用百度接口审核title 、content文字内容
+    text = TextAudit()
+    res, msg = text.work_on(title + content)
+    # 如果是int整数，则是百度接口的错误码
+    if isinstance(res, int):
+        return http_return(400, msg)
+    if res == "checkFail":
+        if msg != "恶意推广":
+            return http_return(400, "发布文字涉及违规信息，请重新编辑！")
+    # if not isinstance(content, str):
+    #     return http_return(400, "消息内容格式需为字符串")
+    #
+    # if len(content) > 256:
+    #     return http_return(400, "消息内容超出256个字符")
 
     if type == 2:
         if not linkAddress:
@@ -2906,8 +2920,18 @@ def modify_notification(request):
         # 跳转的是活动则拼接活动路由
         linkAddress = urljoin(activity.url, activity.uuid) + "/false"
 
+    # 使用百度接口审核title 、content文字内容
+    text = TextAudit()
+    res, msg = text.work_on(title + content)
+    # 如果是int整数，则是百度接口的错误码
+    if isinstance(res, int):
+        return http_return(400, msg)
+    if res == "checkFail":
+        if msg != "恶意推广":
+            return http_return(400, "发布文字涉及违规信息，请重新编辑！")
 
     # =====================修改极光推送  修改定时的极光推送
+    publishState = notification.publishState
     if notification.scheduleId:
         try:
             timestr = time2str(publishDate)
@@ -2920,15 +2944,12 @@ def modify_notification(request):
             publishState = 3
             if result.status_code != 200:
                 publishState = 4
-                # return http_return(400, "极光推送连接失败")
             if result.payload.get("taskid") != notification.scheduleId:
                 publishState = 4
-                # return http_return(400, "极光推送修改失败")
 
         except Exception as e:
             publishState = 4
             logging.error(str(e))
-            # return http_return(400, '极光推送出错！')
 
 
     try:
@@ -3394,3 +3415,83 @@ def check_album(request):
         logging.error(str(e))
         return http_return(400, '审核失败')
     return http_return(200, '审核成功！')
+
+
+# 显示评论列表  评论用户 时间范围  审核状态  评论内容
+class CommentView(ListAPIView):
+    queryset = Behavior.objects.filter(type=2, isDelete=False)
+    serializer_class = CommentSerializer
+    filter_class = CommentFilter
+    pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+        return self.queryset
+
+
+# 审核 通过/不通过
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication,))
+def check_comment(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    checkStatus = data.get('checkStatus')
+
+    if checkStatus not in ["check", "checkFail"]:
+        return http_return(400, '参数无效')
+
+    comment = Behavior.objects.filter(type=2, isDelete=False, uuid=uuid).\
+        exclude(adminStatus__in=["check", "checkFail"]).first()
+
+    if not comment:
+        return http_return(400, '没有此评论')
+
+    try:
+        with transaction.atomic():
+            comment.adminStatus = checkStatus
+            comment.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '审核失败')
+    return http_return(200, '审核成功！')
+
+# 删除
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication,))
+def del_comment(request):
+    # 删除专辑
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+
+    comment = Behavior.objects.filter(type=2, isDelete=False, uuid=uuid).first()
+    if not comment:
+        return http_return(400, '没有此评论')
+
+    try:
+        with transaction.atomic():
+            comment.isDelete = True
+            comment.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+    return http_return(200, '删除成功')
+
+

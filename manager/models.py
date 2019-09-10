@@ -141,7 +141,7 @@ class GameInfo(BaseModle, models.Model):
     activityUuid = models.ForeignKey('Activity', models.CASCADE, null=True, related_name='activityRankUuid',
                                      to_field='uuid')
     audioUuid = models.ForeignKey('AudioStory', models.CASCADE, null=True, related_name='audioRankUuid',
-                                  to_field='uuid') # 为空则只是报名， 有则是上传作品
+                                  to_field='uuid')  # 为空则只是报名， 有则是上传作品
     votes = models.IntegerField(null=True, default=0)
     status = models.IntegerField(default=0)  # 状态 0正常 1禁用 2删除
     inviter = models.CharField(max_length=32, null=True)  # 邀请人 or 门店uuid
@@ -403,7 +403,8 @@ class Behavior(BaseModle, models.Model):
     type = models.IntegerField(null=True)  # 行为类型 1:点赞 2:评论 3:收藏 4:播放记录 5:最近录过
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.TextField(null=True)
-    checkStatus = models.CharField(max_length=64, default="unCheck")  # unCheck check checkFail
+    checkStatus = models.CharField(max_length=64, default="unCheck")  # unCheck check checkFail checkAgain
+    checkInfo = models.CharField(max_length=255, null=True)
     isRead = models.BooleanField(default=False)
 
     class Meta:
@@ -537,9 +538,9 @@ class SystemNotification(BaseModle):
     """
     存储系统消息：包含后台系统消息和作品审核消息
     """
-    userUuid = models.CharField(max_length=64, null=True) # 绘童团队
+    userUuid = models.CharField(max_length=64, null=True)  # 绘童团队
     type = models.IntegerField(null=True, default=1)  # 系统消息类型 1：后台通知（纯文本） 2：外部连接 3：活动邀请 4：审核通过  5：审核没有通过
-    targetType = models.IntegerField(null=True)      # 跳转类型分类：0 活动 1 专辑 2 音频 3 商品 4 链接 5 模板
+    targetType = models.IntegerField(null=True)  # 跳转类型分类：0 活动 1 专辑 2 音频 3 商品 4 链接 5 模板
     title = models.CharField(max_length=256, verbose_name="标题")
     content = models.CharField(max_length=256, verbose_name="内容")
     publishDate = models.DateTimeField(null=False)

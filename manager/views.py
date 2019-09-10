@@ -2712,10 +2712,11 @@ def add_notification(request):
         return http_return(400, "发布日期不要超过一年")
 
     # 跳转活动
+    targetType = 4
     if type == 3:
         if not activityUuid:
             return http_return(400, "活动参数不能为空")
-
+        targetType = 0
         activity = Activity.objects.filter(uuid=activityUuid, status="normal").first()
         if not activity:
             return http_return(400, "该活动不存在！")
@@ -2744,27 +2745,20 @@ def add_notification(request):
     timestr = time2str(publishDate)
     if JPUSH == "ON":
         try:
-            if type == 3:  # 活动横幅通知
-                extras = {"type": 0}  # 这里的自定义消息type： 0 系统消息 1 关注 2 点赞 3 评论
-                result = post_schedule_notification(title, content, extras, timestr, title)
-            else:  # app内， 跳转外部连接，（系统纯文字通知，或者有外部链接）
-                extras = {"type": 0} # 这里的自定义消息type： 0 系统消息 1 关注 2 点赞 3 评论
-                result = post_schedule_message(title, content, extras, timestr, title, alias=None)
+            extras = {"type": 0} # 这里的自定义消息type： 0 系统消息 1 关注 2 点赞 3 评论
+            result = post_schedule_notification(title, content, extras, timestr, title)
             if result.status_code == 200:
                 schedule_id = result.payload.get("schedule_id", "")
                 publishState = 7
                 if not schedule_id:
                     publishState = 8
-                    # return http_return(400, "极光推送错误")
             else:
                 schedule_id = ""
                 publishState = 8
-                # return http_return(400, "连接极光错误")
         except Exception as e:
             schedule_id = ""
             publishState = 8
             logging.error(str(e))
-            # return http_return(400, '极光推送出错！')
     else:
         schedule_id = ""
         publishState = 0
@@ -2781,7 +2775,7 @@ def add_notification(request):
                 linkAddress=linkAddress,
                 linkText=linkText or linkAddress,
                 type=type,
-                targetType=0,  # 活动
+                targetType=targetType,  # 活动
                 activityUuid=activityUuid,
                 publishState=publishState,
                 scheduleId=schedule_id,
@@ -2934,12 +2928,8 @@ def modify_notification(request):
     if notification.scheduleId:
         try:
             timestr = time2str(publishDate)
-            if type == 3:  # 活动横幅通知
-                extras = {"type": 0}
-                result = put_schedule_notification(notification.scheduleId, content, title, extras, timestr, title)
-            else:  # app内， 跳转外部连接，（系统纯文字通知，或者有外部链接）
-                extras = {"type": 0}
-                result = put_schedule_message(notification.scheduleId, content, title, extras, timestr, title)
+            extras = {"type": 0}
+            result = put_schedule_notification(notification.scheduleId, content, title, extras, timestr, title)
             publishState = 3
             if result.status_code != 200:
                 publishState = 4

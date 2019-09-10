@@ -19,52 +19,71 @@ def textWorker(uuid, ftype):
     :return:
     """
     text = TextAudit()
+    targetDict = {
+        1: "暴恐违禁",
+        2: "文本色情",
+        3: "政治敏感",
+        4: "恶意推广",
+        5: "低俗辱骂",
+        6: "低质灌水",
+    }
     if ftype == 1:
         behavior = Behavior.objects.filter(uuid=uuid).first()
-        result = text.work_on(behavior.remarks)
-        if result == 18:
-            textWorker.delay(uuid, 1)
-        elif result == 0:
-            behavior.checkStatus = "check"
-
-            # 评论通过审核 推送评论信息
-            title = "评论提醒"
-            content = behavior.userUuid.nickName + "评论了" + behavior.audioUuid.name
-            extras = {"type": 3, "unread": 1}
-            alias = []
-            alias.append(behavior.userUuid.uuid)
-            try:
-                jpush_platform_msg(title, content, extras, alias)
-            except Exception as e:
-                logging.error(str(e))
-        elif result == 1:
-            behavior.checkStatus = "checkFail"
-        elif result == 2:
-            behavior.checkStatus = "checkAgain"
-        try:
-            behavior.save()
-        except Exception as e:
-            logging.error(str(e))
+        checkResult, checkInfo, = text.work_on(behavior.remarks)
+        if checkResult or checkInfo:
+            if checkResult == 18:
+                textWorker.delay(uuid, 1)
+                return True
+            if checkResult in [0, 1, 2]:
+                checkList = []
+                for info in checkInfo:
+                    checkList.append(targetDict[info["label"]])
+                if checkResult == 0:
+                    # 评论通过审核 推送评论信息
+                    title = "评论提醒"
+                    content = behavior.userUuid.nickName + "评论了" + behavior.audioUuid.name
+                    extras = {"type": 3, "unread": 1}
+                    alias = []
+                    alias.append(behavior.userUuid.uuid)
+                    try:
+                        jpush_platform_msg(title, content, extras, alias)
+                    except Exception as e:
+                        logging.error(str(e))
+                checkDict = {
+                    0: "check",
+                    1: "checkFail",
+                    2: "checkAgain"
+                }
+                behavior.checkStatus = checkDict[checkResult]
+                behavior.checkInfo = ",".join(checkList)
+                try:
+                    behavior.save()
+                except Exception as e:
+                    logging.error(str(e))
 
     elif ftype == 2:
         audio = AudioStory.objects.filter(uuid=uuid).first()
-        targetStr = "标题："+audio.name+",内容："+audio.remarks
-        result = text.work_on(targetStr)
-        if result == 18:
-            textWorker.delay(uuid, 1)
-        elif result == 0:
-            audio.interfaceStatus = "check"
-            audio.interfaceInfo = "textCheck"
-        elif result == 1:
-            audio.interfaceStatus = "checkFail"
-            audio.interfaceInfo = "textCheck"
-        elif result == 2:
-            audio.checkStatus = "checkAgain"
-            audio.interfaceInfo = "textCheck"
-        try:
-            audio.save()
-        except Exception as e:
-            logging.error(str(e))
+        targetStr = "标题：" + audio.name + ",内容：" + audio.remarks
+        checkResult, checkInfo = text.work_on(targetStr)
+        if checkResult or checkInfo:
+            if checkResult == 18:
+                textWorker.delay(uuid, 1)
+                return True
+            if checkResult in [0, 1, 2]:
+                interfaceDict = {
+                    1: "check",
+                    2: "checkFail",
+                    3: "checkFail",
+                }
+                checkList = []
+                for info in checkInfo:
+                    checkList.append(targetDict[info["label"]])
+                audio.interfaceStatus = interfaceDict[checkResult]
+                audio.interfaceInfo = ",".join(checkList)
+                try:
+                    audio.save()
+                except Exception as e:
+                    logging.error(str(e))
     return True
 
 

@@ -34,7 +34,6 @@ class TextAudit(object):
         except Exception as e:
             logging.error(e)
 
-
     def text_audit(self):
         """审核文本内容"""
         data = {
@@ -48,15 +47,16 @@ class TextAudit(object):
         try:
             if re.status_code == 200:
                 if re.json().get('error_code') == 18:
-                    return 18
-                if re.json().get('result').get('spam') in [0, 1, 2]:
-                    return re.json().get('result').get('spam')
-                return False
-            else:
-                return False
+                    return re.json().get('error_code'), re.json().get('error_msg')
+                if re.json().get('result').get('spam') == 0:
+                    return re.json().get('result').get('spam'), re.json().get('result').get('pass')
+                elif re.json().get('result').get('spam') == 1:
+                    return re.json().get('result').get('spam'), re.json().get('result').get('reject')
+                elif re.json().get('result').get('spam') == 2:
+                    return re.json().get('result').get('spam'), re.json().get('result').get('review')
         except Exception as e:
             logging.error(str(e))
-            return False
+        return False, False
 
     def work_on(self, text):
         """执行审核"""
@@ -79,5 +79,5 @@ class TextAudit(object):
 
 if __name__ == "__main__":
     text = TextAudit()
-    # print(text.work_on("咕咚来了"))
+    print(text.work_on("咕咚来了"))
     # text.thread_test()

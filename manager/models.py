@@ -406,6 +406,7 @@ class Behavior(BaseModle, models.Model):
     checkStatus = models.CharField(max_length=64, default="unCheck")  # unCheck check checkFail checkAgain
     checkInfo = models.CharField(max_length=255, null=True)
     isRead = models.BooleanField(default=False)
+    isDelete = models.BooleanField(verbose_name='软删除', default=False)
 
     class Meta:
         db_table = 'tb_behavior'
@@ -553,8 +554,8 @@ class SystemNotification(BaseModle):
     audioUuid = models.CharField(max_length=64, null=True)
     activityUuid = models.CharField(max_length=64, null=True)
     isRead = models.BooleanField(default=False)
-    checkStatus = models.CharField(max_length=64, null=True)
-    checkInfo = models.CharField(max_length=255, null=True)
+    checkStatus = models.CharField(max_length=64, null=True) # 机器审核
+    checkInfo = models.CharField(max_length=255, null=True) # 机器审核反馈信息：
 
     class Meta:
         db_table = "tb_system_notification"

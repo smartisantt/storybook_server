@@ -27,8 +27,17 @@ def textWorker(uuid, ftype):
             if checkResult == 18:
                 raise QPSError
             if checkResult in ["check", "checkFail", "checkAgain"]:
+                if checkResult == "checkAgain":
+                    checkInfo = "建议人工复审"
                 if checkResult == "check":
                     checkInfo = "评论通过审核"
+                behavior.checkStatus = checkResult
+                behavior.checkInfo = checkInfo
+                try:
+                    behavior.save()
+                except Exception as e:
+                    logging.error(str(e))
+                if checkResult == "check":
                     # 评论通过审核 推送评论信息
                     title = "评论提醒"
                     content = behavior.userUuid.nickName + "评论了" + behavior.audioUuid.name
@@ -39,14 +48,6 @@ def textWorker(uuid, ftype):
                         jpush_platform_msg(title, content, extras, alias)
                     except Exception as e:
                         logging.error(str(e))
-                if checkResult == "checkAgain":
-                    checkInfo = "建议人工复审"
-                behavior.checkStatus = checkResult
-                behavior.checkInfo = checkInfo
-                try:
-                    behavior.save()
-                except Exception as e:
-                    logging.error(str(e))
 
     elif ftype == 2:
         audio = AudioStory.objects.filter(uuid=uuid).first()

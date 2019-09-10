@@ -54,7 +54,7 @@ def jpush_notification(title, msg, extras, alias=None):
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
     push.message = jpush.message(msg, title=title, content_type="text", extras=extras)
     if version != "ali_test":
-        push.options = {"apns_production":False}
+        push.options = {"apns_production": False}
     push.platform = jpush.all_
     response = push.send()
     return response
@@ -74,9 +74,9 @@ def jpush_platform_msg(title, content, extras, alias=None):
     else:
         push.audience = jpush.alias(*alias)
     if version != "ali_test":
-        push.options = {"apns_production":False}
+        push.options = {"apns_production": False}
     push.platform = jpush.all_
-    push.message = jpush.message(content,title=title,content_type="text", extras=extras)
+    push.message = jpush.message(content, title=title, content_type="text", extras=extras)
     res = push.send()
     return res
 
@@ -123,10 +123,10 @@ def post_schedule_message(title, content, extras, timestr, name, alias=None):
     push.platform = jpush.all_
     push.message = jpush.message(content, title=title, content_type="text", extras=extras)
     if version != "ali_test":
-        push.options = {"apns_production":False}
+        push.options = {"apns_production": False}
     push = push.payload
 
-    trigger = jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
+    trigger = jpush.schedulepayload.trigger(timestr)  # timestr "2016-07-17 12:00:00"
     schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)
     result = schedule.post_schedule(schedulepayload)
     return result
@@ -152,12 +152,12 @@ def post_schedule_notification(title, msg, extras, timestr, name, alias=None):
     push.notification = jpush.notification(alert=msg, android=android, ios=ios)
     push.message = jpush.message(msg, title=title, content_type="text", extras=extras)
     if version != "ali_test":
-        push.options = {"apns_production":False}
-    push=push.payload
+        push.options = {"apns_production": False}
+    push = push.payload
 
-    trigger=jpush.schedulepayload.trigger(timestr)   # timestr "2016-07-17 12:00:00"
-    schedulepayload=jpush.schedulepayload.schedulepayload(name,True,trigger,push)
-    result=schedule.post_schedule(schedulepayload)
+    trigger = jpush.schedulepayload.trigger(timestr)  # timestr "2016-07-17 12:00:00"
+    schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)
+    result = schedule.post_schedule(schedulepayload)
     return result
 
 
@@ -200,7 +200,7 @@ def put_schedule_message(schedule_id, title, content, extras, timestr, name):
     push.audience = jpush.all_
     push.message = jpush.message(content, title=title, content_type="text", extras=extras)
     push.platform = jpush.all_
-    push=push.payload
+    push = push.payload
 
     trigger = jpush.schedulepayload.trigger(timestr)
     schedulepayload = jpush.schedulepayload.schedulepayload(name, True, trigger, push)

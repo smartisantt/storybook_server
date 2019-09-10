@@ -25,7 +25,6 @@ def textWorker(uuid, ftype):
         if checkResult or checkInfo:
             if checkResult == 18:
                 textWorker.delay(uuid, 1)
-                return True
             if checkResult in [0, 1, 2]:
                 if checkResult == 0:
                     # 评论通过审核 推送评论信息
@@ -57,7 +56,6 @@ def textWorker(uuid, ftype):
         if checkResult or checkInfo:
             if checkResult == 18:
                 textWorker.delay(uuid, 1)
-                return True
             if checkResult in [0, 1, 2]:
                 interfaceDict = {
                     1: "check",

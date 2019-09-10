@@ -8,7 +8,7 @@ from manager import views
 from manager.views import StoryView, AudioStoryInfoView, FreedomAudioStoryInfoView, CheckAudioStoryInfoView, \
     TypeTagView, StorySimpleView, UserSearchView, BgmView, HotSearchView, ModuleView, UserView, AllAudioSimpleView, \
     CycleBannerView, AdView, FeedbackView, ChildTagView, AllTagView, QualifiedAudioStoryInfoView, \
-    AlbumView, CheckAlbumView, AuthorAudioStoryView, NotificationView
+    AlbumView, CheckAlbumView, AuthorAudioStoryView, NotificationView, CommentView
 
 app_name = 'manager'
 
@@ -127,6 +127,10 @@ urlpatterns = [
     path('album/delalbum/', views.del_album, name='del_album'),
     path('album/albumtags/', views.album_tags, name='album_tags'),
     path('album/checkalbum/', views.check_album, name='check_album'),
+
+    path('comment/commentlist/', CommentView.as_view()),
+    path('comment/checkcomment/', views.check_comment, name='check_comment'),
+    path('comment/delcomment/', views.del_comment, name='del_comment'),
 
 ]
 

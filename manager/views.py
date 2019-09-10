@@ -15,7 +15,8 @@ from common.common import limit_of_text
 from manager.auths import CustomAuthentication
 from manager.filters import StoryFilter, FreedomAudioStoryInfoFilter, CheckAudioStoryInfoFilter, AudioStoryInfoFilter, \
     UserSearchFilter, BgmFilter, HotSearchFilter, UserFilter, CycleBannerFilter, \
-    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter, AuthorAudioStoryFilter, NotificationFilter
+    AdFilter, FeedbackFilter, QualifiedAudioStoryInfoFilter, AlbumFilter, AuthorAudioStoryFilter, NotificationFilter, \
+    CommentFilter
 from manager.models import *
 from manager.managerCommon import *
 from manager.paginations import MyPagination
@@ -24,7 +25,7 @@ from manager.serializers import StorySerializer, FreedomAudioStoryInfoSerializer
     HotSearchSerializer, AdSerializer, ModuleSerializer, UserDetailSerializer, \
     AudioStorySimpleSerializer, CycleBannerSerializer, FeedbackSerializer, \
     TagsSerialzer, QualifiedAudioStoryInfoSerializer, AlbumSerializer, CheckAlbumSerializer, \
-    AuthorAudioStorySerializer, AlbumDetailSerializer, NotificationSerializer
+    AuthorAudioStorySerializer, AlbumDetailSerializer, NotificationSerializer, CommentSerializer
 from common.api import Api
 from django.db.models import Count, Q, Max, Min
 from datetime import datetime, timedelta
@@ -2669,11 +2670,14 @@ def add_notification(request):
     if not all([title, content, publishDate]):
         return http_return(400, "参数有空")
 
-    if not isinstance(content, str):
-        return http_return(400, "消息内容格式需为字符串")
+    if not limit_of_text(content, 256):
+        return http_return(400, "消息内容格式错误或超出256个字符")
 
-    if len(content) > 256:
-        return http_return(400, "消息内容超出256个字符")
+    # if not isinstance(content, str):
+    #     return http_return(400, "消息内容格式需为字符串")
+    #
+    # if len(content) > 256:
+    #     return http_return(400, "消息内容超出256个字符")
 
     if type == 2:
         if not linkAddress:
@@ -3394,3 +3398,83 @@ def check_album(request):
         logging.error(str(e))
         return http_return(400, '审核失败')
     return http_return(200, '审核成功！')
+
+
+# 显示评论列表  评论用户 时间范围  审核状态  评论内容
+class CommentView(ListAPIView):
+    queryset = Behavior.objects.filter(type=2, isDelete=False)
+    serializer_class = CommentSerializer
+    filter_class = CommentFilter
+    pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
+
+    def get_queryset(self):
+        startTimestamp = self.request.query_params.get('starttime', '')
+        endTimestamp = self.request.query_params.get('endtime', '')
+
+        if (startTimestamp and not endTimestamp) or (not startTimestamp and endTimestamp):
+            raise ParamsException('时间错误')
+        if startTimestamp and endTimestamp:
+            try:
+                starttime, endtime = timestamp2datetime(startTimestamp, endTimestamp)
+                return self.queryset.filter(createTime__range=(starttime, endtime))
+            except Exception as e:
+                logging.error(str(e))
+                raise ParamsException(e.detail)
+        return self.queryset
+
+
+# 审核 通过/不通过
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication,))
+def check_comment(request):
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+    checkStatus = data.get('checkStatus')
+
+    if checkStatus not in ["check", "checkFail"]:
+        return http_return(400, '参数无效')
+
+    comment = Behavior.objects.filter(type=2, isDelete=False, uuid=uuid).\
+        exclude(adminStatus__in=["check", "checkFail"]).first()
+
+    if not comment:
+        return http_return(400, '没有此评论')
+
+    try:
+        with transaction.atomic():
+            comment.adminStatus = checkStatus
+            comment.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '审核失败')
+    return http_return(200, '审核成功！')
+
+# 删除
+@api_view(['POST'])
+@authentication_classes((CustomAuthentication,))
+def del_comment(request):
+    # 删除专辑
+    data = request_body(request, 'POST')
+    if not data:
+        return http_return(400, '参数错误')
+    uuid = data.get('uuid', '')
+
+    comment = Behavior.objects.filter(type=2, isDelete=False, uuid=uuid).first()
+    if not comment:
+        return http_return(400, '没有此评论')
+
+    try:
+        with transaction.atomic():
+            comment.isDelete = True
+            comment.save()
+    except Exception as e:
+        logging.error(str(e))
+        return http_return(400, '删除失败')
+    return http_return(200, '删除成功')
+
+

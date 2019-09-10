@@ -23,7 +23,7 @@ def textWorker(uuid, ftype):
     if ftype == 1:
         behavior = Behavior.objects.filter(uuid=uuid).first()
         checkResult, checkInfo, = text.work_on(behavior.remarks)
-        if checkResult or checkInfo:
+        if checkResult:
             if checkResult == 18:
                 raise QPSError
             if checkResult in ["check", "checkFail", "checkAgain"]:

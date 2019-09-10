@@ -29,7 +29,7 @@ HTTD = "13333333333"
 
 
 # 分享域名
-SHAREURL = "http://192.168.100.235:8009"
+SHAREURL = "http://192.168.100.87:99"
 SLECTAUDIOURL = "http://192.168.100.235:8010"
 if version == 'ali_test':
     SHAREURL = 'http://h5huitong.hbbclub.com'

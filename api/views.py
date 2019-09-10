@@ -596,7 +596,7 @@ def index_more(request):
     sort = data.get('sort', '')  # rank:最热 latest:最新
     # MOD1每日一读  MOD2抢先听  MOD3热门推荐 MOD4猜你喜欢
     audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-        checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
+        checkStatus="unCheck").filter(isDelete=False)
     if type in [1, 2, 3]:
         typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
         audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False, moduleAudioUuid__isDelete=False)
@@ -641,7 +641,7 @@ def search_all(request):
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
     audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-        checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
+        checkStatus="unCheck").filter(isDelete=False)
     user = User.objects.filter(roles='normalUser')
     audios = audio.filter(name__contains=keyword).order_by("-updateTime").all()[:6]
     users = user.filter(nickName__contains=keyword).order_by("-updateTime").all()[:6]
@@ -675,7 +675,7 @@ def search_each(request):
     if type == "audioStory":
         audio = AudioStory.objects.filter(
             Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-            checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
+            checkStatus="unCheck").filter(isDelete=False)
         audio = audio.filter(Q(storyUuid__name__contains=keyword) | Q(name__contains=keyword))
         if filterValue == 'rank':
             audio = audio.order_by("-playTimes")
@@ -764,7 +764,7 @@ def index_category_result(request):
         return http_return(400, '请求错误')
     keyword = data.get('keyword', '')
     audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-        checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
+        checkStatus="unCheck").filter(isDelete=False)
     user = User.objects.filter(status='normal')
     if keyword:
         categoryList = keyword.split('*')
@@ -800,7 +800,7 @@ def index_category_each(request):
     if type == "audioStory":
         audio = AudioStory.objects.filter(
             Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-            checkStatus="unCheck").exclude(checkStatus="unCheck").filter(isDelete=False)
+            checkStatus="unCheck").filter(isDelete=False)
         if keyword:
             categoryList = keyword.split('*')
             for cate in categoryList:
@@ -998,15 +998,14 @@ def personal_audiostory(request):
     page = data.get('page', '')
     pageCount = data.get('pageCount', '')
     selfUuid = data['_cache']['uuid']
+    audio = AudioStory.objects.filter(isDelete=False)
     if uuid:
-        audio = AudioStory.objects.filter(
-            isDelete=False).filter(userUuid__uuid=uuid).filter(
+        audio = audio.filter(userUuid__uuid=uuid).filter(
             Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-            checkStatus="unCheck").exclude(checkStatus="unCheck")
+            checkStatus="unCheck")
     else:
-        audio = AudioStory.objects.filter(
-            isDelete=False).filter(userUuid__uuid=selfUuid).filter(
-            Q(checkStatus__in=["check", "exemption", ""]) | Q(interfaceStatus="check"))
+        audio = audio.filter(userUuid__uuid=selfUuid).exclude(interfaceStatus="checkFail").exclude(
+            checkStatus="checkFail")
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)
@@ -1902,7 +1901,8 @@ def comment_list(request):
     if not audio:
         return http_return(400, "未查询到作品信息")
     comments = audio.bauUuid.filter(type=2).filter(
-        Q(checkStatus="check") | Q(userUuid__uuid=data['_cache']['uuid'])).order_by("-createTime").all()
+        Q(checkStatus="check") | Q(userUuid__uuid=data['_cache']['uuid']) | Q(adminStatus="check")).exclude(
+        checkStatus="checkFail").exclude(adminStatus="checkFail").order_by("-createTime").all()
     total, commentMsg = message_format(comments, pageCount, 4, uuid, refreshWay)
     commentList = commentList_format(commentMsg)
     return http_return(200, "成功", {"total": total, "list": commentList})

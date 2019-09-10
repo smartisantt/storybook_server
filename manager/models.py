@@ -404,7 +404,7 @@ class Behavior(BaseModle, models.Model):
     status = models.IntegerField(null=True, default=0)  # 状态 0：正常 1：取消
     remarks = models.TextField(null=True)
     checkStatus = models.CharField(max_length=64, default="unCheck")  # unCheck check checkFail checkAgain
-    checkInfo = models.CharField(max_length=255, null=True)
+    checkInfo = models.CharField(max_length=255, default="机器未审核")  # 机器审核信息
     isRead = models.BooleanField(default=False)
     isDelete = models.BooleanField(verbose_name='软删除', default=False)
 

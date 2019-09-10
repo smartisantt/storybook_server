@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import os
 import sys
-
+import codecs
+sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
 
 if __name__ == '__main__':
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'storybook_sever.settings')

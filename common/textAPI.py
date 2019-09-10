@@ -46,7 +46,7 @@ class TextAudit(object):
         re = requests.post(self.textHost, headers=headers, params=data)
         try:
             if re.status_code == 200:
-                if re.json().get('error_code') == 18:
+                if re.json().get('error_code'):
                     return re.json().get('error_code'), re.json().get('error_msg')
                 code = re.json().get('result').get('spam')
                 if code in [0, 1, 2]:
@@ -54,6 +54,11 @@ class TextAudit(object):
                         0: "pass",
                         1: "reject",
                         2: "review",
+                    }
+                    checkDict = {
+                        0: "check",
+                        1: "checkFail",
+                        2: "checkAgain",
                     }
                     targetDict = {
                         1: "暴恐违禁",
@@ -66,7 +71,7 @@ class TextAudit(object):
                     labelList = []
                     for label in re.json().get('result').get(labelDict[code]):
                         labelList.append(targetDict[label["label"]])
-                    return code, ",".join(labelList)
+                    return checkDict[code], ",".join(labelList)
         except Exception as e:
             logging.error(str(e))
         return False, False

@@ -2623,7 +2623,7 @@ def reply(request):
 
 
 class NotificationView(ListAPIView):
-    queryset = SystemNotification.objects.filter(isDelete=False)
+    queryset = SystemNotification.objects.filter(isDelete=False).exclude(type__in=[4, 5])
     serializer_class = NotificationSerializer
     filter_class = NotificationFilter
     pagination_class = MyPagination

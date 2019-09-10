@@ -48,12 +48,25 @@ class TextAudit(object):
             if re.status_code == 200:
                 if re.json().get('error_code') == 18:
                     return re.json().get('error_code'), re.json().get('error_msg')
-                if re.json().get('result').get('spam') == 0:
-                    return re.json().get('result').get('spam'), re.json().get('result').get('pass')
-                elif re.json().get('result').get('spam') == 1:
-                    return re.json().get('result').get('spam'), re.json().get('result').get('reject')
-                elif re.json().get('result').get('spam') == 2:
-                    return re.json().get('result').get('spam'), re.json().get('result').get('review')
+                code = re.json().get('result').get('spam')
+                if code in [0, 1, 2]:
+                    labelDict = {
+                        0: "pass",
+                        1: "reject",
+                        2: "review",
+                    }
+                    targetDict = {
+                        1: "暴恐违禁",
+                        2: "文本色情",
+                        3: "政治敏感",
+                        4: "恶意推广",
+                        5: "低俗辱骂",
+                        6: "低质灌水",
+                    }
+                    labelList = []
+                    for label in re.json().get('result').get(labelDict[code]):
+                        labelList.append(targetDict[label["label"]])
+                    return code, ",".join(labelList)
         except Exception as e:
             logging.error(str(e))
         return False, False

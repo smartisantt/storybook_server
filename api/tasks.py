@@ -19,14 +19,6 @@ def textWorker(uuid, ftype):
     :return:
     """
     text = TextAudit()
-    targetDict = {
-        1: "暴恐违禁",
-        2: "文本色情",
-        3: "政治敏感",
-        4: "恶意推广",
-        5: "低俗辱骂",
-        6: "低质灌水",
-    }
     if ftype == 1:
         behavior = Behavior.objects.filter(uuid=uuid).first()
         checkResult, checkInfo, = text.work_on(behavior.remarks)
@@ -35,9 +27,6 @@ def textWorker(uuid, ftype):
                 textWorker.delay(uuid, 1)
                 return True
             if checkResult in [0, 1, 2]:
-                checkList = []
-                for info in checkInfo:
-                    checkList.append(targetDict[info["label"]])
                 if checkResult == 0:
                     # 评论通过审核 推送评论信息
                     title = "评论提醒"
@@ -55,7 +44,7 @@ def textWorker(uuid, ftype):
                     2: "checkAgain"
                 }
                 behavior.checkStatus = checkDict[checkResult]
-                behavior.checkInfo = ",".join(checkList)
+                behavior.checkInfo = checkInfo
                 try:
                     behavior.save()
                 except Exception as e:
@@ -75,11 +64,8 @@ def textWorker(uuid, ftype):
                     2: "checkFail",
                     3: "checkFail",
                 }
-                checkList = []
-                for info in checkInfo:
-                    checkList.append(targetDict[info["label"]])
                 audio.interfaceStatus = interfaceDict[checkResult]
-                audio.interfaceInfo = ",".join(checkList)
+                audio.interfaceInfo = "textCheck"
                 try:
                     audio.save()
                 except Exception as e:

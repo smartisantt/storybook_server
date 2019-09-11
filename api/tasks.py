@@ -11,7 +11,7 @@ from common.textAPI import TextAudit
 from manager.models import Behavior, AudioStory
 
 
-@app.task(autoretry_for=(QPSError,), retry_kwargs={'max_retries': 5})
+@app.task(autoretry_for=(QPSError,), retry_kwargs={'max_retries': 5, 'countdown': 5})
 def textWorker(uuid):
     """
     消费者处理任务
@@ -24,7 +24,7 @@ def textWorker(uuid):
         checkResult, checkInfo, = text.work_on(behavior.remarks)
         if checkResult:
             if checkResult == 18:
-                raise QPSError
+                raise QPSError("QPS超限！！！")
             if checkResult in ["check", "checkFail", "checkAgain"]:
                 if checkResult == "checkAgain":
                     checkInfo = "建议人工复审"

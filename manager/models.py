@@ -386,7 +386,7 @@ class AudioStory(BaseModle, models.Model):
     isDelete = models.BooleanField(default=False)  # 软删除
     fileSize = models.IntegerField(null=True)  # 音频文件大小
     taskID = models.CharField(max_length=255, null=True)  # 任务轮训id
-    interfaceStatus = models.CharField(max_length=64, default="unCheck")  # unCheck待审核 check审核通过 checkFail审核不通过
+    interfaceStatus = models.CharField(max_length=64, default="unCheck")  # unCheck待审核 check审核通过 checkFail审核不通过 manualCheck 转人工审核
     interfaceInfo = models.CharField(max_length=64, default="audioCheck")  # audioCheck textCheck 标记机器审核内容
 
     class Meta:

@@ -595,11 +595,12 @@ def index_more(request):
     pageCount = data.get('pageCount', '')
     sort = data.get('sort', '')  # rank:最热 latest:最新
     # MOD1每日一读  MOD2抢先听  MOD3热门推荐 MOD4猜你喜欢
-    audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-        checkStatus="unCheck").filter(isDelete=False)
+    audio = AudioStory.objects.filter(isDelete=False).filter(
+        Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail"))
     if type in [1, 2, 3]:
         typeDict = {1: "MOD1", 2: "MOD2", 3: "MOD3"}
-        audio = audio.filter(moduleAudioUuid__type=typeDict[type], isDelete=False, moduleAudioUuid__isDelete=False)
+        audio = audio.filter(moduleAudioUuid__type=typeDict[type], moduleAudioUuid__isDelete=False)
         if type == 1:
             audio = audio.filter(audioStoryType=True)
     elif type == 4:
@@ -640,8 +641,9 @@ def search_all(request):
         return http_return(400, '请输入搜索关键词')
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
-    audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-        checkStatus="unCheck").filter(isDelete=False)
+    audio = AudioStory.objects.filter(isDelete=False).filter(
+        Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail"))
     user = User.objects.filter(roles='normalUser')
     audios = audio.filter(name__contains=keyword).order_by("-updateTime").all()[:6]
     users = user.filter(nickName__contains=keyword).order_by("-updateTime").all()[:6]
@@ -673,9 +675,9 @@ def search_each(request):
     if not save_search(data):
         return http_return(400, '存储搜索记录失败')
     if type == "audioStory":
-        audio = AudioStory.objects.filter(
+        audio = AudioStory.objects.filter(isDelete=False).filter(
             Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-            checkStatus="unCheck").filter(isDelete=False)
+            Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail"))
         audio = audio.filter(Q(storyUuid__name__contains=keyword) | Q(name__contains=keyword))
         if filterValue == 'rank':
             audio = audio.order_by("-playTimes")
@@ -763,8 +765,9 @@ def index_category_result(request):
     if not data:
         return http_return(400, '请求错误')
     keyword = data.get('keyword', '')
-    audio = AudioStory.objects.filter(Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-        checkStatus="unCheck").filter(isDelete=False)
+    audio = AudioStory.objects.filter(isDelete=False).filter(
+        Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
+        Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail"))
     user = User.objects.filter(status='normal')
     if keyword:
         categoryList = keyword.split('*')
@@ -798,9 +801,9 @@ def index_category_each(request):
     if not selfUser:
         return http_return(400, '未获取到用户信息')
     if type == "audioStory":
-        audio = AudioStory.objects.filter(
+        audio = AudioStory.objects.filter(isDelete=False).filter(
             Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-            checkStatus="unCheck").filter(isDelete=False)
+            Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail"))
         if keyword:
             categoryList = keyword.split('*')
             for cate in categoryList:
@@ -1002,10 +1005,11 @@ def personal_audiostory(request):
     if uuid:
         audio = audio.filter(userUuid__uuid=uuid).filter(
             Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
-            checkStatus="unCheck")
+            Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail"))
     else:
-        audio = audio.filter(userUuid__uuid=selfUuid).exclude(interfaceStatus="checkFail").exclude(
-            checkStatus="checkFail")
+        audio = audio.filter(userUuid__uuid=selfUuid).filter(isDelete=False).filter(
+            Q(checkStatus__in=["check", "exemption", "uncheck"]) | Q(interfaceStatus__in=["check", "unCheck"])).exclude(
+            Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail"))
     audios = audio.order_by("-updateTime").all()
     total, audios = page_index(audios, page, pageCount)
     audioStoryList = audioList_format(audios, data)

@@ -410,7 +410,7 @@ def userList_format(users):
     resultList = []
     for u in users:
         audioCount = u.useAudioUuid.filter(isDelete=False).filter(
-            Q(checkStatus="check") | Q(interfaceStatus="check")).exclude(
+            Q(checkStatus__in=["check", "exemption"]) | Q(interfaceStatus="check")).exclude(
             Q(checkStatus="checkFail") | Q(interfaceStatus="checkFail")).count()
         followers = FriendShip.objects.filter(follows__uuid=u.uuid).count()
         resultList.append({

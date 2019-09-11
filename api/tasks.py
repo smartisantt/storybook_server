@@ -16,7 +16,6 @@ def textWorker(uuid):
     """
     消费者处理任务
     :param uuid:
-    :param type:
     :return:
     """
     text = TextAudit()
@@ -48,26 +47,23 @@ def textWorker(uuid):
                         jpush_platform_msg(title, content, extras, alias)
                     except Exception as e:
                         logging.error(str(e))
+        return True
 
-    audio = AudioStory.objects.filter(uuid=uuid).first()
+    audio = AudioStory.objects.filter(uuid=uuid)
     if audio:
         targetStr = "标题：" + audio.name + ",内容：" + audio.remarks
         checkResult, checkInfo = text.work_on(targetStr)
-        if checkResult or checkInfo:
+        if checkResult:
             if checkResult == 18:
                 raise QPSError
-            if checkResult in [0, 1, 2]:
-                interfaceDict = {
-                    1: "check",
-                    2: "checkFail",
-                    3: "checkFail",
-                }
-                audio.interfaceStatus = interfaceDict[checkResult]
-                audio.interfaceInfo = "textCheck"
-                try:
-                    audio.save()
-                except Exception as e:
-                    logging.error(str(e))
+            interfaceData = {}
+            if checkResult in ["checkAgain", "checkFail"]:
+                interfaceData["interfaceStatus"] = "checkFail"
+            interfaceData["interfaceInfo"] = "textCheck"
+            try:
+                audio.update(**interfaceData)
+            except Exception as e:
+                logging.error(str(e))
     return True
 
 

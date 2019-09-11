@@ -2627,6 +2627,9 @@ class NotificationView(ListAPIView):
     serializer_class = NotificationSerializer
     filter_class = NotificationFilter
     pagination_class = MyPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-createTime',)
+    ordering_fields = ('id', 'createTime')
 
     def get_queryset(self):
         startTimestamp = self.request.query_params.get('starttime', '')

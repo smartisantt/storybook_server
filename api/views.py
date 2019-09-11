@@ -267,7 +267,7 @@ def recording_send(request):
         url = urljoin(SLECTAUDIOURL, "/huodong/selectEntries/" + game.activityUuid.uuid)
 
     # 标题和录制感受生产者提交
-    textWorker.delay(uuid, 2)
+    textWorker.delay(uuid)
 
     return http_return(200, '发布成功', url)
 
@@ -1947,7 +1947,7 @@ def commnet_create(request):
     commentInfo = commentList_format(comments)[0]
 
     # 评论内容审核
-    textWorker.delay(behavior.uuid, 1)
+    textWorker.delay(behavior.uuid)
 
     return http_return(200, '评论成功', commentInfo)
 

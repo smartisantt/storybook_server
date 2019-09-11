@@ -12,7 +12,7 @@ from manager.models import Behavior, AudioStory
 
 
 @app.task(autoretry_for=(QPSError,), retry_kwargs={'max_retries': 5})
-def textWorker(uuid, ftype):
+def textWorker(uuid):
     """
     消费者处理任务
     :param uuid:
@@ -20,8 +20,8 @@ def textWorker(uuid, ftype):
     :return:
     """
     text = TextAudit()
-    if ftype == 1:
-        behavior = Behavior.objects.filter(uuid=uuid).first()
+    behavior = Behavior.objects.filter(uuid=uuid).first()
+    if behavior:
         checkResult, checkInfo, = text.work_on(behavior.remarks)
         if checkResult:
             if checkResult == 18:
@@ -49,8 +49,8 @@ def textWorker(uuid, ftype):
                     except Exception as e:
                         logging.error(str(e))
 
-    elif ftype == 2:
-        audio = AudioStory.objects.filter(uuid=uuid).first()
+    audio = AudioStory.objects.filter(uuid=uuid).first()
+    if audio:
         targetStr = "标题：" + audio.name + ",内容：" + audio.remarks
         checkResult, checkInfo = text.work_on(targetStr)
         if checkResult or checkInfo:

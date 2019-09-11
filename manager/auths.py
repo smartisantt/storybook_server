@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from django.core.cache import caches
 from rest_framework.authentication import BaseAuthentication
@@ -8,6 +9,7 @@ from rest_framework.permissions import BasePermission
 from manager.managerCommon import get_uuid, get_ip_address, create_session
 from manager.models import User, LoginLog
 from common.api import Api
+from storybook_sever.config import USER_CACHE_OVER_TIME
 from utils.errors import ParamsException
 
 
@@ -55,6 +57,7 @@ class CustomAuthentication(BaseAuthentication):
             if not user:
                 raise AuthenticationFailed('没有管理员权限')
 
+
             # 获取登录ip
             # loginIp = get_ip_address(request)
             # try:
@@ -86,6 +89,11 @@ class CustomAuthentication(BaseAuthentication):
                 raise AuthenticationFailed('没有管理员权限')
 
             loginIp = get_ip_address(request)
+            humanTime = user_info.get('loginTime').get("humanTime")
+
+            lastLoginTime = datetime.strptime(humanTime, "%Y-%m-%d %H:%M:%S")
+            if (datetime.now() - lastLoginTime).total_seconds() > USER_CACHE_OVER_TIME:
+                raise AuthenticationFailed("登录失效，请重新登录！")
             if not create_session(user, token, loginIp):
                 raise AuthenticationFailed('写缓存失败')
 

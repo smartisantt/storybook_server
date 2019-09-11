@@ -968,6 +968,8 @@ def personal_index(request):
     user = User.objects.filter(uuid=selfUuid).first()
     if not user:
         return http_return(400, "用户信息不存在")
+    if user.status == "destroy":
+        return http_return(400, "根据平台规则，此作者主页暂停访问")
     url = SHAREURL + "/myAlbum/" + user.uuid
     content = "这是【" + user.nickName + "】绘童个人主页，ta有很多优秀的作品，推荐你关注"
     share = share_format(user.avatar, user.nickName, url, content)

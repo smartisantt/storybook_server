@@ -2755,13 +2755,16 @@ def add_notification(request):
                 publishState = 7
                 if not schedule_id:
                     publishState = 8
+                    return http_return(400, "极光推送错误，暂无法创建系统消息！")
             else:
                 schedule_id = ""
                 publishState = 8
+                return http_return(400, "极光推送错误，暂无法创建系统消息！")
         except Exception as e:
             schedule_id = ""
             publishState = 8
             logging.error(str(e))
+            return http_return(400, "极光推送错误，暂无法创建系统消息！")
     else:
         schedule_id = ""
         publishState = 0

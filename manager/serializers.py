@@ -607,7 +607,8 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_isPublish(notification):
-        return (notification.publishDate < datetime.now()) and notification.publishState in [1,3,7]
+        return notification.publishDate < datetime.now()
+        # return (notification.publishDate < datetime.now()) and notification.publishState in [1,3,7]
 
     class Meta:
         model = SystemNotification

@@ -211,9 +211,11 @@ class NotificationFilter(django_filters.FilterSet):
         currentTime = datetime.now()
         # 发布成功 = 时间到了 + 发布状态成功（添加成功或修改成功）
         if value == "true":
-            return queryset.filter(publishDate__lt=currentTime, publishDate__in=[1,3,7])
+            return queryset.filter(publishDate__lt=currentTime)
+            # return queryset.filter(publishDate__lt=currentTime, publishDate__in=[1,3,7])
         elif value == "false":
-            return queryset.filter(Q(publishDate__gt=currentTime)|Q(publishDate__in=[0,2,4,5,6,8]))
+            return queryset.filter(publishDate__gt=currentTime)
+            # return queryset.filter(Q(publishDate__gt=currentTime)|Q(publishDate__in=[0,2,4,5,6,8]))
         else:
             return queryset
 

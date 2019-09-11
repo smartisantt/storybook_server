@@ -2,7 +2,6 @@ from datetime import datetime
 
 import django_filters
 from django.db.models import Q
-from django.utils import timezone
 
 from manager.models import Tag, Story, AudioStory, User, Bgm, HotSearch, GameInfo, Activity, CycleBanner, Ad, Feedback, \
     Album, SystemNotification, Behavior
@@ -209,11 +208,12 @@ class NotificationFilter(django_filters.FilterSet):
 
     @staticmethod
     def filter_by_isPublish(queryset, name, value):
-        currentTime = timezone.now()
+        currentTime = datetime.now()
+        # 发布成功 = 时间到了 + 发布状态成功（添加成功或修改成功）
         if value == "true":
-            return queryset.filter(publishDate__lt=currentTime)
+            return queryset.filter(publishDate__lt=currentTime, publishDate__in=[1,3,7])
         elif value == "false":
-            return queryset.filter(publishDate__gt=currentTime)
+            return queryset.filter(Q(publishDate__gt=currentTime)|Q(publishDate__in=[0,2,4,5,6,8]))
         else:
             return queryset
 

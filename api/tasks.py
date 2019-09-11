@@ -42,7 +42,7 @@ def textWorker(uuid):
                     content = "你的作品被评论了"
                     extras = {"type": 3}
                     alias = []
-                    alias.append(behavior.userUuid.uuid)
+                    alias.append(behavior.audioUuid.userUuid.uuid)
                     try:
                         jpush_platform_msg(title, content, extras, alias)
                     except Exception as e:

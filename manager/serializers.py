@@ -1,4 +1,5 @@
-from django.utils import timezone
+from datetime import datetime
+
 from rest_framework import serializers
 
 from manager.models import Tag, User, Bgm, AudioStory, Story, HotSearch, Ad, Module, Activity, GameInfo, CycleBanner, \
@@ -282,7 +283,7 @@ class AdSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_isPast(cycleBanner):
-        return cycleBanner.endTime < timezone.now()
+        return cycleBanner.endTime < datetime.now()
 
     @staticmethod
     def get_linkObjectInfo(ad):
@@ -375,7 +376,7 @@ class ActivitySerializer(serializers.ModelSerializer):
     @staticmethod
     def get_stage(activity):
         # currentTime = datetime.now()
-        currentTime =timezone.now()
+        currentTime =datetime.now()
 
         if activity.endTime<currentTime:
             return "past"
@@ -400,7 +401,7 @@ class CycleBannerSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_isPast(cycleBanner):
-        return cycleBanner.endTime < timezone.now()
+        return cycleBanner.endTime < datetime.now()
 
     @staticmethod
     def get_linkObjectInfo(cycleBanner):
@@ -606,7 +607,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_isPublish(notification):
-        return notification.publishDate < timezone.now()
+        return (notification.publishDate < datetime.now()) and notification.publishState in [1,3,7]
 
     class Meta:
         model = SystemNotification

@@ -39,7 +39,7 @@ def textWorker(uuid):
                 if checkResult == "check":
                     # 评论通过审核 推送评论信息
                     title = "评论提醒"
-                    content = behavior.userUuid.nickName + "评论了" + behavior.audioUuid.name
+                    content = "你的作品被评论了"
                     extras = {"type": 3, "unread": 1}
                     alias = []
                     alias.append(behavior.userUuid.uuid)

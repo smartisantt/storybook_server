@@ -12,16 +12,15 @@ from manager.models import Behavior, AudioStory
 
 
 @app.task(autoretry_for=(QPSError,), retry_kwargs={'max_retries': 5})
-def textWorker(uuid, ftype):
+def textWorker(uuid):
     """
     消费者处理任务
     :param uuid:
-    :param type:
     :return:
     """
     text = TextAudit()
-    if ftype == 1:
-        behavior = Behavior.objects.filter(uuid=uuid).first()
+    behavior = Behavior.objects.filter(uuid=uuid).first()
+    if behavior:
         checkResult, checkInfo, = text.work_on(behavior.remarks)
         if checkResult:
             if checkResult == 18:
@@ -48,26 +47,23 @@ def textWorker(uuid, ftype):
                         jpush_platform_msg(title, content, extras, alias)
                     except Exception as e:
                         logging.error(str(e))
+        return True
 
-    elif ftype == 2:
-        audio = AudioStory.objects.filter(uuid=uuid).first()
+    audio = AudioStory.objects.filter(uuid=uuid)
+    if audio:
         targetStr = "标题：" + audio.name + ",内容：" + audio.remarks
         checkResult, checkInfo = text.work_on(targetStr)
-        if checkResult or checkInfo:
+        if checkResult:
             if checkResult == 18:
                 raise QPSError
-            if checkResult in [0, 1, 2]:
-                interfaceDict = {
-                    1: "check",
-                    2: "checkFail",
-                    3: "checkFail",
-                }
-                audio.interfaceStatus = interfaceDict[checkResult]
-                audio.interfaceInfo = "textCheck"
-                try:
-                    audio.save()
-                except Exception as e:
-                    logging.error(str(e))
+            interfaceData = {}
+            if checkResult in ["checkAgain", "checkFail"]:
+                interfaceData["interfaceStatus"] = "checkFail"
+            interfaceData["interfaceInfo"] = "textCheck"
+            try:
+                audio.update(**interfaceData)
+            except Exception as e:
+                logging.error(str(e))
     return True
 
 

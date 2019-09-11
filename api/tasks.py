@@ -40,7 +40,7 @@ def textWorker(uuid):
                     # 评论通过审核 推送评论信息
                     title = "评论提醒"
                     content = "你的作品被评论了"
-                    extras = {"type": 3, "unread": 1}
+                    extras = {"type": 3}
                     alias = []
                     alias.append(behavior.userUuid.uuid)
                     try:

@@ -226,7 +226,7 @@ if __name__ == '__main__':
     # post_schedule_notification("温馨提示", "发月饼啦！", extras, "2019-09-15 15:50:30", "温馨提示")
     title = "title"
     content = "content"
-    extras = {"type": 2, "unread": 1}
+    extras = {"type": 3, "unread": 1}
     alias = ["68CA0CEC08DC4BA1973A76DBC79EEB6C"]
     # 推送点赞信息
     try:

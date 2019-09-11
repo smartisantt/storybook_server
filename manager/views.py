@@ -2939,12 +2939,15 @@ def modify_notification(request):
             publishState = 3
             if result.status_code != 200:
                 publishState = 4
+                return http_return(400, "极光错误，暂无法修改")
             if result.payload.get("taskid") != notification.scheduleId:
                 publishState = 4
+                return http_return(400, "极光错误，暂无法修改")
 
         except Exception as e:
             publishState = 4
             logging.error(str(e))
+            return http_return(400, "极光错误，暂无法修改")
 
 
     try:
@@ -2993,11 +2996,11 @@ def del_notification(request):
                     publishState = 5
                 else:
                     publishState = 6
-                    # return http_return(400, "极光删除错误")
+                    return http_return(400, "极光错误，暂无法删除")
             except Exception as e:
                 publishState = 6
                 logging.error(str(e))
-                # return http_return(400, '极光推送出错！')
+                return http_return(400, "极光错误，暂无法删除")
         elif 5*60 > (notification.publishDate-datetime.now()).total_seconds()>0:
             publishState = 6
             return http_return(400, "临近极光发布时间，暂无法删除！")
